@@ -1,111 +1,194 @@
 # PhotoPainter
 
-## Waveshare Electronics
-waveshare electronics</br>
+Fork of the [official Waveshare PhotoPainter firmware](https://github.com/waveshareteam/PhotoPainter).
+
+C firmware for Waveshare 7.3" 7-color e-ink photo frame with RP2040 microcontroller.
+
 ![waveshare_logo.png](waveshare_logo.png)
 
 ---
 
-## 中文说明
+## Features
 
-本例程为 PhotoPainter 的示例代码，友情开源，有bug欢迎反馈。
+- 7.3" e-ink display with 7 colors (800x480 resolution)
+- Battery-powered with USB-C charging
+- SD card storage for BMP images
+- RTC-based scheduled refresh (15min to 24hr intervals)
+- Three file management modes (auto-sorted, filesystem order, manual list)
 
-相关资料地址：  
-[PhotoPainter - Waveshare Wiki](https://www.waveshare.net/wiki/PhotoPainter)  
+## Hardware
 
-## 图片制作
-一、使用 Photoshop 制作散点图，然后导入到 SD 卡。参考教程：  
-[E-Paper-Floyd-Steinberg - Waveshare Wiki](https://www.waveshare.net/wiki/E-Paper-Floyd-Steinberg)  
+| Component | Interface | Pins |
+|-----------|-----------|------|
+| E-ink display (800x480, 7-color) | SPI1 @ 8MHz | CLK=10, MOSI=11, CS=9, DC=8, RST=12, BUSY=13, PWR=16 |
+| SD card (FAT32) | SPI0 @ 12.5MHz | CLK=2, MOSI=3, MISO=4, CS=5 |
+| RTC (PCF85063) | I2C1 @ 100kHz | SDA=14, SCL=15, INT=6, addr=0x51 |
+| Battery | ADC | VBAT=29, BAT_OFF=18, BAT_STATE=19, CHARGE=17, VBUS=24 |
+| LEDs | GPIO | ACT=25, PWR=26 |
 
-二、使用 图片制作工具-由Dr. Fedor G. Sarafanov 分享提供：  
-[Image Tool by Dr. Fedor G. Sarafanov](http://fedorsarafanov.github.io/imagetool/) 
+## Development Environment Setup (macOS)
 
-三、使用我们提供的七色抖动图片转换工具。下载链接：  
-[ConverTo7c_bmp.zip](https://www.waveshare.net/w/upload/e/ea/ConverTo7c_bmp.zip)  
+### Prerequisites
 
-### 图片转换工具使用
+```bash
+# Install build tools
+brew install cmake
 
-#### Windows 系统
+# Install ARM toolchain (official ARM version with newlib)
+curl -LO "https://developer.arm.com/-/media/Files/downloads/gnu/13.2.rel1/binrel/arm-gnu-toolchain-13.2.rel1-darwin-arm64-arm-none-eabi.tar.xz"
+tar -xf arm-gnu-toolchain-13.2.rel1-darwin-arm64-arm-none-eabi.tar.xz
+sudo mv arm-gnu-toolchain-13.2.Rel1-darwin-arm64-arm-none-eabi /opt/arm-gnu-toolchain
 
-- **单张图片转换**  
-  将`图片`拖到 `convert.exe` 上即可完成转换。
+# Clone Pico SDK
+git clone --depth 1 https://github.com/raspberrypi/pico-sdk.git ~/pico-sdk
+cd ~/pico-sdk && git submodule update --init
+```
 
-- **批量转换图片**  
-  将`图片`、`convert.exe` 和 `converterTo7color_all.cmd` 放在同一个文件夹中，然后双击 `converterTo7color_all.cmd` 文件即可进行批量转换。
+### Environment Variables
 
-#### MAC 系统：
+Add to `~/.zshrc`:
+```bash
+export PICO_SDK_PATH="$HOME/pico-sdk"
+export PATH="/opt/arm-gnu-toolchain/bin:$PATH"
+```
 
-将`图片`、`convert`、`converterTo7color_all` 放在一个文件夹
+**Note:** The Homebrew `arm-none-eabi-gcc` package lacks newlib and won't work. Use the official ARM toolchain.
 
-打开终端，进入对应的文件夹
-> cd xxxx/xxx/xxx/
+## Configuration
 
-- **单张图片转换**  
-  输入命令，给予 `convert` 可执行权限
-  >sudo chmod +x convert
-  
-  转换图片
-  >./convert 图片名称
+Edit `main.c` before building to configure operation mode and refresh interval:
 
-- **批量转换图片**  
-  要先对 `convert` 文件进行权限操作给予后才行
-  
-  输入命令，给予 `converterTo7color_all.sh` 可执行权限
-  >sudo chmod +x converterTo7color_all.sh
+### File Mode (line 20)
 
-  转换图片
-  >./converterTo7color_all.sh
+```c
+#define Mode 0  // 0=sorted, 1=filesystem, 2=manual
+```
 
----
+- **Mode 0**: Auto-scan `/pic/`, sort alphabetically
+- **Mode 1**: Auto-scan `/pic/`, filesystem order (deterministic but not alphabetical - order determined by FAT directory structure)
+- **Mode 2**: Manual list from `fileList.txt`
 
-## English
+### Refresh Interval (lines 64-65)
 
-This example code is for PhotoPainter, which is open-sourced in a friendly manner. If you find any bugs, please feel free to report them.
+```c
+alarmTime.minutes += 15;    // For 15/30 minute intervals
+// alarmTime.hours += 1;    // For 1-24 hour intervals
+```
 
-Related documentation can be found at:  
-[PhotoPainter - Waveshare Wiki](https://www.waveshare.com/wiki/PhotoPainter)  
+Common configurations:
+- 15 min: `alarmTime.minutes += 15;`
+- 30 min: `alarmTime.minutes += 30;`
+- 1 hour: `alarmTime.hours += 1;` (comment out minutes line)
+- 2 hours: `alarmTime.hours += 2;`
+- 24 hours: `alarmTime.hours += 24;`
 
-## Image Preparation
-1.Using Photoshop to create a dithered image and then importing it to an SD card. For a tutorial, please refer to:  
-[E-Paper-Floyd-Steinberg - Waveshare Wiki](https://www.waveshare.com/wiki/E-Paper_Floyd-Steinberg)  
+## Build
 
-2.Use the image-making tool - courtesy of Dr. Fedor G. Sarafanov:  
-[Image Tool by Dr. Fedor G. Sarafanov](http://fedorsarafanov.github.io/imagetool/) 
+```bash
+mkdir build && cd build
+cmake ..
+make -j4
+```
 
-3.Using our provided 7-color dithering image conversion tool. Download link:  
-[ConverTo7c_bmp.zip](https://files.waveshare.com/upload/e/ea/ConverTo7c_bmp.zip)  
+Output: `build/epd.uf2`
 
-### How to Use the Image Conversion Tool
+**Note:** `-j4` runs 4 parallel compile jobs. Adjust for your CPU core count.
 
-#### For Windows:
+## Flashing
 
-- **Single Image Conversion**  
-  Drag the image onto `convert.exe` to complete the conversion.
+1. Hold **BOOT** button
+2. Press **RUN** button
+3. Release **RUN**
+4. Release **BOOT**
+5. Drag `epd.uf2` to the USB drive that appears
 
-- **Batch Image Conversion**   
-  Place the `images`, `convert.exe`, and `converterTo7color_all.cmd` in the same folder. Double-click the `converterTo7color_all.cmd` file to perform batch conversion.
+## Architecture
 
-#### For MAC:
+```
+main.c                          Entry point, power management, main loop
+├── lib/Config/DEV_Config.h     Pin definitions, SPI/I2C/GPIO init
+├── lib/e-Paper/EPD_7in3f.c     Display driver (init, display, sleep, clear)
+├── lib/GUI/
+│   ├── GUI_Paint.c             Drawing primitives, text rendering
+│   └── GUI_BMPfile.c           BMP parsing, RGB→7-color conversion
+├── lib/RTC/waveshare_PCF85063.c RTC driver, alarm scheduling
+├── lib/FatFs_SPI/              SD card filesystem (FatFs library)
+├── lib/Fonts/                  ASCII (8-24pt) and Chinese fonts
+├── lib/led/led.c               LED indicators, power control
+└── examples/
+    ├── EPD_7in3f_test.c        Display test functions, BMP rendering
+    └── run_File.c              File scanning, image index management
+```
 
-Place the `images`, `convert` and `converterTo7color_all` in the same folder.
+## 7-Color Palette
 
-Open the terminal and navigate to the corresponding folder:
-> cd xxxx/xxx/xxx/
+| Index | Color |
+|-------|-------|
+| 0x0 | Black |
+| 0x1 | White |
+| 0x2 | Green |
+| 0x3 | Blue |
+| 0x4 | Red |
+| 0x5 | Yellow |
+| 0x6 | Orange |
+| 0x7 | Clean (avoid - causes artifacts) |
 
-- **Single Image Conversion**  
-  Grant execution permission to `convert`:
-  >sudo chmod +x convert
-  
-  Convert the image:
-  >./convert image_name
+## Image Requirements
 
-- **Batch Image Conversion**  
-  You need to first grant execution permissions to the `convert` file.
+- Format: 24-bit BMP
+- Resolution: 800x480 or 480x800
+- Location: `/pic/` folder on SD card
+- Use Waveshare's dithering tool for best results
 
-  Grant execution permission to `converterTo7color_all.sh`:
-  >sudo chmod +x converterTo7color_all.sh
+## Program Flow
 
-  Convert the images:
-  >./converterTo7color_all.sh
+1. `DEV_Module_Init()` - GPIO, SPI, I2C, ADC setup
+2. `watchdog_enable(8000)` - 8s watchdog
+3. Battery check (min 3.1V) → low power shutdown if below
+4. SD card detection and file list scan
+5. `run_display()` - render current BMP to display
+6. Set RTC alarm for next wake
+7. Sleep until RTC interrupt or button press
+8. Repeat from step 3
 
----
+## Key Functions
+
+| Function | File | Purpose |
+|----------|------|---------|
+| `EPD_7IN3F_Init()` | EPD_7in3f.c | Initialize display |
+| `EPD_7IN3F_Display()` | EPD_7in3f.c | Send buffer to display |
+| `EPD_7IN3F_Sleep()` | EPD_7in3f.c | Enter low power mode |
+| `GUI_ReadBmp_RGB_7Color()` | GUI_BMPfile.c | Load BMP, convert to 7-color |
+| `sdScanDir()` | run_File.c | Scan /pic/ for images |
+| `setFilePath()` | run_File.c | Get current image path |
+| `updatePathIndex()` | run_File.c | Advance to next image |
+| `rtcRunAlarm()` | waveshare_PCF85063.c | Set wake alarm |
+| `powerOff()` | led.c | Shutdown (BAT_OFF=LOW) |
+
+## SD Card Files
+
+| File | Purpose |
+|------|---------|
+| `/pic/*.bmp` | Image files |
+| `/fileList.txt` | Generated/manual image list |
+| `/index.txt` | Current image index (persists across power cycles) |
+
+## Debugging
+
+Enable in `lib/Config/Debug.h`:
+```c
+#define DEBUG 1
+```
+
+USB serial output enabled by default (`pico_enable_stdio_usb`).
+
+## Documentation
+
+- **Product wiki**: [PhotoPainter Wiki](https://www.waveshare.com/wiki/PhotoPainter)
+- **Image preparation tools**: See wiki for 7-color dithering conversion tools
+- **Pico SDK**: [raspberrypi/pico-sdk](https://github.com/raspberrypi/pico-sdk)
+- **Original repository**: [waveshareteam/PhotoPainter](https://github.com/waveshareteam/PhotoPainter)
+
+## License
+
+Open-sourced by Waveshare Electronics. Bug reports and contributions welcome.
