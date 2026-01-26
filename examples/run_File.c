@@ -248,25 +248,6 @@ void ls2file(const char *dir, const char *path)
     { /* Repeat while an item is found */
         /* Create a string that includes the file name, the file size and the
          attributes string. */
-        const char *pcWritableFile = "writable file",
-                   *pcReadOnlyFile = "read only file",
-                   *pcDirectory = "directory";
-        const char *pcAttrib;
-        /* Point pcAttrib to a string that describes the file. */
-        if (fno.fattrib & AM_DIR)
-        {
-            pcAttrib = pcDirectory;
-        }
-        else if (fno.fattrib & AM_RDO)
-        {
-            pcAttrib = pcReadOnlyFile;
-        }
-        else
-        {
-            pcAttrib = pcWritableFile;
-        }
-        /* Create a string that includes the file name, the file size and the
-         attributes string. */
         if (!(fno.fattrib & AM_DIR) && fno.fname[0] != '.' && endsWith(fno.fname, ".bmp"))
         {
             // f_printf(&fil, "%d %s\r\n", filNum, fno.fname);
