@@ -6,7 +6,7 @@
 *----------------
 * |	This version:   V1.0
 * | Date        :   2022-12-11
-* | Info        :   
+* | Info        :
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documnetation files (the "Software"), to deal
@@ -35,6 +35,4 @@ int EPD_7in3f_test(void);
 int EPD_7in3f_display(float vol);
 int EPD_7in3f_display_BMP(const char *path, float vol);
 
-
 #endif
-

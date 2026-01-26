@@ -1,10 +1,8 @@
 #include "EPD_Test.h" // Examples
 #include "run_File.h"
-
 #include "led.h"
 #include "waveshare_PCF85063.h" // RTC
 #include "DEV_Config.h"
-
 #include <time.h>
 
 extern const char *fileList;
