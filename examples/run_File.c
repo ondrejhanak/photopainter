@@ -596,7 +596,7 @@ void file_copy(char temp[fileNumber][fileLen], char templist[fileNumber / 2][fil
 {
     memcpy(temp, templist, fileNumber / 2 * fileLen);
     memcpy(temp[fileNumber / 2], templistnew, count * fileLen);
-    custom_qsort(temp, 0, fileLen / 2 + count - 1);
+    custom_qsort(temp, 0, fileNumber / 2 + count - 1);
     memcpy(templist, temp, fileNumber / 2 * fileLen);
     memcpy(templistnew, temp[fileNumber / 2], count * fileLen);
 }
@@ -849,7 +849,7 @@ void file_sort()
     else
     {
         file_count1 = 0;
-        custom_qsort(temp, 0, fileLen - 1);
+        custom_qsort(temp, 0, scanFileNum1 - 1);
         file_copy1(temp, templist1);
         file_copy2(temp, templist2);
 
