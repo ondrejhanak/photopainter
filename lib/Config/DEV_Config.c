@@ -143,8 +143,8 @@ Info:
 ******************************************************************************/
 UBYTE DEV_Module_Init(void)
 {
-    stdio_init_all();
-	
+    // stdio_init_all(); // Commented out - Arduino-Pico handles this automatically
+
     spi_init(EPD_SPI_PORT, 8000 * 1000);
     gpio_set_function(EPD_CLK_PIN, GPIO_FUNC_SPI);
     gpio_set_function(EPD_MOSI_PIN, GPIO_FUNC_SPI);
