@@ -14,7 +14,7 @@ its own ARM toolchain, so no `PICO_SDK_PATH` or system toolchain is needed.
 ```bash
 pio run                 # build
 pio run -t clean        # clean
-pio run -t upload       # flash (device must be in BOOTSEL mode)
+pio run -t upload       # flash via picotool (auto-resets into BOOTSEL over USB serial)
 pio device monitor      # USB serial
 ```
 

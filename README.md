@@ -86,11 +86,23 @@ Clean build: `pio run -t clean`
 
 ## Flashing
 
+With the device connected over USB and running this firmware:
+
+```bash
+pio run -t upload
+```
+
+`picotool` reboots the board into BOOTSEL mode (1200-baud touch on its USB serial port),
+flashes and verifies the firmware, and starts it. Flash and open the serial monitor in one go
+with `pio run -t upload -t monitor`.
+
+If the board has no working USB serial (first flash, or firmware that crashed), enter BOOTSEL
+manually and then run the same command, or drag `.pio/build/pico/firmware.uf2` to the `RPI-RP2` drive:
+
 1. Hold **BOOT** button
 2. Press **RUN** button
 3. Release **RUN**
 4. Release **BOOT**
-5. Either drag `.pio/build/pico/firmware.uf2` to the `RPI-RP2` USB drive, or run `pio run -t upload`
 
 ## Architecture
 
