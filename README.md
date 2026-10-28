@@ -26,39 +26,27 @@ C firmware for Waveshare 7.3" 7-color e-ink photo frame with RP2040 microcontrol
 | Battery | ADC | VBAT=29, BAT_OFF=18, BAT_STATE=19, CHARGE=17, VBUS=24 |
 | LEDs | GPIO | ACT=25, PWR=26 |
 
-## Development Environment Setup (macOS)
+## Development Environment Setup
 
-### Prerequisites
+The firmware is built with [PlatformIO](https://platformio.org) using the
+[Arduino-Pico](https://github.com/earlephilhower/arduino-pico) core (which bundles the Pico SDK).
+PlatformIO downloads the ARM toolchain and framework automatically on first build.
+
+Install either the **PlatformIO IDE** extension for VS Code (recommended in `.vscode/extensions.json`)
+or the CLI:
 
 ```bash
-# Install build tools
-brew install cmake
-
-# Install ARM toolchain (official ARM version with newlib)
-curl -LO "https://developer.arm.com/-/media/Files/downloads/gnu/13.2.rel1/binrel/arm-gnu-toolchain-13.2.rel1-darwin-arm64-arm-none-eabi.tar.xz"
-tar -xf arm-gnu-toolchain-13.2.rel1-darwin-arm64-arm-none-eabi.tar.xz
-sudo mv arm-gnu-toolchain-13.2.Rel1-darwin-arm64-arm-none-eabi /opt/arm-gnu-toolchain
-
-# Clone Pico SDK
-git clone --depth 1 https://github.com/raspberrypi/pico-sdk.git ~/pico-sdk
-cd ~/pico-sdk && git submodule update --init
+curl -fsSL -o get-platformio.py https://raw.githubusercontent.com/platformio/platformio-core-installer/master/get-platformio.py
+python3 get-platformio.py
 ```
 
-### Environment Variables
-
-Add to `~/.zshrc`:
-```bash
-export PICO_SDK_PATH="$HOME/pico-sdk"
-export PATH="/opt/arm-gnu-toolchain/bin:$PATH"
-```
-
-**Note:** The Homebrew `arm-none-eabi-gcc` package lacks newlib and won't work. Use the official ARM toolchain.
+The CLI is installed to `~/.platformio/penv/bin/pio` (add it to `PATH` or use the full path).
 
 ## Configuration
 
-Edit `main.c` before building to configure operation mode and refresh interval:
+Edit `src/main.c` before building.
 
-### File Mode (line 20)
+### File Mode
 
 ```c
 #define Mode 0  // 0=sorted, 1=filesystem, 2=manual
@@ -68,31 +56,33 @@ Edit `main.c` before building to configure operation mode and refresh interval:
 - **Mode 1**: Auto-scan `/pic/`, filesystem order (deterministic but not alphabetical - order determined by FAT directory structure)
 - **Mode 2**: Manual list from `fileList.txt`
 
-### Refresh Interval (lines 64-65)
+### Refresh Interval
+
+Set in `main()` by adjusting `alarmTime` (default: 12 hours):
 
 ```c
-alarmTime.minutes += 15;    // For 15/30 minute intervals
-// alarmTime.hours += 1;    // For 1-24 hour intervals
+// alarmTime.minutes += 15;
+alarmTime.hours += 12;
 ```
 
 Common configurations:
 - 15 min: `alarmTime.minutes += 15;`
 - 30 min: `alarmTime.minutes += 30;`
-- 1 hour: `alarmTime.hours += 1;` (comment out minutes line)
-- 2 hours: `alarmTime.hours += 2;`
+- 1 hour: `alarmTime.hours += 1;`
+- 12 hours: `alarmTime.hours += 12;`
 - 24 hours: `alarmTime.hours += 24;`
+
+Use only one of the `minutes` / `hours` lines.
 
 ## Build
 
 ```bash
-mkdir build && cd build
-cmake ..
-make -j4
+pio run
 ```
 
-Output: `build/epd.uf2`
+Output: `.pio/build/pico/firmware.uf2`. Flash and RAM usage are printed at the end of the build.
 
-**Note:** `-j4` runs 4 parallel compile jobs. Adjust for your CPU core count.
+Clean build: `pio run -t clean`
 
 ## Flashing
 
@@ -100,24 +90,28 @@ Output: `build/epd.uf2`
 2. Press **RUN** button
 3. Release **RUN**
 4. Release **BOOT**
-5. Drag `epd.uf2` to the USB drive that appears
+5. Either drag `.pio/build/pico/firmware.uf2` to the `RPI-RP2` USB drive, or run `pio run -t upload`
 
 ## Architecture
 
 ```
-main.c                          Entry point, power management, main loop
-├── lib/Config/DEV_Config.h     Pin definitions, SPI/I2C/GPIO init
-├── lib/e-Paper/EPD_7in3f.c     Display driver (init, display, sleep, clear)
-├── lib/GUI/
+platformio.ini                  Build configuration (flags, include paths, ignored framework libs)
+src/
+├── main.c                      Entry point, power management, main loop, configuration
+├── EPD_7in3f_test.c            Display functions, BMP rendering
+└── run_File.c                  File scanning, image index management
+include/                        Headers for src/ (EPD_Test.h, run_File.h)
+lib/
+├── Config/DEV_Config.h         Pin definitions, SPI/I2C/GPIO init
+├── e-Paper/EPD_7in3f.c         Display driver (init, display, sleep, clear)
+├── GUI/
 │   ├── GUI_Paint.c             Drawing primitives, text rendering
-│   └── GUI_BMPfile.c           BMP parsing, RGB→7-color conversion
-├── lib/RTC/waveshare_PCF85063.c RTC driver, alarm scheduling
-├── lib/FatFs_SPI/              SD card filesystem (FatFs library)
-├── lib/Fonts/                  ASCII (8-24pt) and Chinese fonts
-├── lib/led/led.c               LED indicators, power control
-└── examples/
-    ├── EPD_7in3f_test.c        Display test functions, BMP rendering
-    └── run_File.c              File scanning, image index management
+│   └── GUI_BMPfile.c           BMP parsing, RGB→7-color mapping
+├── RTC/waveshare_PCF85063.c    RTC driver, alarm scheduling
+├── FatFs_SPI/                  SD card filesystem (FatFs library)
+├── Fonts/                      ASCII (8-24pt) and Chinese fonts
+└── led/led.c                   LED indicators, power control
+convert/                        Host-side image conversion script (Python)
 ```
 
 ## 7-Color Palette
@@ -135,10 +129,26 @@ main.c                          Entry point, power management, main loop
 
 ## Image Requirements
 
-- Format: 24-bit BMP
+- Format: 24-bit BMP using **only these exact RGB values** — any other value is not recognized
+  and the pixel repeats the previous pixel's color:
+  black `(0,0,0)`, white `(255,255,255)`, green `(0,255,0)`, blue `(0,0,255)`, red `(255,0,0)`,
+  yellow `(255,255,0)`, orange `(255,128,0)`
 - Resolution: 800x480 or 480x800
 - Location: `/pic/` folder on SD card
-- Use Waveshare's dithering tool for best results
+
+### Image Preparation
+
+`convert/convert.py` (requires [Pillow](https://pypi.org/project/pillow/)) resizes a photo to cover the
+frame, crops it from the center, applies light sharpening / contrast / saturation, dithers it
+(Floyd–Steinberg) to the exact display palette, and saves `<name>_output.bmp`:
+
+```bash
+python3 convert/convert.py photo.jpg                  # orientation picked from aspect ratio
+python3 convert/convert.py photo.jpg --dir portrait   # force landscape/portrait
+```
+
+`convert/convert_all.sh` converts every `*.jpg` / `*.jpeg` in the current directory
+(run it from the folder with your photos, with `convert.py` alongside).
 
 ## Program Flow
 
@@ -158,7 +168,7 @@ main.c                          Entry point, power management, main loop
 | `EPD_7IN3F_Init()` | EPD_7in3f.c | Initialize display |
 | `EPD_7IN3F_Display()` | EPD_7in3f.c | Send buffer to display |
 | `EPD_7IN3F_Sleep()` | EPD_7in3f.c | Enter low power mode |
-| `GUI_ReadBmp_RGB_7Color()` | GUI_BMPfile.c | Load BMP, convert to 7-color |
+| `GUI_ReadBmp_RGB_7Color()` | GUI_BMPfile.c | Load BMP, map exact RGB values to 7-color indices |
 | `sdScanDir()` | run_File.c | Scan /pic/ for images |
 | `setFilePath()` | run_File.c | Get current image path |
 | `updatePathIndex()` | run_File.c | Advance to next image |
@@ -175,18 +185,21 @@ main.c                          Entry point, power management, main loop
 
 ## Debugging
 
-Enable in `lib/Config/Debug.h`:
-```c
-#define DEBUG 1
+Enable debug output by adding to `build_flags` in `platformio.ini`:
+```ini
+    -D DEBUG=1
 ```
 
-USB serial output enabled by default (`pico_enable_stdio_usb`).
+USB serial output is enabled via `-D PICO_STDIO_USB=1`. View it with:
+```bash
+pio device monitor
+```
 
 ## Documentation
 
 - **Product wiki**: [PhotoPainter Wiki](https://www.waveshare.com/wiki/PhotoPainter)
-- **Image preparation tools**: See wiki for 7-color dithering conversion tools
-- **Pico SDK**: [raspberrypi/pico-sdk](https://github.com/raspberrypi/pico-sdk)
+- **PlatformIO**: [docs.platformio.org](https://docs.platformio.org)
+- **Arduino-Pico core**: [earlephilhower/arduino-pico](https://github.com/earlephilhower/arduino-pico)
 - **Original repository**: [waveshareteam/PhotoPainter](https://github.com/waveshareteam/PhotoPainter)
 
 ## License
