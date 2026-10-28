@@ -49,9 +49,9 @@ static void armAlarm(void)
 void run_display(void)
 {
     if (!isCard)
-        EPD_7in3f_display(measureVBAT(), "No SD Card Found", "Please Insert SD Card");
+        EPD_7in3f_display(measureVBAT(), "SD Card Not Found or Unreadable", "Insert an SD card or try another one");
     else if (!selectNextImage())
-        EPD_7in3f_display(measureVBAT(), "No Images Found", "Copy .bmp images to the SD card");
+        EPD_7in3f_display(measureVBAT(), "No Images Found", "Copy .bmp images onto the card, not in a folder");
     else
         EPD_7in3f_display_BMP(pathName, measureVBAT());
 
