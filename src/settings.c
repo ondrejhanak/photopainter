@@ -21,8 +21,8 @@ Settings settings = {
 // Written when settings.ini is missing, so users can see what can be changed
 static const char *default_settings =
     "; PhotoPainter settings\r\n"
-    "; Change a value after \"=\", save the file, then restart the frame\r\n"
-    "; (or press KEY while it is connected to USB). Lines starting with ; are comments.\r\n"
+    "; Change a value after \"=\" and save the file. Changes apply with the next image change\r\n"
+    "; (scheduled, or press KEY). Lines starting with ; are comments.\r\n"
     "\r\n"
     "; Hours between image changes (1 to 47)\r\n"
     "interval_hours = 12\r\n"
