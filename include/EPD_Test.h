@@ -32,7 +32,7 @@
 
 int EPD_7in3f_test(void);
 
-int EPD_7in3f_display(float vol);
+int EPD_7in3f_display(float vol, const char *title, const char *hint);
 int EPD_7in3f_display_BMP(const char *path, float vol);
 
 #endif

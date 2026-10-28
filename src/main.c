@@ -6,16 +6,6 @@
 #include "settings.h"
 #include <time.h>
 
-extern const char *fileList;
-extern char pathName[];
-
-/*
-Mode 0: Automatically get pic folder names and sort them
-Mode 1: Automatically get pic folder names but not sorted
-Mode 2: pic folder name is not automatically obtained, users need to create fileList.txt file and write the picture name in TF card by themselves
-*/
-#define Mode 0
-
 // State shared by setup() and loop()
 // Arbitrary reference time (2000-01-01 00:00:00): the RTC is reset to it on every run and the
 // alarm is set relative to it, so only the interval matters; the date is never read or shown
@@ -58,45 +48,23 @@ static void armAlarm(void)
 
 void run_display(void)
 {
-    if (isCard)
-    {
-        setFilePath();
-        EPD_7in3f_display_BMP(pathName, measureVBAT()); // display bmp
-    }
+    if (!isCard)
+        EPD_7in3f_display(measureVBAT(), "No SD Card Found", "Please Insert SD Card");
+    else if (!selectNextImage())
+        EPD_7in3f_display(measureVBAT(), "No Images Found", "Copy .bmp images to the SD card");
     else
-    {
-        EPD_7in3f_display(measureVBAT());
-    }
+        EPD_7in3f_display_BMP(pathName, measureVBAT());
 
     PCF85063_clear_alarm_flag(); // clear RTC alarm flag
     armAlarm();
 }
 
-// Detect the SD card and (re)build the image list, so a card inserted or changed while on USB is picked up
+// Detect the SD card and read settings.ini, so a card inserted or changed while on USB is picked up
 static void scanCard(void)
 {
-    if (!sdTest())
-    {
-        isCard = 1;
+    isCard = !sdTest();
+    if (isCard)
         settings_load();
-        if (Mode == 0)
-        {
-            sdScanDir();
-            file_sort();
-        }
-        if (Mode == 1)
-        {
-            sdScanDir();
-        }
-        if (Mode == 2)
-        {
-            file_cat();
-        }
-    }
-    else
-    {
-        isCard = 0;
-    }
 }
 
 /*

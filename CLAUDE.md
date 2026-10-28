@@ -41,7 +41,7 @@ which may be reused or referenced elsewhere.
 ## Key Files
 
 - **src/main.c** - Main application logic (mode, refresh interval, power flow), safe to modify
-- **src/EPD_7in3f_test.c, src/run_File.c** - Application-level display and file-management functions, safe to modify
+- **src/EPD_7in3f_test.c, src/run_File.c** - Application-level display, SD card and next-image selection, safe to modify
 - **src/settings.c** - `settings.ini` on the SD card (user settings, parsed with inih in `lib/inih/`)
 - **include/** - Headers for the `src/` files
 - **lib/** - Generic reusable libraries (display driver, GUI/BMP decoding, FatFs, RTC), modify with caution

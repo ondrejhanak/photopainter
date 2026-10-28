@@ -86,8 +86,7 @@ int EPD_7in3f_display_BMP(const char *path, float vol)
 
     run_unmount();
 #endif
-    printf("Update Path Index...\r\n");
-    updatePathIndex();
+    saveShownImage();
 
     printf("Goto Sleep...\r\n\r\n");
     EPD_7IN3F_Sleep();
@@ -97,7 +96,7 @@ int EPD_7in3f_display_BMP(const char *path, float vol)
     return 0;
 }
 
-int EPD_7in3f_display(float vol)
+int EPD_7in3f_display(float vol, const char *title, const char *hint)
 {
     printf("e-Paper Init and Clear...\r\n");
     EPD_7IN3F_Init();
@@ -114,15 +113,15 @@ int EPD_7in3f_display(float vol)
     Paint_NewImage(BlackImage, EPD_7IN3F_WIDTH, EPD_7IN3F_HEIGHT, 0, EPD_7IN3F_WHITE);
     Paint_SetScale(7);
 
-    printf("Display No SD Card message\r\n");
+    printf("Display message: %s\r\n", title);
     Paint_SelectImage(BlackImage);
     Paint_Clear(EPD_7IN3F_WHITE);
 
     Paint_SetRotate(180);
 
     // Display a message
-    Paint_DrawString_EN(250, 200, "No SD Card Found", &Font20, EPD_7IN3F_WHITE, EPD_7IN3F_BLACK);
-    Paint_DrawString_EN(250, 224, "Please Insert SD Card", &Font16, EPD_7IN3F_WHITE, EPD_7IN3F_BLACK);
+    Paint_DrawString_EN(250, 200, title, &Font20, EPD_7IN3F_WHITE, EPD_7IN3F_BLACK);
+    Paint_DrawString_EN(250, 224, hint, &Font16, EPD_7IN3F_WHITE, EPD_7IN3F_BLACK);
 
     // Display battery voltage
     char strvol[21] = {0};

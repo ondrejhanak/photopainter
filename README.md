@@ -14,7 +14,7 @@ C firmware for Waveshare 7.3" 7-color e-ink photo frame with RP2040 microcontrol
 - Battery-powered with USB-C charging
 - SD card storage for BMP images
 - RTC-based scheduled refresh (15min to 24hr intervals)
-- Three file management modes (auto-sorted, filesystem order, manual list)
+- Images copied straight to the SD card root, shown in natural name order (`Photo 2` before `Photo 10`)
 
 ## Hardware
 
@@ -72,18 +72,6 @@ Unknown keys are ignored and invalid values fall back to the default (both are l
 serial). The 1–47 hour limit comes from the RTC library, which carries hour overflow into the next
 day only once.
 
-### File Mode (build time)
-
-Edit `src/main.c` before building.
-
-```c
-#define Mode 0  // 0=sorted, 1=filesystem, 2=manual
-```
-
-- **Mode 0**: Auto-scan `/pic/`, sort alphabetically
-- **Mode 1**: Auto-scan `/pic/`, filesystem order (deterministic but not alphabetical - order determined by FAT directory structure)
-- **Mode 2**: Manual list from `fileList.txt`
-
 ## Build
 
 ```bash
@@ -121,7 +109,7 @@ platformio.ini                  Build configuration (flags, include paths, ignor
 src/
 ├── main.c                      Entry point, power management, main loop, configuration
 ├── EPD_7in3f_test.c            Display functions, BMP rendering
-├── run_File.c                  File scanning, image index management
+├── run_File.c                  SD card, next-image selection, frame state
 └── settings.c                  settings.ini loading (via inih)
 include/                        Headers for src/ (EPD_Test.h, run_File.h, settings.h)
 lib/
@@ -158,7 +146,7 @@ convert/                        Host-side image conversion script (Python)
   black `(0,0,0)`, white `(255,255,255)`, green `(0,255,0)`, blue `(0,0,255)`, red `(255,0,0)`,
   yellow `(255,255,0)`, orange `(255,128,0)`
 - Resolution: 800x480 or 480x800
-- Location: `/pic/` folder on SD card
+- Location: SD card root (subfolders are ignored)
 
 ### Image Preparation
 
@@ -182,7 +170,7 @@ python3 convert/convert.py photo.jpg --dir portrait   # force landscape/portrait
 2. `watchdog_enable(8000)` - 8s watchdog
 3. RTC reset to the reference time, alarm set 12 h later (safe default)
 4. Battery check (min 3.1V) → low power shutdown if below
-5. `scanCard()` - SD card detection, `settings.ini`, file list scan; alarm re-armed with `interval_hours`
+5. `scanCard()` - SD card detection and `settings.ini`; alarm re-armed with `interval_hours`
 6. On battery: `run_display()` shows the next image, then `powerOff()`; the RTC alarm or KEY powers
    the board on again
 7. On USB: enter charging mode and return
@@ -198,9 +186,8 @@ python3 convert/convert.py photo.jpg --dir portrait   # force landscape/portrait
 | `EPD_7IN3F_Display()` | EPD_7in3f.c | Send buffer to display |
 | `EPD_7IN3F_Sleep()` | EPD_7in3f.c | Enter low power mode |
 | `GUI_ReadBmp_RGB_7Color()` | GUI_BMPfile.c | Load BMP, map exact RGB values to 7-color indices |
-| `sdScanDir()` | run_File.c | Scan /pic/ for images |
-| `setFilePath()` | run_File.c | Get current image path |
-| `updatePathIndex()` | run_File.c | Advance to next image |
+| `selectNextImage()` | run_File.c | Pick the image after the last shown one (natural order, wraps) |
+| `saveShownImage()` | run_File.c | Remember the shown image in the state file |
 | `rtcRunAlarm()` | waveshare_PCF85063.c | Set wake alarm |
 | `powerOff()` | led.c | Shutdown (BAT_OFF=LOW) |
 
@@ -208,9 +195,13 @@ python3 convert/convert.py photo.jpg --dir portrait   # force landscape/portrait
 
 | File | Purpose |
 |------|---------|
-| `/pic/*.bmp` | Image files |
-| `/fileList.txt` | Generated/manual image list |
-| `/index.txt` | Current image index (persists across power cycles) |
+| `/*.bmp` | Images, in the card root |
+| `/settings.ini` | User settings (created with defaults if missing) |
+| `/.photopainter/state.txt` | Last shown image name; the folder is hidden (dot name + FAT hidden attribute) |
+
+The next image is the one after the last shown name in natural order, so adding or removing images
+never causes skips or repeats. Dot-files (e.g. macOS `._*` companions), hidden/system files and
+folders are ignored.
 
 ## Debugging
 
