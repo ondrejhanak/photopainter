@@ -379,12 +379,13 @@ void fil2array(int index)
     // printf("ls array path\r\n");
     for (int i = 0; i < index; i++)
     {
-        if (f_gets(pathName, 999, &fil) == NULL)
+        if (f_gets(pathName, sizeof(pathName), &fil) == NULL)
         {
             break;
         }
         // printf("%s", pathName[i]);
     }
+    pathName[strcspn(pathName, "\r\n")] = '\0'; // f_gets keeps the line ending
 
     f_close(&fil);
     run_unmount();
