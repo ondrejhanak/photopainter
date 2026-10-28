@@ -42,67 +42,86 @@
 #include "f_util.h"
 #include "ff.h"
 
+/******************************************************************************
+function:	Read a 24-bit uncompressed BMP and draw it into the selected image
+parameter:
+    path   :   File path on the SD card
+    Xstart :   X offset
+    Ystart :   Y offset
+return:
+    0 on success, 1 on any error (the file is always closed)
+******************************************************************************/
 UBYTE GUI_ReadBmp_RGB_7Color(const char *path, UWORD Xstart, UWORD Ystart)
 {
     BMPFILEHEADER bmpFileHeader;  //Define a bmp file header structure
     BMPINFOHEADER bmpInfoHeader;  //Define a bmp info header structure
-    
+
     FRESULT fr;
     FIL fil;
     UINT br;
-    printf("open %s", path);
+    printf("open %s\r\n", path);
     fr = f_open(&fil, path, FA_READ);
     if (FR_OK != fr && FR_EXIST != fr) {
-        panic("f_open(%s) error: %s (%d)\n", path, FRESULT_str(fr), fr);
-        // exit(0);
+        printf("f_open(%s) error: %s (%d)\r\n", path, FRESULT_str(fr), fr);
+        return 1; // nothing to close
     }
-    
-    // Set the file pointer from the beginning
-    f_lseek(&fil, 0);
-    f_read(&fil, &bmpFileHeader, sizeof(BMPFILEHEADER), &br);   // sizeof(BMPFILEHEADER) must be 14
-    if (br != sizeof(BMPFILEHEADER)) {
+
+    fr = f_read(&fil, &bmpFileHeader, sizeof(BMPFILEHEADER), &br);   // sizeof(BMPFILEHEADER) must be 14
+    if (fr != FR_OK || br != sizeof(BMPFILEHEADER)) {
         printf("f_read bmpFileHeader error\r\n");
-        // printf("br is %d\n", br);
+        goto error;
     }
-    f_read(&fil, &bmpInfoHeader, sizeof(BMPINFOHEADER), &br);   // sizeof(BMPFILEHEADER) must be 50
-    if (br != sizeof(BMPINFOHEADER)) {
+    if (bmpFileHeader.bType != 0x4D42) { // "BM"
+        printf("not a BMP file\r\n");
+        goto error;
+    }
+    fr = f_read(&fil, &bmpInfoHeader, sizeof(BMPINFOHEADER), &br);   // sizeof(BMPINFOHEADER) must be 40
+    if (fr != FR_OK || br != sizeof(BMPINFOHEADER)) {
         printf("f_read bmpInfoHeader error\r\n");
-        // printf("br is %d\n", br);
+        goto error;
     }
+
+    printf("pixel = %d * %d\r\n", bmpInfoHeader.biWidth, bmpInfoHeader.biHeight);
+
+    if (bmpInfoHeader.biBitCount != 24) {
+        printf("BMP is %d-bit, only 24-bit is supported\r\n", bmpInfoHeader.biBitCount);
+        goto error;
+    }
+    if (bmpInfoHeader.biCompression != 0) {
+        printf("compressed BMP is not supported\r\n");
+        goto error;
+    }
+
     if(bmpInfoHeader.biWidth > bmpInfoHeader.biHeight)
         Paint_SetRotate(0);
     else
         Paint_SetRotate(90);
 
-    printf("pixel = %d * %d\r\n", bmpInfoHeader.biWidth, bmpInfoHeader.biHeight);
-
-    // Determine if it is a monochrome bitmap
-    int readbyte = bmpInfoHeader.biBitCount;
-    if(readbyte != 24){
-        printf("Bmp image is not 24 bitmap!\n");
+    // Paint.Width/Height follow the rotation; also rejects top-down BMPs (negative height reads as huge)
+    if (bmpInfoHeader.biWidth > Paint.Width || bmpInfoHeader.biHeight > Paint.Height) {
+        printf("BMP is larger than the display (%d * %d)\r\n", Paint.Width, Paint.Height);
+        goto error;
     }
+
     // Read image data into the cache
     UWORD x, y;
     UBYTE Rdata[3];
-    
-    f_lseek(&fil, bmpFileHeader.bOffset);
+
+    if (f_lseek(&fil, bmpFileHeader.bOffset) != FR_OK) {
+        printf("f_lseek to pixel data error\r\n");
+        goto error;
+    }
 
     UBYTE color;
     printf("read data\n");
-    
+
     for(y = 0; y < bmpInfoHeader.biHeight; y++) {//Total display column
         for(x = 0; x < bmpInfoHeader.biWidth ; x++) {//Show a line in the line
-            if(f_read(&fil, (char *)Rdata, 1, &br) != FR_OK) {
-                perror("get bmpdata:\r\n");
-                break;
-            }
-            if(f_read(&fil, (char *)Rdata+1, 1, &br) != FR_OK) {
-                perror("get bmpdata:\r\n");
-                break;
-            }
-            if(f_read(&fil, (char *)Rdata+2, 1, &br) != FR_OK) {
-                perror("get bmpdata:\r\n");
-                break;
+            if(f_read(&fil, (char *)Rdata, 1, &br) != FR_OK || br != 1 ||
+               f_read(&fil, (char *)Rdata+1, 1, &br) != FR_OK || br != 1 ||
+               f_read(&fil, (char *)Rdata+2, 1, &br) != FR_OK || br != 1) {
+                printf("pixel data read error at %d, %d\r\n", x, y);
+                goto error;
             }
 
 			if(Rdata[0] == 0 && Rdata[1] == 0 && Rdata[2] == 0){
@@ -135,6 +154,10 @@ UBYTE GUI_ReadBmp_RGB_7Color(const char *path, UWORD Xstart, UWORD Ystart)
     f_close(&fil);
 
     return 0;
+
+error:
+    f_close(&fil);
+    return 1;
 }
 
 

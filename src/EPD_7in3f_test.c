@@ -61,9 +61,15 @@ int EPD_7in3f_display_BMP(const char *path, float vol)
     Paint_SelectImage(BlackImage);
     Paint_Clear(EPD_7IN3F_WHITE);
 
-    GUI_ReadBmp_RGB_7Color(path, 0, 0);
-
-    if (Paint_GetRotate() == 90)
+    if (GUI_ReadBmp_RGB_7Color(path, 0, 0) != 0)
+    {
+        // Show what failed instead of a partial image; the index still advances below
+        Paint_SetRotate(180);
+        Paint_Clear(EPD_7IN3F_WHITE);
+        Paint_DrawString_EN(10, 42, "Cannot display image:", &Font16, EPD_7IN3F_BLACK, EPD_7IN3F_WHITE);
+        Paint_DrawString_EN(10, 58, path, &Font16, EPD_7IN3F_BLACK, EPD_7IN3F_WHITE);
+    }
+    else if (Paint_GetRotate() == 90)
         Paint_SetRotate(270);
     else
         Paint_SetRotate(180);
