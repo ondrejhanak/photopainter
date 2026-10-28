@@ -31,7 +31,7 @@ For per-section detail:
 
 ## Project Architecture
 
-See README.md for architecture overview.
+See README.md for architecture overview and hardware behavior (power, wake-up, RTC, USB mode).
 
 ## Optimization Focus
 

@@ -21,10 +21,23 @@ C firmware for Waveshare 7.3" 7-color e-ink photo frame with RP2040 microcontrol
 | Component | Interface | Pins |
 |-----------|-----------|------|
 | E-ink display (800x480, 7-color) | SPI1 @ 8MHz | CLK=10, MOSI=11, CS=9, DC=8, RST=12, BUSY=13, PWR=16 |
-| SD card (FAT32) | SPI0 @ 12.5MHz | CLK=2, MOSI=3, MISO=4, CS=5 |
-| RTC (PCF85063) | I2C1 @ 100kHz | SDA=14, SCL=15, INT=6, addr=0x51 |
-| Battery | ADC | VBAT=29, BAT_OFF=18, BAT_STATE=19, CHARGE=17, VBUS=24 |
+| SD card (FAT32/exFAT) | SPI0 @ 12.5MHz | CLK=2, MOSI=3, MISO=4, CS=5 (no card-detect pin) |
+| RTC (PCF85063) | I2C1 @ 100kHz | SDA=14, SCL=15, INT=6 (unused), addr=0x51 |
+| Power / battery | GPIO, ADC | VBAT=29 (ADC), BAT_OFF=18, BAT_STATE=19 (KEY / RTC wake sense), CHARGE=17, VBUS=24 |
 | LEDs | GPIO | ACT=25, PWR=26 |
+
+### How it behaves
+
+- **Power:** on battery the board keeps itself powered while working and cuts its own power with
+  `BAT_OFF` (`powerOff()`) when done. It is fully off between images.
+- **Wake-up:** the KEY button and the RTC alarm both feed the power-on circuit and both pull
+  `BAT_STATE` low. On battery either one powers the board on; on USB the firmware sees either as a
+  "KEY" event. The RTC `INT` pin (GPIO 6) never shows the alarm and is not used.
+- **RTC:** used only as a countdown timer. On every run it is reset to a fixed reference time and the
+  alarm is set `WAKE_INTERVAL_HOURS` later; the time is never read.
+- **On USB:** the board stays awake. KEY or the RTC alarm shows the next image, the SD card is
+  re-scanned each time (cards can be swapped), and unplugging USB powers the board off.
+- **SD card:** with no card-detect pin, the firmware forces card re-initialization on every check.
 
 ## Development Environment Setup
 
@@ -156,14 +169,19 @@ python3 convert/convert.py photo.jpg --dir portrait   # force landscape/portrait
 
 ## Program Flow
 
+`setup()` (runs once per power-on):
+
 1. `DEV_Module_Init()` - GPIO, SPI, I2C, ADC setup
 2. `watchdog_enable(8000)` - 8s watchdog
-3. Battery check (min 3.1V) → low power shutdown if below
-4. SD card detection and file list scan
-5. `run_display()` - render current BMP to display
-6. Set RTC alarm for next wake
-7. Sleep until RTC interrupt or button press
-8. Repeat from step 3
+3. RTC reset to the reference time, alarm set `WAKE_INTERVAL_HOURS` later
+4. Battery check (min 3.1V) → low power shutdown if below
+5. `scanCard()` - SD card detection and file list scan
+6. On battery: `run_display()` shows the next image, then `powerOff()`; the RTC alarm or KEY powers
+   the board on again
+7. On USB: enter charging mode and return
+
+`loop()` (only in charging mode, every 200 ms): power off if USB is unplugged; on KEY or RTC alarm,
+`scanCard()` then `run_display()`.
 
 ## Key Functions
 
