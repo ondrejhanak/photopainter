@@ -128,8 +128,6 @@ void setup(void)
         chargeState_callback();
         while (DEV_Digital_Read(VBUS))
         {
-            measureVBAT();
-
 #if enChargingRtc
             if (!DEV_Digital_Read(RTC_INT))
             { // RTC interrupt trigger
