@@ -7,10 +7,6 @@ itself off in between.
 This is a fork of the [official Waveshare firmware](https://github.com/waveshareteam/PhotoPainter),
 reworked to be easier to use and to develop.
 
-![waveshare_logo.png](waveshare_logo.png)
-
----
-
 ## What's improved over the original firmware
 
 ### Using the frame
@@ -46,14 +42,48 @@ reworked to be easier to use and to develop.
 - **Documented hardware behavior**, e.g. the RTC alarm arriving on the KEY line and the missing SD
   card-detect pin (see [How it behaves](#how-it-behaves)).
 
-## Features
+## Photos & SD card
 
-- 7.3" e-ink display with 7 colors (800x480 resolution)
-- Battery-powered with USB-C charging
-- SD card storage for BMP images
-- RTC wake-ups for scheduled image changes (1 to 47 hours)
+| On the card | Purpose |
+|---|---|
+| `*.bmp` in the root | Photos (subfolders, dot-files and non-`.bmp` files are ignored) |
+| `settings.ini` | Settings, created with comments on first start |
+| `.photopainter/` | The frame's own state (hidden) |
+
+Photos are shown in natural name order or randomly; adding or removing photos never causes skips or
+repeats.
+
+### settings.ini
+
+Edit in any text editor; changes apply with the next image change (scheduled, or press KEY).
+Unknown keys are ignored and invalid values fall back to the default.
+
+```ini
+; Hours between image changes (1 to 47)
+interval_hours = 12
+
+; Image order: alphabetical or random (random shows every image once before reshuffling)
+order = alphabetical
+```
+
+### Preparing photos
+
+Images must be 800x480 (or 480x800) 24-bit BMPs that use only the panel's 7 colors: black
+`(0,0,0)`, white `(255,255,255)`, green `(0,255,0)`, blue `(0,0,255)`, red `(255,0,0)`,
+yellow `(255,255,0)`, orange `(255,128,0)`.
+
+`convert/convert.py` (needs [Pillow](https://pypi.org/project/pillow/)) produces exactly that: it
+crops a photo to fill the frame, enhances it slightly and dithers it to the palette, saving
+`<name>_output.bmp`. `convert/convert_all.sh` converts all JPEGs in the current folder.
+
+```bash
+python3 convert/convert.py photo.jpg                  # orientation from the aspect ratio
+python3 convert/convert.py photo.jpg --dir portrait   # or force landscape/portrait
+```
 
 ## Hardware
+
+Product details and schematic: [PhotoPainter wiki](https://www.waveshare.com/wiki/PhotoPainter).
 
 | Component | Interface | Pins |
 |-----------|-----------|------|
@@ -76,73 +106,30 @@ reworked to be easier to use and to develop.
   re-scanned each time (cards can be swapped), and unplugging USB powers the board off.
 - **SD card:** with no card-detect pin, the firmware forces card re-initialization on every check.
 
-## Development Environment Setup
+## Development
 
-The firmware is built with [PlatformIO](https://platformio.org) using the
-[Arduino-Pico](https://github.com/earlephilhower/arduino-pico) core (which bundles the Pico SDK).
-PlatformIO downloads the ARM toolchain and framework automatically on first build.
-
-Install either the **PlatformIO IDE** extension for VS Code (recommended in `.vscode/extensions.json`)
-or the CLI:
+Built with [PlatformIO](https://platformio.org) on the
+[Arduino-Pico](https://github.com/earlephilhower/arduino-pico) core (which bundles the Pico SDK);
+the toolchain and framework are downloaded on the first build. Install the **PlatformIO IDE** extension
+for VS Code, or the CLI:
 
 ```bash
 curl -fsSL -o get-platformio.py https://raw.githubusercontent.com/platformio/platformio-core-installer/master/get-platformio.py
-python3 get-platformio.py
+python3 get-platformio.py   # installs ~/.platformio/penv/bin/pio
 ```
-
-The CLI is installed to `~/.platformio/penv/bin/pio` (add it to `PATH` or use the full path).
-
-## Configuration
-
-### settings.ini (on the SD card)
-
-User settings live in `settings.ini` in the SD card root. If it is missing, the frame creates a
-commented default on first start. Edit it in any text editor; changes apply on the next start, or on
-the next KEY press while connected to USB.
-
-```ini
-; Hours between image changes (1 to 47)
-interval_hours = 12
-
-; Image order: alphabetical or random (random shows every image once before reshuffling)
-order = alphabetical
-```
-
-Unknown keys are ignored and invalid values fall back to the default (both are logged over USB
-serial). The 1–47 hour limit comes from the RTC library, which carries hour overflow into the next
-day only once.
-
-## Build
 
 ```bash
-pio run
+pio run                      # build (.pio/build/pico/firmware.uf2)
+pio run -t upload            # flash: reboots into BOOTSEL over USB, flashes, verifies, starts
+pio run -t upload -t monitor # flash, then show the serial log
+pio device monitor           # serial log (printf output)
 ```
 
-Output: `.pio/build/pico/firmware.uf2`. Flash and RAM usage are printed at the end of the build.
+If the board has no working USB serial (first flash, crashed firmware), enter BOOTSEL by hand (hold
+**BOOT**, press and release **RUN**, release **BOOT**), then run the upload again or drag the `.uf2`
+onto the `RPI-RP2` drive. Extra library debug output: add `-D DEBUG=1` to `build_flags`.
 
-Clean build: `pio run -t clean`
-
-## Flashing
-
-With the device connected over USB and running this firmware:
-
-```bash
-pio run -t upload
-```
-
-`picotool` reboots the board into BOOTSEL mode (1200-baud touch on its USB serial port),
-flashes and verifies the firmware, and starts it. Flash and open the serial monitor in one go
-with `pio run -t upload -t monitor`.
-
-If the board has no working USB serial (first flash, or firmware that crashed), enter BOOTSEL
-manually and then run the same command, or drag `.pio/build/pico/firmware.uf2` to the `RPI-RP2` drive:
-
-1. Hold **BOOT** button
-2. Press **RUN** button
-3. Release **RUN**
-4. Release **BOOT**
-
-## Architecture
+### Architecture
 
 ```
 platformio.ini                  Build configuration (flags, include paths, ignored framework libs)
@@ -166,43 +153,7 @@ lib/
 convert/                        Host-side image conversion script (Python)
 ```
 
-## 7-Color Palette
-
-| Index | Color |
-|-------|-------|
-| 0x0 | Black |
-| 0x1 | White |
-| 0x2 | Green |
-| 0x3 | Blue |
-| 0x4 | Red |
-| 0x5 | Yellow |
-| 0x6 | Orange |
-| 0x7 | Clean (avoid - causes artifacts) |
-
-## Image Requirements
-
-- Format: 24-bit BMP using **only these exact RGB values** — any other value is not recognized
-  and the pixel repeats the previous pixel's color:
-  black `(0,0,0)`, white `(255,255,255)`, green `(0,255,0)`, blue `(0,0,255)`, red `(255,0,0)`,
-  yellow `(255,255,0)`, orange `(255,128,0)`
-- Resolution: 800x480 or 480x800
-- Location: SD card root (subfolders are ignored)
-
-### Image Preparation
-
-`convert/convert.py` (requires [Pillow](https://pypi.org/project/pillow/)) resizes a photo to cover the
-frame, crops it from the center, applies light sharpening / contrast / saturation, dithers it
-(Floyd–Steinberg) to the exact display palette, and saves `<name>_output.bmp`:
-
-```bash
-python3 convert/convert.py photo.jpg                  # orientation picked from aspect ratio
-python3 convert/convert.py photo.jpg --dir portrait   # force landscape/portrait
-```
-
-`convert/convert_all.sh` converts every `*.jpg` / `*.jpeg` in the current directory
-(run it from the folder with your photos, with `convert.py` alongside).
-
-## Program Flow
+### Program flow
 
 `setup()` (runs once per power-on):
 
@@ -217,53 +168,3 @@ python3 convert/convert.py photo.jpg --dir portrait   # force landscape/portrait
 
 `loop()` (only in charging mode, every 200 ms): power off if USB is unplugged; on KEY or RTC alarm,
 `scanCard()` then `run_display()`.
-
-## Key Functions
-
-| Function | File | Purpose |
-|----------|------|---------|
-| `EPD_7IN3F_Init()` | EPD_7in3f.c | Initialize display |
-| `EPD_7IN3F_Display()` | EPD_7in3f.c | Send buffer to display |
-| `EPD_7IN3F_Sleep()` | EPD_7in3f.c | Enter low power mode |
-| `GUI_ReadBmp_RGB_7Color()` | GUI_BMPfile.c | Load BMP, map exact RGB values to 7-color indices |
-| `selectNextImage()` | run_File.c | Pick the image after the last shown one (natural order, wraps) |
-| `saveShownImage()` | run_File.c | Remember the shown image in the state file |
-| `rtcRunAlarm()` | waveshare_PCF85063.c | Set wake alarm |
-| `powerOff()` | led.c | Shutdown (BAT_OFF=LOW) |
-
-## SD Card Files
-
-| File | Purpose |
-|------|---------|
-| `/*.bmp` | Images, in the card root |
-| `/settings.ini` | User settings (created with defaults if missing) |
-| `/.photopainter/state.txt` | Last shown image name and random-order seed; the folder is hidden (dot name + FAT hidden attribute) |
-
-The next image is the one after the last shown name in natural order, so adding or removing images
-never causes skips or repeats. Random order works the same way on a pseudo-random key per name
-(hash of the name and a seed stored in `state.txt`): every image is shown once per round, then a new
-seed reshuffles (never starting the new round with the image just shown). Dot-files (e.g. macOS `._*` companions), hidden/system files and
-folders are ignored.
-
-## Debugging
-
-Enable debug output by adding to `build_flags` in `platformio.ini`:
-```ini
-    -D DEBUG=1
-```
-
-`printf()` output goes to USB serial via `-D DEBUG_RP2040_PORT=Serial` in `platformio.ini`. View it with:
-```bash
-pio device monitor
-```
-
-## Documentation
-
-- **Product wiki**: [PhotoPainter Wiki](https://www.waveshare.com/wiki/PhotoPainter)
-- **PlatformIO**: [docs.platformio.org](https://docs.platformio.org)
-- **Arduino-Pico core**: [earlephilhower/arduino-pico](https://github.com/earlephilhower/arduino-pico)
-- **Original repository**: [waveshareteam/PhotoPainter](https://github.com/waveshareteam/PhotoPainter)
-
-## License
-
-Open-sourced by Waveshare Electronics. Bug reports and contributions welcome.
