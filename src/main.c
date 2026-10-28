@@ -8,14 +8,18 @@
 extern const char *fileList;
 extern char pathName[];
 
-#define enChargingRtc 0
-
 /*
 Mode 0: Automatically get pic folder names and sort them
 Mode 1: Automatically get pic folder names but not sorted
 Mode 2: pic folder name is not automatically obtained, users need to create fileList.txt file and write the picture name in TF card by themselves
 */
 #define Mode 0
+
+// State shared by setup() and loop()
+static Time_data Time = {2024 - 2000, 3, 31, 0, 0, 0};
+static Time_data alarmTime;
+static char isCard = 0;
+static bool chargingMode = false; // powered over USB at boot; loop() only acts in this mode
 
 float measureVBAT(void)
 {
@@ -42,9 +46,9 @@ void chargeState_callback()
     }
 }
 
-void run_display(Time_data Time, Time_data alarmTime, char hasCard)
+void run_display(void)
 {
-    if (hasCard)
+    if (isCard)
     {
         setFilePath();
         EPD_7in3f_display_BMP(pathName, measureVBAT()); // display bmp
@@ -64,12 +68,10 @@ setup()/loop(), so the firmware runs from setup() instead of defining main().
 */
 void setup(void)
 {
-    Time_data Time = {2024 - 2000, 3, 31, 0, 0, 0};
-    Time_data alarmTime = Time;
+    alarmTime = Time;
     // alarmTime.seconds += 10;
     // alarmTime.minutes += 15;
     alarmTime.hours += 12;
-    char isCard = 0;
 
     printf("Init...\r\n");
     if (DEV_Module_Init() != 0)
@@ -120,35 +122,37 @@ void setup(void)
     }
 
     if (!DEV_Digital_Read(VBUS))
-    { // no charge state
-        run_display(Time, alarmTime, isCard);
-    }
-    else
-    { // charge state
-        chargeState_callback();
-        while (DEV_Digital_Read(VBUS))
-        {
-#if enChargingRtc
-            if (!DEV_Digital_Read(RTC_INT))
-            { // RTC interrupt trigger
-                printf("rtc interrupt\r\n");
-                run_display(Time, alarmTime, isCard);
-            }
-#endif
-
-            if (!DEV_Digital_Read(BAT_STATE))
-            { // KEY pressed
-                printf("key interrupt\r\n");
-                run_display(Time, alarmTime, isCard);
-            }
-            DEV_Delay_ms(200);
-        }
+    { // on battery: show the next image and cut power until the RTC alarm wakes us up
+        run_display();
+        printf("power off ...\r\n");
+        powerOff(); // BAT off
+        return;
     }
 
-    printf("power off ...\r\n");
-    powerOff(); // BAT off
+    // on USB power: stay awake, loop() handles KEY presses until USB is unplugged
+    chargeState_callback();
+    chargingMode = true;
 }
 
 void loop(void)
 {
+    if (!chargingMode)
+        return;
+
+    if (!DEV_Digital_Read(VBUS))
+    { // USB unplugged
+        printf("power off ...\r\n");
+        powerOff(); // BAT off
+        chargingMode = false;
+        return;
+    }
+
+    // KEY and the RTC alarm both pull BAT_STATE low on this board (both feed the power-on
+    // circuit that wakes the device on battery), so this also rotates on the RTC schedule
+    if (!DEV_Digital_Read(BAT_STATE))
+    {
+        printf("key or rtc interrupt\r\n");
+        run_display();
+    }
+    DEV_Delay_ms(200);
 }
