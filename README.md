@@ -1,20 +1,57 @@
 # PhotoPainter
 
-Fork of the [official Waveshare PhotoPainter firmware](https://github.com/waveshareteam/PhotoPainter).
+Firmware for the Waveshare PhotoPainter: a battery-powered 7.3" 7-color e-paper photo frame with an
+RP2040 microcontroller. Copy photos onto its SD card and it shows a new one every few hours, switching
+itself off in between.
 
-C firmware for Waveshare 7.3" 7-color e-ink photo frame with RP2040 microcontroller.
+This is a fork of the [official Waveshare firmware](https://github.com/waveshareteam/PhotoPainter),
+reworked to be easier to use and to develop.
 
 ![waveshare_logo.png](waveshare_logo.png)
 
 ---
+
+## What's improved over the original firmware
+
+### Using the frame
+
+- **Photos go straight onto the card.** Copy them to the card root under any name; the original only
+  looked in a `/pic/` folder.
+- **Natural or random order.** `Photo 2` comes before `Photo 10`; random order shows every photo once
+  before reshuffling. Adding or removing photos never causes skips or repeats (the original kept a
+  position in a list file, which shifted whenever photos changed).
+- **Settings without rebuilding.** Interval and order live in `settings.ini` on the card, created with
+  comments on first start; the original needed code changes and a rebuild.
+- **Sensible default interval:** 12 hours instead of 15 minutes, which drained the battery quickly.
+- **Bad files don't break the frame.** A broken or unsupported image shows an error screen with its
+  name and the frame moves on; the original froze and kept rebooting on the same file.
+- **Only images are shown.** Only `.bmp` files (any letter case) are used; other files, folders,
+  hidden and system files and dot-files (e.g. macOS `._*` companions, `.DS_Store`) are ignored. The
+  original tried to display every file in `/pic/`.
+- **Card swaps work while plugged in.** The original checked for the card only at boot and never
+  re-initialized a swapped card.
+- **A tidy card.** The frame's own state lives in a hidden folder; no list, index or temporary files.
+- **Clear on-screen messages** for a missing card or missing images.
+- **Better photo conversion.** `convert/convert.py` crops, enhances and dithers photos against a palette
+  modelled on the panel's real ink colors.
+
+### Developing
+
+- **PlatformIO build.** No manual Pico SDK or ARM toolchain setup (the original used CMake with both
+  installed by hand).
+- **One-command flashing.** `pio run -t upload` reboots the board into BOOTSEL over USB, flashes and
+  verifies; no button combination or dragging files.
+- **Arduino-Pico `setup()`/`loop()` structure**, with `printf` logging over USB serial.
+- **Fixed buffer overflows** when reading file names.
+- **Documented hardware behavior**, e.g. the RTC alarm arriving on the KEY line and the missing SD
+  card-detect pin (see [How it behaves](#how-it-behaves)).
 
 ## Features
 
 - 7.3" e-ink display with 7 colors (800x480 resolution)
 - Battery-powered with USB-C charging
 - SD card storage for BMP images
-- RTC-based scheduled refresh (15min to 24hr intervals)
-- Images copied straight to the SD card root, shown in natural name order (`Photo 2` before `Photo 10`) or randomly
+- RTC wake-ups for scheduled image changes (1 to 47 hours)
 
 ## Hardware
 
