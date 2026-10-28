@@ -29,6 +29,23 @@ For per-section detail:
 ~/.platformio/packages/toolchain-rp2040-earlephilhower/bin/arm-none-eabi-size .pio/build/pico/firmware.elf
 ```
 
+## Device Testing
+
+The frame is usually connected over USB, so flashing and logs need no button presses.
+
+- **Flash only between panel refreshes** (~35-40 s each). A reset mid-refresh leaves the panel black
+  (one KEY press fixes it). If unsure, wait for `Goto Sleep...` in the log before `pio run -t upload`.
+- **Serial log capture without the user:** read the port in a background command with PlatformIO's
+  Python (`~/.platformio/penv/bin/python`, `pyserial`) and timestamp each chunk, then grep it. The
+  port (`/dev/cu.usbmodem*`) reappears a few seconds after flashing; the first character of a line is
+  sometimes lost after idle gaps. Stop any capture before flashing (picotool needs the port).
+- **Test timer behavior fast:** temporarily set the alarm to seconds (e.g. `alarmTime.seconds += 40`
+  in `armAlarm()`), flash, record, then restore and reflash. Never commit the temporary change.
+- **Logic without hardware:** compile `src/` files on the Mac against small stub headers (FatFs,
+  hw_config, pico) to test parsing, ordering and edge cases before flashing.
+- KEY presses are only seen between refreshes; the RTC alarm also arrives on the KEY line (`BAT_STATE`).
+- The SD card slot is fiddly; prefer tests that don't need card changes.
+
 ## Project Architecture
 
 See README.md for architecture overview and hardware behavior (power, wake-up, RTC, USB mode).
