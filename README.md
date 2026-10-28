@@ -190,7 +190,7 @@ Enable debug output by adding to `build_flags` in `platformio.ini`:
     -D DEBUG=1
 ```
 
-USB serial output is enabled via `-D PICO_STDIO_USB=1`. View it with:
+`printf()` output goes to USB serial via `-D DEBUG_RP2040_PORT=Serial` in `platformio.ini`. View it with:
 ```bash
 pio device monitor
 ```

@@ -143,7 +143,8 @@ Info:
 ******************************************************************************/
 UBYTE DEV_Module_Init(void)
 {
-    // stdio_init_all(); // Commented out - Arduino-Pico handles this automatically
+    // No stdio_init_all(): the Arduino-Pico core starts USB serial before setup(), and printf()
+    // is routed to it via DEBUG_RP2040_PORT (see platformio.ini)
 
     spi_init(EPD_SPI_PORT, 8000 * 1000);
     gpio_set_function(EPD_CLK_PIN, GPIO_FUNC_SPI);

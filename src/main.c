@@ -58,7 +58,11 @@ void run_display(Time_data Time, Time_data alarmTime, char hasCard)
     rtcRunAlarm(Time, alarmTime); // RTC run alarm
 }
 
-int main(void)
+/*
+Arduino-Pico entry points. The core's own main() starts USB serial and then calls
+setup()/loop(), so the firmware runs from setup() instead of defining main().
+*/
+void setup(void)
 {
     Time_data Time = {2024 - 2000, 3, 31, 0, 0, 0};
     Time_data alarmTime = Time;
@@ -70,7 +74,7 @@ int main(void)
     printf("Init...\r\n");
     if (DEV_Module_Init() != 0)
     { // DEV init
-        return -1;
+        return;
     }
 
     watchdog_enable(8 * 1000, 1); // 8s
@@ -85,7 +89,7 @@ int main(void)
         PCF85063_alarm_Time_Disable();
         ledLowPower(); // LED flash for Low power
         powerOff();    // BAT off
-        return 0;
+        return;
     }
     else
     {
@@ -145,6 +149,8 @@ int main(void)
 
     printf("power off ...\r\n");
     powerOff(); // BAT off
+}
 
-    return 0;
+void loop(void)
+{
 }
