@@ -3,6 +3,7 @@
 #include "led.h"
 #include "waveshare_PCF85063.h" // RTC
 #include "DEV_Config.h"
+#include "settings.h"
 #include <time.h>
 
 extern const char *fileList;
@@ -15,14 +16,10 @@ Mode 2: pic folder name is not automatically obtained, users need to create file
 */
 #define Mode 0
 
-// Hours between image changes (RTC wake-up), 1..47
-#define WAKE_INTERVAL_HOURS 12
-
 // State shared by setup() and loop()
 // Arbitrary reference time (2000-01-01 00:00:00): the RTC is reset to it on every run and the
 // alarm is set relative to it, so only the interval matters; the date is never read or shown
 static Time_data Time = {0, 1, 1, 0, 0, 0};
-static Time_data alarmTime;
 static char isCard = 0;
 static bool chargingMode = false; // powered over USB at boot; loop() only acts in this mode
 
@@ -51,6 +48,14 @@ void chargeState_callback()
     }
 }
 
+// Reset the RTC to the reference time and set the alarm interval_hours (settings.ini) later
+static void armAlarm(void)
+{
+    Time_data alarmTime = Time;
+    alarmTime.hours += settings.interval_hours;
+    rtcRunAlarm(Time, alarmTime);
+}
+
 void run_display(void)
 {
     if (isCard)
@@ -63,8 +68,8 @@ void run_display(void)
         EPD_7in3f_display(measureVBAT());
     }
 
-    PCF85063_clear_alarm_flag();  // clear RTC alarm flag
-    rtcRunAlarm(Time, alarmTime); // RTC run alarm
+    PCF85063_clear_alarm_flag(); // clear RTC alarm flag
+    armAlarm();
 }
 
 // Detect the SD card and (re)build the image list, so a card inserted or changed while on USB is picked up
@@ -73,6 +78,7 @@ static void scanCard(void)
     if (!sdTest())
     {
         isCard = 1;
+        settings_load();
         if (Mode == 0)
         {
             sdScanDir();
@@ -99,9 +105,6 @@ setup()/loop(), so the firmware runs from setup() instead of defining main().
 */
 void setup(void)
 {
-    alarmTime = Time;
-    alarmTime.hours += WAKE_INTERVAL_HOURS;
-
     printf("Init...\r\n");
     if (DEV_Module_Init() != 0)
     { // DEV init
@@ -110,8 +113,8 @@ void setup(void)
 
     watchdog_enable(8 * 1000, 1); // 8s
     DEV_Delay_ms(1000);
-    PCF85063_init();              // RTC init
-    rtcRunAlarm(Time, alarmTime); // RTC run alarm
+    PCF85063_init(); // RTC init
+    armAlarm(); // default interval until settings.ini is read, in case anything below fails
     gpio_set_irq_enabled_with_callback(CHARGE_STATE, GPIO_IRQ_EDGE_RISE | GPIO_IRQ_EDGE_FALL, true, chargeState_callback);
 
     if (measureVBAT() < 3.1)
@@ -119,7 +122,7 @@ void setup(void)
         printf("low power ...\r\n");
         PCF85063_alarm_Time_Disable();
         ledLowPower(); // LED flash for Low power
-        powerOff();    // BAT off
+        powerOff(); // BAT off
         return;
     }
     else
@@ -129,6 +132,7 @@ void setup(void)
     }
 
     scanCard();
+    armAlarm(); // re-arm with interval_hours from settings.ini
 
     if (!DEV_Digital_Read(VBUS))
     { // on battery: show the next image and cut power until the RTC alarm wakes us up

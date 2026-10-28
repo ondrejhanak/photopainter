@@ -1,0 +1,103 @@
+#include "settings.h"
+#include "run_File.h"
+#include "ff.h"
+#include "ini.h"
+
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <strings.h> // strcasecmp()
+
+#define SETTINGS_FILE "settings.ini"
+#define DEFAULT_INTERVAL_HOURS 12
+
+Settings settings = {
+    .interval_hours = DEFAULT_INTERVAL_HOURS,
+};
+
+// Written when settings.ini is missing, so users can see what can be changed
+static const char *default_settings =
+    "; PhotoPainter settings\r\n"
+    "; Change a value after \"=\", save the file, then restart the frame\r\n"
+    "; (or press KEY while it is connected to USB). Lines starting with ; are comments.\r\n"
+    "\r\n"
+    "; Hours between image changes (1 to 47)\r\n"
+    "interval_hours = 12\r\n";
+
+// Parse a whole number in [min, max]; returns false for anything else (text, decimals, out of range)
+static bool parse_int(const char *value, int min, int max, int *out)
+{
+    char *end;
+    long n = strtol(value, &end, 10);
+    if (end == value || *end != '\0' || n < min || n > max)
+        return false;
+    *out = (int)n;
+    return true;
+}
+
+static int handler(void *user, const char *section, const char *name, const char *value)
+{
+    (void)user;
+    (void)section; // sections are allowed but not used
+
+    if (strcasecmp(name, "interval_hours") == 0)
+    {
+        if (!parse_int(value, 1, 47, &settings.interval_hours))
+            printf("settings: invalid interval_hours \"%s\", using %d\r\n", value, settings.interval_hours);
+    }
+    else
+    {
+        printf("settings: unknown key \"%s\" ignored\r\n", name);
+    }
+    return 1; // keep parsing
+}
+
+// ini_reader adapter for FatFs
+static char *read_line(char *str, int num, void *stream)
+{
+    return f_gets(str, num, (FIL *)stream);
+}
+
+static void write_default(void)
+{
+    FIL fil;
+    UINT bw;
+    if (f_open(&fil, SETTINGS_FILE, FA_CREATE_NEW | FA_WRITE) != FR_OK)
+    {
+        printf("settings: cannot create %s\r\n", SETTINGS_FILE);
+        return;
+    }
+    f_write(&fil, default_settings, strlen(default_settings), &bw);
+    f_close(&fil);
+    printf("settings: created default %s\r\n", SETTINGS_FILE);
+}
+
+void settings_load(void)
+{
+    settings.interval_hours = DEFAULT_INTERVAL_HOURS;
+
+    run_mount();
+
+    FIL fil;
+    FRESULT fr = f_open(&fil, SETTINGS_FILE, FA_READ);
+    if (fr == FR_NO_FILE)
+    {
+        write_default();
+    }
+    else if (fr != FR_OK)
+    {
+        printf("settings: cannot open %s (%d), using defaults\r\n", SETTINGS_FILE, fr);
+    }
+    else
+    {
+        int err = ini_parse_stream(read_line, &fil, handler, NULL);
+        if (err > 0)
+            printf("settings: syntax error on line %d (other lines still applied)\r\n", err);
+        f_close(&fil);
+    }
+
+    run_unmount();
+
+    printf("settings: interval_hours = %d\r\n", settings.interval_hours);
+}

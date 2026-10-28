@@ -34,7 +34,7 @@ C firmware for Waveshare 7.3" 7-color e-ink photo frame with RP2040 microcontrol
   `BAT_STATE` low. On battery either one powers the board on; on USB the firmware sees either as a
   "KEY" event. The RTC `INT` pin (GPIO 6) never shows the alarm and is not used.
 - **RTC:** used only as a countdown timer. On every run it is reset to a fixed reference time and the
-  alarm is set `WAKE_INTERVAL_HOURS` later; the time is never read.
+  alarm is set `interval_hours` (settings.ini) later; the time is never read.
 - **On USB:** the board stays awake. KEY or the RTC alarm shows the next image, the SD card is
   re-scanned each time (cards can be swapped), and unplugging USB powers the board off.
 - **SD card:** with no card-detect pin, the firmware forces card re-initialization on every check.
@@ -57,9 +57,24 @@ The CLI is installed to `~/.platformio/penv/bin/pio` (add it to `PATH` or use th
 
 ## Configuration
 
-Edit `src/main.c` before building.
+### settings.ini (on the SD card)
 
-### File Mode
+User settings live in `settings.ini` in the SD card root. If it is missing, the frame creates a
+commented default on first start. Edit it in any text editor; changes apply on the next start, or on
+the next KEY press while connected to USB.
+
+```ini
+; Hours between image changes (1 to 47)
+interval_hours = 12
+```
+
+Unknown keys are ignored and invalid values fall back to the default (both are logged over USB
+serial). The 1–47 hour limit comes from the RTC library, which carries hour overflow into the next
+day only once.
+
+### File Mode (build time)
+
+Edit `src/main.c` before building.
 
 ```c
 #define Mode 0  // 0=sorted, 1=filesystem, 2=manual
@@ -68,16 +83,6 @@ Edit `src/main.c` before building.
 - **Mode 0**: Auto-scan `/pic/`, sort alphabetically
 - **Mode 1**: Auto-scan `/pic/`, filesystem order (deterministic but not alphabetical - order determined by FAT directory structure)
 - **Mode 2**: Manual list from `fileList.txt`
-
-### Refresh Interval
-
-Hours between image changes (default: 12):
-
-```c
-#define WAKE_INTERVAL_HOURS 12
-```
-
-Allowed range is 1–47 hours (the RTC library carries hour overflow into the next day only once).
 
 ## Build
 
@@ -116,8 +121,9 @@ platformio.ini                  Build configuration (flags, include paths, ignor
 src/
 ├── main.c                      Entry point, power management, main loop, configuration
 ├── EPD_7in3f_test.c            Display functions, BMP rendering
-└── run_File.c                  File scanning, image index management
-include/                        Headers for src/ (EPD_Test.h, run_File.h)
+├── run_File.c                  File scanning, image index management
+└── settings.c                  settings.ini loading (via inih)
+include/                        Headers for src/ (EPD_Test.h, run_File.h, settings.h)
 lib/
 ├── Config/DEV_Config.h         Pin definitions, SPI/I2C/GPIO init
 ├── e-Paper/EPD_7in3f.c         Display driver (init, display, sleep, clear)
@@ -127,7 +133,8 @@ lib/
 ├── RTC/waveshare_PCF85063.c    RTC driver, alarm scheduling
 ├── FatFs_SPI/                  SD card filesystem (FatFs library)
 ├── Fonts/                      ASCII (8-24pt) and Chinese fonts
-└── led/led.c                   LED indicators, power control
+├── led/led.c                   LED indicators, power control
+└── inih/                       INI parser (r62, BSD) for settings.ini
 convert/                        Host-side image conversion script (Python)
 ```
 
@@ -173,9 +180,9 @@ python3 convert/convert.py photo.jpg --dir portrait   # force landscape/portrait
 
 1. `DEV_Module_Init()` - GPIO, SPI, I2C, ADC setup
 2. `watchdog_enable(8000)` - 8s watchdog
-3. RTC reset to the reference time, alarm set `WAKE_INTERVAL_HOURS` later
+3. RTC reset to the reference time, alarm set 12 h later (safe default)
 4. Battery check (min 3.1V) → low power shutdown if below
-5. `scanCard()` - SD card detection and file list scan
+5. `scanCard()` - SD card detection, `settings.ini`, file list scan; alarm re-armed with `interval_hours`
 6. On battery: `run_display()` shows the next image, then `powerOff()`; the RTC alarm or KEY powers
    the board on again
 7. On USB: enter charging mode and return
