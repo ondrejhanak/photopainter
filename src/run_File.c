@@ -2,6 +2,7 @@
 #include "f_util.h"
 #include "pico/stdlib.h"
 #include "hw_config.h"
+#include "diskio.h" // STA_NOINIT
 
 #include <stdio.h>
 #include <stdlib.h> // malloc() free()
@@ -311,6 +312,9 @@ void sdInitTest(void)
 char sdTest(void)
 {
     sd_card_t *pSD = sd_get_by_num(0);
+    // The board has no card-detect pin, so the driver never notices a removed card and
+    // would keep skipping initialization. Force it, so a re-inserted card works again.
+    pSD->m_Status |= STA_NOINIT;
     FRESULT fr = f_mount(&pSD->fatfs, pSD->pcName, 1);
     if (FR_OK != fr)
     {

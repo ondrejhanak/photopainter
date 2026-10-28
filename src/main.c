@@ -62,6 +62,32 @@ void run_display(void)
     rtcRunAlarm(Time, alarmTime); // RTC run alarm
 }
 
+// Detect the SD card and (re)build the image list, so a card inserted or changed while on USB is picked up
+static void scanCard(void)
+{
+    if (!sdTest())
+    {
+        isCard = 1;
+        if (Mode == 0)
+        {
+            sdScanDir();
+            file_sort();
+        }
+        if (Mode == 1)
+        {
+            sdScanDir();
+        }
+        if (Mode == 2)
+        {
+            file_cat();
+        }
+    }
+    else
+    {
+        isCard = 0;
+    }
+}
+
 /*
 Arduino-Pico entry points. The core's own main() starts USB serial and then calls
 setup()/loop(), so the firmware runs from setup() instead of defining main().
@@ -99,27 +125,7 @@ void setup(void)
         ledPowerOn();
     }
 
-    if (!sdTest())
-    {
-        isCard = 1;
-        if (Mode == 0)
-        {
-            sdScanDir();
-            file_sort();
-        }
-        if (Mode == 1)
-        {
-            sdScanDir();
-        }
-        if (Mode == 2)
-        {
-            file_cat();
-        }
-    }
-    else
-    {
-        isCard = 0;
-    }
+    scanCard();
 
     if (!DEV_Digital_Read(VBUS))
     { // on battery: show the next image and cut power until the RTC alarm wakes us up
@@ -152,6 +158,7 @@ void loop(void)
     if (!DEV_Digital_Read(BAT_STATE))
     {
         printf("key or rtc interrupt\r\n");
+        scanCard();
         run_display();
     }
     DEV_Delay_ms(200);
