@@ -14,7 +14,7 @@ C firmware for Waveshare 7.3" 7-color e-ink photo frame with RP2040 microcontrol
 - Battery-powered with USB-C charging
 - SD card storage for BMP images
 - RTC-based scheduled refresh (15min to 24hr intervals)
-- Images copied straight to the SD card root, shown in natural name order (`Photo 2` before `Photo 10`)
+- Images copied straight to the SD card root, shown in natural name order (`Photo 2` before `Photo 10`) or randomly
 
 ## Hardware
 
@@ -66,6 +66,9 @@ the next KEY press while connected to USB.
 ```ini
 ; Hours between image changes (1 to 47)
 interval_hours = 12
+
+; Image order: alphabetical or random (random shows every image once before reshuffling)
+order = alphabetical
 ```
 
 Unknown keys are ignored and invalid values fall back to the default (both are logged over USB
@@ -197,10 +200,12 @@ python3 convert/convert.py photo.jpg --dir portrait   # force landscape/portrait
 |------|---------|
 | `/*.bmp` | Images, in the card root |
 | `/settings.ini` | User settings (created with defaults if missing) |
-| `/.photopainter/state.txt` | Last shown image name; the folder is hidden (dot name + FAT hidden attribute) |
+| `/.photopainter/state.txt` | Last shown image name and random-order seed; the folder is hidden (dot name + FAT hidden attribute) |
 
 The next image is the one after the last shown name in natural order, so adding or removing images
-never causes skips or repeats. Dot-files (e.g. macOS `._*` companions), hidden/system files and
+never causes skips or repeats. Random order works the same way on a pseudo-random key per name
+(hash of the name and a seed stored in `state.txt`): every image is shown once per round, then a new
+seed reshuffles (never starting the new round with the image just shown). Dot-files (e.g. macOS `._*` companions), hidden/system files and
 folders are ignored.
 
 ## Debugging

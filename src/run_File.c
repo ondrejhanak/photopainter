@@ -3,9 +3,12 @@
 #include "pico/stdlib.h"
 #include "hw_config.h"
 #include "diskio.h" // STA_NOINIT
+#include "pico/rand.h"
+#include "settings.h"
 
 #include <ctype.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <strings.h> // strcasecmp()
 
@@ -14,6 +17,7 @@
 #define STATE_FILE STATE_DIR "/state.txt"
 
 char pathName[FF_LFN_BUF + 1]; // file name of the image to display, in the card root
+static uint32_t seed; // random order: identifies the current shuffle; persisted in the state file
 
 static sd_card_t *sd_get_by_name(const char *const name)
 {
@@ -165,20 +169,52 @@ static int naturalCompare(const char *a, const char *b)
     return strcmp(a, b);
 }
 
-// Read the last shown image name from the state file; empty if there is none yet
-static void readLastShown(char *name, int len)
+// Pseudo-random sort key for random order: hash of the name, mixed with the seed. Sorting by it
+// gives a shuffle without keeping a list in RAM; a new seed gives a new shuffle.
+static uint32_t shuffleKey(const char *name)
 {
+    uint32_t h = 2166136261u ^ seed; // FNV-1a
+    for (const unsigned char *p = (const unsigned char *)name; *p; p++)
+        h = (h ^ *p) * 16777619u;
+    h ^= h >> 16; // final mix, so similar names end up far apart
+    h *= 0x7feb352du;
+    h ^= h >> 15;
+    h *= 0x846ca68bu;
+    h ^= h >> 16;
+    return h;
+}
+
+// Display order of two names under the current settings
+static int orderCompare(const char *a, const char *b)
+{
+    if (settings.order == ORDER_RANDOM)
+    {
+        uint32_t ka = shuffleKey(a), kb = shuffleKey(b);
+        if (ka != kb)
+            return ka < kb ? -1 : 1;
+    }
+    return naturalCompare(a, b);
+}
+
+// Read the state file: last shown image name (empty if none yet) and the shuffle seed (0 if none)
+static void readState(char *name, int len)
+{
+    char line[16];
     name[0] = '\0';
+    seed = 0;
     FIL fil;
     if (f_open(&fil, STATE_FILE, FA_READ) != FR_OK)
         return;
     if (f_gets(name, len, &fil))
         name[strcspn(name, "\r\n")] = '\0';
+    if (f_gets(line, sizeof(line), &fil))
+        seed = strtoul(line, NULL, 16);
     f_close(&fil);
 }
 
-static void writeLastShown(const char *name)
+static void writeState(const char *name)
 {
+    char line[16];
     if (f_mkdir(STATE_DIR) == FR_OK)
         f_chmod(STATE_DIR, AM_HID, AM_HID);
 
@@ -189,15 +225,48 @@ static void writeLastShown(const char *name)
         printf("cannot write %s: %s (%d)\r\n", STATE_FILE, FRESULT_str(fr), fr);
         return;
     }
+    snprintf(line, sizeof(line), "\n%08lx\n", (unsigned long)seed);
     f_puts(name, &fil);
-    f_puts("\n", &fil);
+    f_puts(line, &fil);
     f_close(&fil);
+}
+
+// One pass over the card root: the first image in display order, and the first one after `last`
+static void scanImages(const char *last, char *first, char *next)
+{
+    first[0] = next[0] = '\0';
+
+    DIR dir;
+    FILINFO fno;
+    FRESULT fr = f_opendir(&dir, "/");
+    if (fr != FR_OK)
+    {
+        printf("f_opendir error: %s (%d)\r\n", FRESULT_str(fr), fr);
+        return;
+    }
+    while (f_readdir(&dir, &fno) == FR_OK && fno.fname[0])
+    {
+        if (!isImage(&fno))
+            continue;
+        if (!first[0] || orderCompare(fno.fname, first) < 0)
+            strcpy(first, fno.fname);
+        if (last[0] && orderCompare(fno.fname, last) > 0 && (!next[0] || orderCompare(fno.fname, next) < 0))
+            strcpy(next, fno.fname);
+    }
+    f_closedir(&dir);
+}
+
+static uint32_t newSeed(void)
+{
+    return get_rand_32() | 1; // never 0, which means "no seed yet"
 }
 
 /*
     function:
-        Pick the image after the last shown one (natural order, wrapping around) into pathName.
-        One pass over the card root; adding or removing images never causes skips or repeats.
+        Pick the image after the last shown one into pathName, in the order set by settings.ini.
+        Alphabetical: natural name order, wrapping around. Random: order of shuffleKey(), so every
+        image is shown once per round; at the end of a round a new seed reshuffles.
+        Adding or removing images never causes skips or repeats within a round.
     return:
         false if the card root contains no images
 */
@@ -206,31 +275,25 @@ bool selectNextImage(void)
     static char last[FF_LFN_BUF + 1];
     static char first[FF_LFN_BUF + 1];
     static char next[FF_LFN_BUF + 1];
-    first[0] = '\0';
-    next[0] = '\0';
 
     run_mount();
-    readLastShown(last, sizeof(last));
+    readState(last, sizeof(last));
+    if (settings.order == ORDER_RANDOM && seed == 0)
+        seed = newSeed();
 
-    DIR dir;
-    FILINFO fno;
-    FRESULT fr = f_opendir(&dir, "/");
-    if (fr == FR_OK)
+    scanImages(last, first, next);
+    if (first[0] && !next[0] && settings.order == ORDER_RANDOM && last[0])
     {
-        while (f_readdir(&dir, &fno) == FR_OK && fno.fname[0])
+        // End of a round: reshuffle. If the new shuffle starts with the image just shown, draw
+        // another seed (gives up after a few tries, e.g. when there is only one image).
+        for (int tries = 0; tries < 8; tries++)
         {
-            if (!isImage(&fno))
-                continue;
-            if (!first[0] || naturalCompare(fno.fname, first) < 0)
-                strcpy(first, fno.fname);
-            if (last[0] && naturalCompare(fno.fname, last) > 0 && (!next[0] || naturalCompare(fno.fname, next) < 0))
-                strcpy(next, fno.fname);
+            seed = newSeed();
+            scanImages("", first, next);
+            if (strcmp(first, last) != 0)
+                break;
         }
-        f_closedir(&dir);
-    }
-    else
-    {
-        printf("f_opendir error: %s (%d)\r\n", FRESULT_str(fr), fr);
+        printf("random order: new round\r\n");
     }
     run_unmount();
 
@@ -241,7 +304,7 @@ bool selectNextImage(void)
         return false;
     }
     strcpy(pathName, next[0] ? next : first);
-    printf("next image: %s (last shown: %s)\r\n", pathName, last[0] ? last : "-");
+    printf("next image: %s (last shown: %s, seed %08lx)\r\n", pathName, last[0] ? last : "-", (unsigned long)seed);
     return true;
 }
 
@@ -249,6 +312,6 @@ bool selectNextImage(void)
 void saveShownImage(void)
 {
     run_mount();
-    writeLastShown(pathName);
+    writeState(pathName);
     run_unmount();
 }

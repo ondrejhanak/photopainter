@@ -1,10 +1,17 @@
 #ifndef _SETTINGS_H_
 #define _SETTINGS_H_
 
+typedef enum
+{
+    ORDER_ALPHABETICAL, // natural name order
+    ORDER_RANDOM, // shuffled; every image once per round, reshuffled after each round
+} ImageOrder;
+
 // User settings, read from settings.ini in the SD card root
 typedef struct
 {
     int interval_hours; // hours between image changes (RTC wake-up), 1..47
+    ImageOrder order;
 } Settings;
 
 extern Settings settings;

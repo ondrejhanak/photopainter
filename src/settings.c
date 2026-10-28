@@ -11,9 +11,11 @@
 
 #define SETTINGS_FILE "settings.ini"
 #define DEFAULT_INTERVAL_HOURS 12
+#define DEFAULT_ORDER ORDER_ALPHABETICAL
 
 Settings settings = {
     .interval_hours = DEFAULT_INTERVAL_HOURS,
+    .order = DEFAULT_ORDER,
 };
 
 // Written when settings.ini is missing, so users can see what can be changed
@@ -23,7 +25,10 @@ static const char *default_settings =
     "; (or press KEY while it is connected to USB). Lines starting with ; are comments.\r\n"
     "\r\n"
     "; Hours between image changes (1 to 47)\r\n"
-    "interval_hours = 12\r\n";
+    "interval_hours = 12\r\n"
+    "\r\n"
+    "; Image order: alphabetical or random (random shows every image once before reshuffling)\r\n"
+    "order = alphabetical\r\n";
 
 // Parse a whole number in [min, max]; returns false for anything else (text, decimals, out of range)
 static bool parse_int(const char *value, int min, int max, int *out)
@@ -45,6 +50,16 @@ static int handler(void *user, const char *section, const char *name, const char
     {
         if (!parse_int(value, 1, 47, &settings.interval_hours))
             printf("settings: invalid interval_hours \"%s\", using %d\r\n", value, settings.interval_hours);
+    }
+    else if (strcasecmp(name, "order") == 0)
+    {
+        if (strcasecmp(value, "alphabetical") == 0)
+            settings.order = ORDER_ALPHABETICAL;
+        else if (strcasecmp(value, "random") == 0)
+            settings.order = ORDER_RANDOM;
+        else
+            printf("settings: invalid order \"%s\", using %s\r\n", value,
+                   settings.order == ORDER_RANDOM ? "random" : "alphabetical");
     }
     else
     {
@@ -76,6 +91,7 @@ static void write_default(void)
 void settings_load(void)
 {
     settings.interval_hours = DEFAULT_INTERVAL_HOURS;
+    settings.order = DEFAULT_ORDER;
 
     run_mount();
 
@@ -99,5 +115,6 @@ void settings_load(void)
 
     run_unmount();
 
-    printf("settings: interval_hours = %d\r\n", settings.interval_hours);
+    printf("settings: interval_hours = %d, order = %s\r\n", settings.interval_hours,
+           settings.order == ORDER_RANDOM ? "random" : "alphabetical");
 }
