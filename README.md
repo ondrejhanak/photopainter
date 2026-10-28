@@ -58,21 +58,13 @@ Edit `src/main.c` before building.
 
 ### Refresh Interval
 
-Set in `main()` by adjusting `alarmTime` (default: 12 hours):
+Hours between image changes (default: 12):
 
 ```c
-// alarmTime.minutes += 15;
-alarmTime.hours += 12;
+#define WAKE_INTERVAL_HOURS 12
 ```
 
-Common configurations:
-- 15 min: `alarmTime.minutes += 15;`
-- 30 min: `alarmTime.minutes += 30;`
-- 1 hour: `alarmTime.hours += 1;`
-- 12 hours: `alarmTime.hours += 12;`
-- 24 hours: `alarmTime.hours += 24;`
-
-Use only one of the `minutes` / `hours` lines.
+Allowed range is 1–47 hours (the RTC library carries hour overflow into the next day only once).
 
 ## Build
 

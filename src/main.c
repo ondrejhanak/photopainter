@@ -15,8 +15,13 @@ Mode 2: pic folder name is not automatically obtained, users need to create file
 */
 #define Mode 0
 
+// Hours between image changes (RTC wake-up), 1..47
+#define WAKE_INTERVAL_HOURS 12
+
 // State shared by setup() and loop()
-static Time_data Time = {2024 - 2000, 3, 31, 0, 0, 0};
+// Arbitrary reference time (2000-01-01 00:00:00): the RTC is reset to it on every run and the
+// alarm is set relative to it, so only the interval matters; the date is never read or shown
+static Time_data Time = {0, 1, 1, 0, 0, 0};
 static Time_data alarmTime;
 static char isCard = 0;
 static bool chargingMode = false; // powered over USB at boot; loop() only acts in this mode
@@ -95,9 +100,7 @@ setup()/loop(), so the firmware runs from setup() instead of defining main().
 void setup(void)
 {
     alarmTime = Time;
-    // alarmTime.seconds += 10;
-    // alarmTime.minutes += 15;
-    alarmTime.hours += 12;
+    alarmTime.hours += WAKE_INTERVAL_HOURS;
 
     printf("Init...\r\n");
     if (DEV_Module_Init() != 0)
