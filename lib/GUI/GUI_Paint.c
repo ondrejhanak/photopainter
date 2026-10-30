@@ -581,8 +581,39 @@ void Paint_DrawChar(UWORD Xpoint, UWORD Ypoint, uint32_t Code_Point,
     }// Write all
 }
 
+// End of the first line of s that fits in max_chars characters: after the last word that fits, at
+// '\n', or inside a word longer than a whole line. *next is set to the start of the following line
+// (spaces at the break skipped). Needs max_chars >= 1, so every line makes progress.
+static const char *line_end(const char *s, int max_chars, const char **next)
+{
+    const char *p = s;
+    const char *space = NULL; // start of the last run of spaces after a word on this line
+    int chars = 0;
+
+    while (*p != '\0' && *p != '\n' && chars < max_chars) {
+        if (*p == ' ' && p > s && p[-1] != ' ')
+            space = p;
+        utf8_next(&p);
+        chars++;
+    }
+
+    const char *end;
+    if (*p == '\0' || *p == '\n' || *p == ' ' || space == NULL)
+        end = p; // whole text, line break, fits exactly, or word longer than a line
+    else
+        end = space;
+
+    *next = end;
+    if (**next == '\n')
+        (*next)++;
+    while (**next == ' ')
+        (*next)++;
+    return end;
+}
+
 /******************************************************************************
-function:	Display the string
+function:	Display the string, wrapped at spaces (and '\n') at the right edge
+    Lines past the bottom edge are not drawn
 parameter:
     Xstart           :X coordinate
     Ystart           :Y coordinate
@@ -590,33 +621,32 @@ parameter:
     Font             :A structure pointer that displays a character size
     Color_Foreground : Select the foreground color
     Color_Background : Select the background color
+return: Y coordinate below the last line
 ******************************************************************************/
-void Paint_DrawString_EN(UWORD Xstart, UWORD Ystart, const char * pString,
-                         sFONT* Font, UWORD Color_Foreground, UWORD Color_Background)
+UWORD Paint_DrawString_EN(UWORD Xstart, UWORD Ystart, const char * pString,
+                          sFONT* Font, UWORD Color_Foreground, UWORD Color_Background)
 {
-    UWORD Xpoint = Xstart;
     UWORD Ypoint = Ystart;
 
     if (Xstart > Paint.Width || Ystart > Paint.Height) {
         Debug("Paint_DrawString_EN Input exceeds the normal display range\r\n");
-        return;
+        return Ystart;
     }
 
-    while (* pString != '\0') {
-        //if X direction filled , reposition to(Xstart,Ypoint),Ypoint is Y direction plus the Height of the character
-        if ((Xpoint + Font->Width ) > Paint.Width ) {
-            Xpoint = Xstart;
-            Ypoint += Font->Height;
-        }
+    int max_chars = (Paint.Width - Xstart) / Font->Width;
+    if (max_chars < 1)
+        return Ystart;
 
-        // If the Y direction is full, reposition to(Xstart, Ystart)
-        if ((Ypoint  + Font->Height ) > Paint.Height ) {
-            Xpoint = Xstart;
-            Ypoint = Ystart;
+    while (*pString != '\0' && Ypoint + Font->Height <= Paint.Height) {
+        const char *next;
+        const char *end = line_end(pString, max_chars, &next);
+        UWORD Xpoint = Xstart;
+        while (pString < end) {
+            Paint_DrawChar(Xpoint, Ypoint, utf8_next(&pString), Font, Color_Background, Color_Foreground);
+            Xpoint += Font->Width;
         }
-        Paint_DrawChar(Xpoint, Ypoint, utf8_next(&pString), Font, Color_Background, Color_Foreground);
-
-        //The next word of the abscissa increases the font of the broadband
-        Xpoint += Font->Width;
+        pString = next;
+        Ypoint += Font->Height;
     }
+    return Ypoint;
 }

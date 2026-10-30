@@ -36,6 +36,7 @@
 #include "GUI_Paint.h"
 #include "GUI_BMPfile.h"
 
+#include <stdbool.h>
 #include <stdlib.h> // malloc() free()
 #include <string.h>
 
@@ -62,24 +63,30 @@ int display_image(const char *path, float vol)
     Paint_SelectImage(image);
     Paint_Clear(EPD_7IN3F_WHITE);
 
-    if (GUI_ReadBmp_RGB_7Color(path, 0, 0) != 0)
+    bool failed = GUI_ReadBmp_RGB_7Color(path, 0, 0) != 0;
+    if (failed)
     {
         // Show what failed instead of a partial image; the index still advances below
         Paint_SetRotate(180);
         Paint_Clear(EPD_7IN3F_WHITE);
-        Paint_DrawString_EN(10, 42, msg(MSG_CANNOT_DISPLAY), &Font16, EPD_7IN3F_BLACK, EPD_7IN3F_WHITE);
-        Paint_DrawString_EN(10, 58, path, &Font16, EPD_7IN3F_BLACK, EPD_7IN3F_WHITE);
     }
     else if (Paint_GetRotate() == 90)
         Paint_SetRotate(270);
     else
         Paint_SetRotate(180);
-    char voltage_text[21] = {0};
-    sprintf(voltage_text, "%f V", vol);
+
+    UWORD y = 10;
     if (vol < 3.3)
     {
-        Paint_DrawString_EN(10, 10, msg(MSG_LOW_VOLTAGE), &Font16, EPD_7IN3F_BLACK, EPD_7IN3F_WHITE);
-        Paint_DrawString_EN(10, 26, voltage_text, &Font16, EPD_7IN3F_BLACK, EPD_7IN3F_WHITE);
+        char voltage_text[21] = {0};
+        sprintf(voltage_text, "%f V", vol);
+        y = Paint_DrawString_EN(10, y, msg(MSG_LOW_VOLTAGE), &Font16, EPD_7IN3F_BLACK, EPD_7IN3F_WHITE);
+        y = Paint_DrawString_EN(10, y, voltage_text, &Font16, EPD_7IN3F_BLACK, EPD_7IN3F_WHITE);
+    }
+    if (failed)
+    {
+        y = Paint_DrawString_EN(10, y, msg(MSG_CANNOT_DISPLAY), &Font16, EPD_7IN3F_BLACK, EPD_7IN3F_WHITE);
+        Paint_DrawString_EN(10, y, path, &Font16, EPD_7IN3F_BLACK, EPD_7IN3F_WHITE);
     }
 
     printf("EPD_Display\r\n");
@@ -120,13 +127,13 @@ int display_message(float vol, const char *title, const char *hint)
     Paint_SetRotate(180);
 
     // Display a message
-    Paint_DrawString_EN(250, 200, title, &Font20, EPD_7IN3F_WHITE, EPD_7IN3F_BLACK);
-    Paint_DrawString_EN(250, 224, hint, &Font16, EPD_7IN3F_WHITE, EPD_7IN3F_BLACK);
+    UWORD y = Paint_DrawString_EN(250, 200, title, &Font20, EPD_7IN3F_WHITE, EPD_7IN3F_BLACK);
+    y = Paint_DrawString_EN(250, y + 4, hint, &Font16, EPD_7IN3F_WHITE, EPD_7IN3F_BLACK);
 
     // Display battery voltage
     char voltage_text[32];
     snprintf(voltage_text, sizeof(voltage_text), "%s %.2fV", msg(MSG_BATTERY), vol);
-    Paint_DrawString_EN(250, 254, voltage_text, &Font16, EPD_7IN3F_WHITE, EPD_7IN3F_BLACK);
+    Paint_DrawString_EN(250, y + 14, voltage_text, &Font16, EPD_7IN3F_WHITE, EPD_7IN3F_BLACK);
 
     printf("EPD_Display\r\n");
     EPD_7IN3F_Display(image);
