@@ -16,6 +16,12 @@ static Time_data reference_time = {0, 1, 1, 0, 0, 0};
 static bool card_present = false;
 static bool charging_mode = false; // powered over USB at boot; loop() only acts in this mode
 
+// KEY on USB: short press (released before LONG_PRESS_MS) = next image, long press = drive mode (to come)
+#define LONG_PRESS_MS 3000
+static bool key_down = false;
+static uint32_t key_down_ms; // when KEY went down
+static bool long_press_done = false; // long press already handled, wait for release
+
 static float measure_battery_voltage(void)
 {
     float voltage = 0.0;
@@ -68,6 +74,15 @@ static void scan_card(void)
     card_present = sdcard_present();
     if (card_present)
         settings_load();
+}
+
+// On USB: re-scan the card and show the next image
+static void next_image(const char *reason)
+{
+    printf("%s: next image\r\n", reason);
+    scan_card();
+    show_next();
+    usb_serial_discard(); // commands sent during the refresh would queue more refreshes
 }
 
 /*
@@ -131,19 +146,48 @@ void loop(void)
         return;
     }
 
+    // KEY and the RTC alarm both pull BAT_STATE low on this board (both feed the power-on circuit
+    // that wakes the device on battery). The alarm holds the line until its flag is cleared, so
+    // the flag tells it apart from a long KEY press
+    bool line_low = !DEV_Digital_Read(BAT_STATE);
+    uint32_t now_ms = to_ms_since_boot(get_absolute_time());
+    // The flag is checked while KEY is held too: an alarm during a press keeps the line low after
+    // the release, which would otherwise look like KEY held forever
+    if (line_low && PCF85063_get_alarm_flag())
+    {
+        key_down = false;
+        long_press_done = false;
+        DEV_Digital_Write(LED_ACT, 0);
+        next_image("rtc alarm");
+    }
+    else if (line_low && !key_down)
+    {
+        key_down = true;
+        key_down_ms = now_ms;
+        printf("key down\r\n");
+    }
+    else if (line_low && !long_press_done && now_ms - key_down_ms >= LONG_PRESS_MS)
+    {
+        long_press_done = true;
+        DEV_Digital_Write(LED_ACT, 1); // the user can let go
+        printf("long key press\r\n");
+    }
+    else if (!line_low && key_down)
+    {
+        printf("key up after %lu ms\r\n", (unsigned long)(now_ms - key_down_ms));
+        key_down = false;
+        DEV_Digital_Write(LED_ACT, 0);
+        if (!long_press_done)
+            next_image("short key press");
+        long_press_done = false;
+    }
+
     // Test commands over USB serial, so log-only device tests need no KEY press
     int command = usb_serial_read();
     if (command == '?')
         printf("commands: n = next image\r\n");
+    else if (command == 'n')
+        next_image("serial command");
 
-    // KEY and the RTC alarm both pull BAT_STATE low on this board (both feed the power-on
-    // circuit that wakes the device on battery), so this also rotates on the RTC schedule
-    if (!DEV_Digital_Read(BAT_STATE) || command == 'n')
-    {
-        printf(command == 'n' ? "serial command: next image\r\n" : "key or rtc interrupt\r\n");
-        scan_card();
-        show_next();
-        usb_serial_discard(); // commands sent during the refresh would queue more refreshes
-    }
     DEV_Delay_ms(200);
 }

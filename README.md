@@ -112,7 +112,7 @@ Product details and schematic: [PhotoPainter wiki](https://www.waveshare.com/wik
 | SD card (FAT32/exFAT) | SPI0 @ 12.5MHz | CLK=2, MOSI=3, MISO=4, CS=5 (no card-detect pin) |
 | RTC (PCF85063) | I2C1 @ 100kHz | SDA=14, SCL=15, INT=6 (unused), addr=0x51 |
 | Power / battery | GPIO, ADC | VBAT=29 (ADC), BAT_OFF=18, BAT_STATE=19 (KEY / RTC wake sense), CHARGE=17, VBUS=24 |
-| LEDs | GPIO | ACT=25, PWR=26 |
+| LEDs | GPIO | ACT=25 (red), PWR=26 (green) |
 
 ### How it behaves
 
@@ -123,8 +123,13 @@ Product details and schematic: [PhotoPainter wiki](https://www.waveshare.com/wik
   "KEY" event. The RTC `INT` pin (GPIO 6) never shows the alarm and is not used.
 - **RTC:** used only as a countdown timer. On every run it is reset to a fixed reference time and the
   alarm is set `interval_hours` (settings.ini) later; the time is never read.
-- **On USB:** the board stays awake. KEY or the RTC alarm shows the next image, the SD card is
-  re-scanned each time (cards can be swapped), and unplugging USB powers the board off.
+- **On USB:** the board stays awake. A short KEY press (released within 3 s) or the RTC alarm shows
+  the next image, the SD card is re-scanned each time (cards can be swapped), and unplugging USB
+  powers the board off. Holding KEY for 3 s is a long press (for the coming USB drive mode); the red
+  LED lights when it is reached. The RTC alarm holds the KEY line low until its flag is cleared, so
+  the flag tells it apart from a held KEY.
+- **LEDs:** green (PWR) is the charging light: on while the battery charges, off when it is full or
+  on battery. Red (ACT) blinks 3 times at power-on and lights during a long KEY press.
 - **SD card:** with no card-detect pin, the firmware forces card re-initialization on every check.
 
 ## Development
