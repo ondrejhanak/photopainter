@@ -39,6 +39,9 @@ The frame is usually connected over USB, so flashing and logs need no button pre
   Python (`~/.platformio/penv/bin/python`, `pyserial`) and timestamp each chunk, then grep it. The
   port (`/dev/cu.usbmodem*`) reappears a few seconds after flashing; the first character of a line is
   sometimes lost after idle gaps. Stop any capture before flashing (picotool needs the port).
+- **Image change without the user:** on USB, send `n` over serial (e.g. from the pyserial capture
+  script) instead of asking for a KEY press; input sent during a refresh is discarded, so wait for
+  `Goto Sleep...` before the next `n`. The KEY/RTC path itself still needs the real button.
 - **Test screens without card changes:** temporarily force them in `show_next()` (a static step
   counter choosing the screen, then `if (1) ; else` before the real chain so it is skipped), and set
   `DEFAULT_LANGUAGE` to `LANG_CS` for Czech. Keep copies of the real files, restore and reflash the

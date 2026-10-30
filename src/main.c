@@ -6,6 +6,7 @@
 #include "waveshare_PCF85063.h" // RTC
 #include "DEV_Config.h"
 #include "settings.h"
+#include "usb_serial.h"
 #include <time.h>
 
 // State shared by setup() and loop()
@@ -130,13 +131,19 @@ void loop(void)
         return;
     }
 
+    // Test commands over USB serial, so log-only device tests need no KEY press
+    int command = usb_serial_read();
+    if (command == '?')
+        printf("commands: n = next image\r\n");
+
     // KEY and the RTC alarm both pull BAT_STATE low on this board (both feed the power-on
     // circuit that wakes the device on battery), so this also rotates on the RTC schedule
-    if (!DEV_Digital_Read(BAT_STATE))
+    if (!DEV_Digital_Read(BAT_STATE) || command == 'n')
     {
-        printf("key or rtc interrupt\r\n");
+        printf(command == 'n' ? "serial command: next image\r\n" : "key or rtc interrupt\r\n");
         scan_card();
         show_next();
+        usb_serial_discard(); // commands sent during the refresh would queue more refreshes
     }
     DEV_Delay_ms(200);
 }

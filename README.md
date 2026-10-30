@@ -36,6 +36,8 @@ reworked to be easier to use and to develop.
 - **One-command flashing.** `pio run -t upload` reboots the board into BOOTSEL over USB, flashes and
   verifies; no button combination or dragging files.
 - **Arduino-Pico `setup()`/`loop()` structure**, with `printf` logging over USB serial.
+- **Serial test command:** on USB, sending `n` shows the next image like a KEY press (`?` lists
+  commands), so tests can run without pressing the button.
 - **Documented hardware behavior**, e.g. the RTC alarm arriving on the KEY line and the missing SD
   card-detect pin (see [How it behaves](#how-it-behaves)).
 
@@ -159,7 +161,8 @@ src/
 ├── images.c                    Next-image selection, frame state
 ├── image_order.c               Natural and random image order (no hardware access)
 ├── messages.c                  On-screen texts per language
-└── settings.c                  settings.ini loading (via inih)
+├── settings.c                  settings.ini loading (via inih)
+└── usb_serial.cpp              USB serial input for C code (test commands)
 include/                        Headers for src/, one per module
 lib/
 ├── Config/DEV_Config.h         Pin definitions, SPI/I2C/GPIO init
