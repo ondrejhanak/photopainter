@@ -24,8 +24,8 @@ reworked to be easier to use and to develop.
   original tried to display every file in `/pic/`.
 - **A tidy card.** The frame's own state lives in a hidden folder; no list, index or temporary files.
 - **Clear on-screen messages** for a missing card or missing images.
-- **Czech or English on-screen messages** (`language` in `settings.ini`); accents shown once the
-  Czech font lands.
+- **Czech or English on-screen messages** (`language` in `settings.ini`), with accents, in larger
+  fonts.
 - **Better photo conversion.** `convert/convert.py` crops, enhances and dithers photos against a palette
   modelled on the panel's real ink colors.
 
@@ -169,10 +169,11 @@ lib/
 │   └── GUI_BMPfile.c           BMP parsing, RGB→7-color mapping
 ├── RTC/waveshare_PCF85063.c    RTC driver, alarm scheduling
 ├── FatFs_SPI/                  SD card filesystem (FatFs library)
-├── Fonts/                      ASCII fonts (16 and 20 px)
+├── Fonts/                      Fonts from Terminus Font (22 and 28 px, U+0020-U+017F, SIL OFL 1.1)
 ├── led/led.c                   LED indicators, power control
 └── inih/                       INI parser (r62, BSD) for settings.ini
 convert/                        Host-side image conversion script (Python)
+tools/gen_font.py               Generates lib/Fonts/fontNN.c from a BDF bitmap font
 ```
 
 ### Program flow

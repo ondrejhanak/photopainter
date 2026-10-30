@@ -80,13 +80,13 @@ int display_image(const char *path, float vol)
     {
         char voltage_text[21] = {0};
         sprintf(voltage_text, "%f V", vol);
-        y = Paint_DrawString_EN(10, y, msg(MSG_LOW_VOLTAGE), &Font16, EPD_7IN3F_BLACK, EPD_7IN3F_WHITE);
-        y = Paint_DrawString_EN(10, y, voltage_text, &Font16, EPD_7IN3F_BLACK, EPD_7IN3F_WHITE);
+        y = Paint_DrawString_EN(10, y, msg(MSG_LOW_VOLTAGE), &Font22, EPD_7IN3F_BLACK, EPD_7IN3F_WHITE);
+        y = Paint_DrawString_EN(10, y, voltage_text, &Font22, EPD_7IN3F_BLACK, EPD_7IN3F_WHITE);
     }
     if (failed)
     {
-        y = Paint_DrawString_EN(10, y, msg(MSG_CANNOT_DISPLAY), &Font16, EPD_7IN3F_BLACK, EPD_7IN3F_WHITE);
-        Paint_DrawString_EN(10, y, path, &Font16, EPD_7IN3F_BLACK, EPD_7IN3F_WHITE);
+        y = Paint_DrawString_EN(10, y, msg(MSG_CANNOT_DISPLAY), &Font22, EPD_7IN3F_BLACK, EPD_7IN3F_WHITE);
+        Paint_DrawString_EN(10, y, path, &Font22, EPD_7IN3F_BLACK, EPD_7IN3F_WHITE);
     }
 
     printf("EPD_Display\r\n");
@@ -127,13 +127,13 @@ int display_message(float vol, const char *title, const char *hint)
     Paint_SetRotate(180);
 
     // Display a message
-    UWORD y = Paint_DrawString_EN(250, 200, title, &Font20, EPD_7IN3F_WHITE, EPD_7IN3F_BLACK);
-    y = Paint_DrawString_EN(250, y + 4, hint, &Font16, EPD_7IN3F_WHITE, EPD_7IN3F_BLACK);
+    UWORD y = Paint_DrawString_EN(250, 200, title, &Font28, EPD_7IN3F_WHITE, EPD_7IN3F_BLACK);
+    y = Paint_DrawString_EN(250, y + 4, hint, &Font22, EPD_7IN3F_WHITE, EPD_7IN3F_BLACK);
 
     // Display battery voltage
     char voltage_text[32];
     snprintf(voltage_text, sizeof(voltage_text), "%s %.2fV", msg(MSG_BATTERY), vol);
-    Paint_DrawString_EN(250, y + 14, voltage_text, &Font16, EPD_7IN3F_WHITE, EPD_7IN3F_BLACK);
+    Paint_DrawString_EN(250, y + 14, voltage_text, &Font22, EPD_7IN3F_WHITE, EPD_7IN3F_BLACK);
 
     printf("EPD_Display\r\n");
     EPD_7IN3F_Display(image);

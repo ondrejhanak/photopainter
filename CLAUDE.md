@@ -63,5 +63,6 @@ which may be reused or referenced elsewhere.
 - **src/messages.c** - All user-visible texts per language (`msg(id)`, `language` setting)
 - **include/** - Headers for the `src/` files
 - **lib/** - Generic reusable libraries (display driver, GUI/BMP decoding, FatFs, RTC), modify with caution
+- **tools/gen_font.py** - Generates the font tables in `lib/Fonts/` from Terminus BDF files (don't edit them by hand)
 - **convert/** - Host-side Python script to resize/crop photos and dither them to the exact 7-color palette (24-bit BMP) for the SD card
 - **platformio.ini** - Build flags, include paths, ignored framework libraries

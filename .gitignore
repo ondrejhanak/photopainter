@@ -11,6 +11,9 @@ build/
 *.so
 *.d
 
+# Python bytecode cache
+__pycache__/
+
 # Temporary Files
 *.tmp
 *.log
