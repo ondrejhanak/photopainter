@@ -19,13 +19,9 @@ reworked to be easier to use and to develop.
 - **Settings without rebuilding.** Interval and order live in `settings.ini` on the card, created with
   comments on first start; the original needed code changes and a rebuild.
 - **Sensible default interval:** 12 hours instead of 15 minutes, which drained the battery quickly.
-- **Bad files don't break the frame.** A broken or unsupported image shows an error screen with its
-  name and the frame moves on; the original froze and kept rebooting on the same file.
 - **Only images are shown.** Only `.bmp` files (any letter case) are used; other files, folders,
   hidden and system files and dot-files (e.g. macOS `._*` companions, `.DS_Store`) are ignored. The
   original tried to display every file in `/pic/`.
-- **Card swaps work while plugged in.** The original checked for the card only at boot and never
-  re-initialized a swapped card.
 - **A tidy card.** The frame's own state lives in a hidden folder; no list, index or temporary files.
 - **Clear on-screen messages** for a missing card or missing images.
 - **Better photo conversion.** `convert/convert.py` crops, enhances and dithers photos against a palette
@@ -38,9 +34,20 @@ reworked to be easier to use and to develop.
 - **One-command flashing.** `pio run -t upload` reboots the board into BOOTSEL over USB, flashes and
   verifies; no button combination or dragging files.
 - **Arduino-Pico `setup()`/`loop()` structure**, with `printf` logging over USB serial.
-- **Fixed buffer overflows** when reading file names.
 - **Documented hardware behavior**, e.g. the RTC alarm arriving on the KEY line and the missing SD
   card-detect pin (see [How it behaves](#how-it-behaves)).
+
+### Bugs fixed
+
+- **Frozen on a bad file.** A broken or unsupported image made the frame freeze and reboot on the same
+  file over and over; now it shows an error screen with the file name and moves on.
+- **Swapped card ignored.** On USB the card was checked only at boot and a swapped card was never
+  re-initialized; now it is re-read before every image change.
+- **Wrong sort length.** The image list was sorted with the file-name length instead of the number of
+  files, so it was sorted only partly or past its end.
+- **Buffer overflows** when reading file names (up to 999 bytes read into smaller buffers).
+- **`u_int8_t` typo** in the SD driver, which broke builds on toolchains without BSD types (also sent
+  [upstream](https://github.com/waveshareteam/PhotoPainter/pull/7)).
 
 Ideas being considered [IDEAS.md](IDEAS.md).
 
