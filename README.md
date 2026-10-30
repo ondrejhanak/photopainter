@@ -137,10 +137,12 @@ onto the `RPI-RP2` drive. Extra library debug output: add `-D DEBUG=1` to `build
 platformio.ini                  Build configuration (flags, include paths, ignored framework libs)
 src/
 ├── main.c                      Entry point, power management, main loop, configuration
-├── EPD_7in3f_test.c            Display functions, BMP rendering
-├── run_File.c                  SD card, next-image selection, frame state
+├── display.c                   Image and message screens on the panel
+├── sdcard.c                    SD card mount and detection
+├── images.c                    Next-image selection, frame state
+├── image_order.c               Natural and random image order (no hardware access)
 └── settings.c                  settings.ini loading (via inih)
-include/                        Headers for src/ (EPD_Test.h, run_File.h, settings.h)
+include/                        Headers for src/, one per module
 lib/
 ├── Config/DEV_Config.h         Pin definitions, SPI/I2C/GPIO init
 ├── e-Paper/EPD_7in3f.c         Display driver (init, display, sleep, clear)
@@ -163,10 +165,10 @@ convert/                        Host-side image conversion script (Python)
 2. `watchdog_enable(8000)` - 8s watchdog
 3. RTC reset to the reference time, alarm set 12 h later (safe default)
 4. Battery check (min 3.1V) → low power shutdown if below
-5. `scanCard()` - SD card detection and `settings.ini`; alarm re-armed with `interval_hours`
-6. On battery: `run_display()` shows the next image, then `powerOff()`; the RTC alarm or KEY powers
+5. `scan_card()` - SD card detection and `settings.ini`; alarm re-armed with `interval_hours`
+6. On battery: `show_next()` shows the next image, then `powerOff()`; the RTC alarm or KEY powers
    the board on again
 7. On USB: enter charging mode and return
 
 `loop()` (only in charging mode, every 200 ms): power off if USB is unplugged; on KEY or RTC alarm,
-`scanCard()` then `run_display()`.
+`scan_card()` then `show_next()`.

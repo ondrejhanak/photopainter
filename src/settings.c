@@ -1,5 +1,5 @@
 #include "settings.h"
-#include "run_File.h"
+#include "sdcard.h"
 #include "ff.h"
 #include "ini.h"
 
@@ -93,7 +93,7 @@ void settings_load(void)
     settings.interval_hours = DEFAULT_INTERVAL_HOURS;
     settings.order = DEFAULT_ORDER;
 
-    run_mount();
+    sdcard_mount();
 
     FIL fil;
     FRESULT fr = f_open(&fil, SETTINGS_FILE, FA_READ);
@@ -113,7 +113,7 @@ void settings_load(void)
         f_close(&fil);
     }
 
-    run_unmount();
+    sdcard_unmount();
 
     printf("settings: interval_hours = %d, order = %s\r\n", settings.interval_hours,
            settings.order == ORDER_RANDOM ? "random" : "alphabetical");

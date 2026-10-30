@@ -1,5 +1,5 @@
 /*****************************************************************************
-* | File      	:   EPD_Test.h
+* | File      	:   display.h
 * | Author      :   Waveshare team
 * | Function    :   e-Paper test Demo
 * | Info        :
@@ -27,12 +27,14 @@
 # THE SOFTWARE.
 #
 ******************************************************************************/
-#ifndef _EPD_TEST_H_
-#define _EPD_TEST_H_
+#ifndef DISPLAY_H
+#define DISPLAY_H
 
-int EPD_7in3f_test(void);
-
-int EPD_7in3f_display(float vol, const char *title, const char *hint);
-int EPD_7in3f_display_BMP(const char *path, float vol);
+// Show an image file from the SD card, with a low-battery note when vol is low
+int display_image(const char *path, float vol);
+// Show a message screen (title, hint and battery voltage)
+int display_message(float vol, const char *title, const char *hint);
+// Color bar test pattern (unused)
+int display_test_pattern(void);
 
 #endif

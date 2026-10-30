@@ -1,5 +1,5 @@
 /*****************************************************************************
-* | File      	:   EPD_7in3f_test.c
+* | File      	:   display.c
 * | Author      :   Waveshare team
 * | Function    :   7.3inch e-Paper (F) Demo
 * | Info        :
@@ -28,8 +28,9 @@
 # THE SOFTWARE.
 #
 ******************************************************************************/
-#include "EPD_Test.h"
-#include "run_File.h"
+#include "display.h"
+#include "images.h"
+#include "sdcard.h"
 #include "EPD_7in3f.h"
 #include "GUI_Paint.h"
 #include "GUI_BMPfile.h"
@@ -37,28 +38,28 @@
 #include <stdlib.h> // malloc() free()
 #include <string.h>
 
-int EPD_7in3f_display_BMP(const char *path, float vol)
+int display_image(const char *path, float vol)
 {
     printf("e-Paper Init and Clear...\r\n");
     EPD_7IN3F_Init();
 
     // Create a new image cache
-    UBYTE *BlackImage;
-    UDOUBLE Imagesize = ((EPD_7IN3F_WIDTH % 2 == 0) ? (EPD_7IN3F_WIDTH / 2) : (EPD_7IN3F_WIDTH / 2 + 1)) * EPD_7IN3F_HEIGHT;
-    if ((BlackImage = (UBYTE *)malloc(Imagesize)) == NULL)
+    UBYTE *image;
+    UDOUBLE image_size = ((EPD_7IN3F_WIDTH % 2 == 0) ? (EPD_7IN3F_WIDTH / 2) : (EPD_7IN3F_WIDTH / 2 + 1)) * EPD_7IN3F_HEIGHT;
+    if ((image = (UBYTE *)malloc(image_size)) == NULL)
     {
         printf("Failed to apply for black memory...\r\n");
         return -1;
     }
     printf("Paint_NewImage\r\n");
-    Paint_NewImage(BlackImage, EPD_7IN3F_WIDTH, EPD_7IN3F_HEIGHT, 0, EPD_7IN3F_WHITE);
+    Paint_NewImage(image, EPD_7IN3F_WIDTH, EPD_7IN3F_HEIGHT, 0, EPD_7IN3F_WHITE);
     Paint_SetScale(7);
 
 #if 1
-    run_mount();
+    sdcard_mount();
 
     printf("Display BMP\r\n");
-    Paint_SelectImage(BlackImage);
+    Paint_SelectImage(image);
     Paint_Clear(EPD_7IN3F_WHITE);
 
     if (GUI_ReadBmp_RGB_7Color(path, 0, 0) != 0)
@@ -73,48 +74,48 @@ int EPD_7in3f_display_BMP(const char *path, float vol)
         Paint_SetRotate(270);
     else
         Paint_SetRotate(180);
-    char strvol[21] = {0};
-    sprintf(strvol, "%f V", vol);
+    char voltage_text[21] = {0};
+    sprintf(voltage_text, "%f V", vol);
     if (vol < 3.3)
     {
         Paint_DrawString_EN(10, 10, "Low voltage, please charge in time.", &Font16, EPD_7IN3F_BLACK, EPD_7IN3F_WHITE);
-        Paint_DrawString_EN(10, 26, strvol, &Font16, EPD_7IN3F_BLACK, EPD_7IN3F_WHITE);
+        Paint_DrawString_EN(10, 26, voltage_text, &Font16, EPD_7IN3F_BLACK, EPD_7IN3F_WHITE);
     }
 
     printf("EPD_Display\r\n");
-    EPD_7IN3F_Display(BlackImage);
+    EPD_7IN3F_Display(image);
 
-    run_unmount();
+    sdcard_unmount();
 #endif
-    saveShownImage();
+    images_save_shown();
 
     printf("Goto Sleep...\r\n\r\n");
     EPD_7IN3F_Sleep();
-    free(BlackImage);
-    BlackImage = NULL;
+    free(image);
+    image = NULL;
 
     return 0;
 }
 
-int EPD_7in3f_display(float vol, const char *title, const char *hint)
+int display_message(float vol, const char *title, const char *hint)
 {
     printf("e-Paper Init and Clear...\r\n");
     EPD_7IN3F_Init();
 
     // Create a new image cache
-    UBYTE *BlackImage;
-    UDOUBLE Imagesize = ((EPD_7IN3F_WIDTH % 2 == 0) ? (EPD_7IN3F_WIDTH / 2) : (EPD_7IN3F_WIDTH / 2 + 1)) * EPD_7IN3F_HEIGHT;
-    if ((BlackImage = (UBYTE *)malloc(Imagesize)) == NULL)
+    UBYTE *image;
+    UDOUBLE image_size = ((EPD_7IN3F_WIDTH % 2 == 0) ? (EPD_7IN3F_WIDTH / 2) : (EPD_7IN3F_WIDTH / 2 + 1)) * EPD_7IN3F_HEIGHT;
+    if ((image = (UBYTE *)malloc(image_size)) == NULL)
     {
         printf("Failed to apply for black memory...\r\n");
         return -1;
     }
     printf("Paint_NewImage\r\n");
-    Paint_NewImage(BlackImage, EPD_7IN3F_WIDTH, EPD_7IN3F_HEIGHT, 0, EPD_7IN3F_WHITE);
+    Paint_NewImage(image, EPD_7IN3F_WIDTH, EPD_7IN3F_HEIGHT, 0, EPD_7IN3F_WHITE);
     Paint_SetScale(7);
 
     printf("Display message: %s\r\n", title);
-    Paint_SelectImage(BlackImage);
+    Paint_SelectImage(image);
     Paint_Clear(EPD_7IN3F_WHITE);
 
     Paint_SetRotate(180);
@@ -124,73 +125,73 @@ int EPD_7in3f_display(float vol, const char *title, const char *hint)
     Paint_DrawString_EN(250, 224, hint, &Font16, EPD_7IN3F_WHITE, EPD_7IN3F_BLACK);
 
     // Display battery voltage
-    char strvol[21] = {0};
-    sprintf(strvol, "Battery: %.2fV", vol);
-    Paint_DrawString_EN(250, 254, strvol, &Font16, EPD_7IN3F_WHITE, EPD_7IN3F_BLACK);
+    char voltage_text[21] = {0};
+    sprintf(voltage_text, "Battery: %.2fV", vol);
+    Paint_DrawString_EN(250, 254, voltage_text, &Font16, EPD_7IN3F_WHITE, EPD_7IN3F_BLACK);
 
     printf("EPD_Display\r\n");
-    EPD_7IN3F_Display(BlackImage);
+    EPD_7IN3F_Display(image);
 
     printf("Goto Sleep...\r\n\r\n");
     EPD_7IN3F_Sleep();
-    free(BlackImage);
-    BlackImage = NULL;
+    free(image);
+    image = NULL;
 
     return 0;
 }
 
-int EPD_7in3f_test(void)
+int display_test_pattern(void)
 {
     printf("e-Paper Init and Clear...\r\n");
     EPD_7IN3F_Init();
 
     // Create a new image cache
-    UBYTE *BlackImage;
-    UDOUBLE Imagesize = ((EPD_7IN3F_WIDTH % 2 == 0) ? (EPD_7IN3F_WIDTH / 2) : (EPD_7IN3F_WIDTH / 2 + 1)) * EPD_7IN3F_HEIGHT;
-    if ((BlackImage = (UBYTE *)malloc(Imagesize)) == NULL)
+    UBYTE *image;
+    UDOUBLE image_size = ((EPD_7IN3F_WIDTH % 2 == 0) ? (EPD_7IN3F_WIDTH / 2) : (EPD_7IN3F_WIDTH / 2 + 1)) * EPD_7IN3F_HEIGHT;
+    if ((image = (UBYTE *)malloc(image_size)) == NULL)
     {
         printf("Failed to apply for black memory...\r\n");
         return -1;
     }
     printf("Paint_NewImage\r\n");
-    Paint_NewImage(BlackImage, EPD_7IN3F_WIDTH, EPD_7IN3F_HEIGHT, 0, EPD_7IN3F_WHITE);
+    Paint_NewImage(image, EPD_7IN3F_WIDTH, EPD_7IN3F_HEIGHT, 0, EPD_7IN3F_WHITE);
     Paint_SetScale(7);
 
 #if 1 // Drawing on the image
     // 1.Select Image
-    printf("SelectImage:BlackImage\r\n");
-    Paint_SelectImage(BlackImage);
+    printf("SelectImage:image\r\n");
+    Paint_SelectImage(image);
     Paint_Clear(EPD_7IN3F_WHITE);
 
-    int hNumber, hWidth, vNumber, vWidth;
-    hNumber = 20;
-    hWidth = EPD_7IN3F_HEIGHT / hNumber; // 800/20
-    vNumber = 10;
-    vWidth = EPD_7IN3F_WIDTH / vNumber; // 480/10
+    int h_number, h_width, v_number, v_width;
+    h_number = 20;
+    h_width = EPD_7IN3F_HEIGHT / h_number; // 800/20
+    v_number = 10;
+    v_width = EPD_7IN3F_WIDTH / v_number; // 480/10
 
     // 2.Drawing on the image
-    printf("Drawing:BlackImage\r\n");
-    for (int i = 0; i < vNumber; i++)
+    printf("Drawing:image\r\n");
+    for (int i = 0; i < v_number; i++)
     {
-        Paint_DrawRectangle(1, 1 + i * vWidth, 800, vWidth * (i + 1), EPD_7IN3F_GREEN + (i % 5), DOT_PIXEL_1X1, DRAW_FILL_FULL);
+        Paint_DrawRectangle(1, 1 + i * v_width, 800, v_width * (i + 1), EPD_7IN3F_GREEN + (i % 5), DOT_PIXEL_1X1, DRAW_FILL_FULL);
     }
-    for (int i = 0, j = 0; i < hNumber; i++)
+    for (int i = 0, j = 0; i < h_number; i++)
     {
         if (i % 2)
         {
             j++;
-            Paint_DrawRectangle(1 + i * hWidth, 1, hWidth * (1 + i), 480, j % 2 ? EPD_7IN3F_BLACK : EPD_7IN3F_WHITE, DOT_PIXEL_1X1, DRAW_FILL_FULL);
+            Paint_DrawRectangle(1 + i * h_width, 1, h_width * (1 + i), 480, j % 2 ? EPD_7IN3F_BLACK : EPD_7IN3F_WHITE, DOT_PIXEL_1X1, DRAW_FILL_FULL);
         }
     }
 
     printf("EPD_Display\r\n");
-    EPD_7IN3F_Display(BlackImage);
+    EPD_7IN3F_Display(image);
 #endif
 
     printf("Goto Sleep...\r\n");
     EPD_7IN3F_Sleep();
-    free(BlackImage);
-    BlackImage = NULL;
+    free(image);
+    image = NULL;
 
     return 0;
 }

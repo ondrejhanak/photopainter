@@ -1,5 +1,6 @@
-#include "EPD_Test.h" // Examples
-#include "run_File.h"
+#include "display.h"
+#include "images.h"
+#include "sdcard.h"
 #include "led.h"
 #include "waveshare_PCF85063.h" // RTC
 #include "DEV_Config.h"
@@ -9,21 +10,21 @@
 // State shared by setup() and loop()
 // Arbitrary reference time (2000-01-01 00:00:00): the RTC is reset to it on every run and the
 // alarm is set relative to it, so only the interval matters; the date is never read or shown
-static Time_data Time = {0, 1, 1, 0, 0, 0};
-static char isCard = 0;
-static bool chargingMode = false; // powered over USB at boot; loop() only acts in this mode
+static Time_data reference_time = {0, 1, 1, 0, 0, 0};
+static bool card_present = false;
+static bool charging_mode = false; // powered over USB at boot; loop() only acts in this mode
 
-float measureVBAT(void)
+static float measure_battery_voltage(void)
 {
-    float Voltage = 0.0;
+    float voltage = 0.0;
     const float conversion_factor = 3.3f / (1 << 12);
     uint16_t result = adc_read();
-    Voltage = result * conversion_factor * 3;
-    printf("Raw value: 0x%03x, voltage: %f V\n", result, Voltage);
-    return Voltage;
+    voltage = result * conversion_factor * 3;
+    printf("Raw value: 0x%03x, voltage: %f V\n", result, voltage);
+    return voltage;
 }
 
-void chargeState_callback()
+static void charge_state_callback()
 {
     if (DEV_Digital_Read(VBUS))
     {
@@ -39,31 +40,31 @@ void chargeState_callback()
 }
 
 // Reset the RTC to the reference time and set the alarm interval_hours (settings.ini) later
-static void armAlarm(void)
+static void arm_alarm(void)
 {
-    Time_data alarmTime = Time;
-    alarmTime.hours += settings.interval_hours;
-    rtcRunAlarm(Time, alarmTime);
+    Time_data alarm_time = reference_time;
+    alarm_time.hours += settings.interval_hours;
+    rtcRunAlarm(reference_time, alarm_time);
 }
 
-void run_display(void)
+static void show_next(void)
 {
-    if (!isCard)
-        EPD_7in3f_display(measureVBAT(), "SD Card Not Found or Unreadable", "Insert an SD card or try another one");
-    else if (!selectNextImage())
-        EPD_7in3f_display(measureVBAT(), "No Images Found", "Copy .bmp images onto the card, not in a folder");
+    if (!card_present)
+        display_message(measure_battery_voltage(), "SD Card Not Found or Unreadable", "Insert an SD card or try another one");
+    else if (!images_select_next())
+        display_message(measure_battery_voltage(), "No Images Found", "Copy .bmp images onto the card, not in a folder");
     else
-        EPD_7in3f_display_BMP(pathName, measureVBAT());
+        display_image(images_path, measure_battery_voltage());
 
     PCF85063_clear_alarm_flag(); // clear RTC alarm flag
-    armAlarm();
+    arm_alarm();
 }
 
 // Detect the SD card and read settings.ini, so a card inserted or changed while on USB is picked up
-static void scanCard(void)
+static void scan_card(void)
 {
-    isCard = !sdTest();
-    if (isCard)
+    card_present = sdcard_present();
+    if (card_present)
         settings_load();
 }
 
@@ -82,10 +83,10 @@ void setup(void)
     watchdog_enable(8 * 1000, 1); // 8s
     DEV_Delay_ms(1000);
     PCF85063_init(); // RTC init
-    armAlarm(); // default interval until settings.ini is read, in case anything below fails
-    gpio_set_irq_enabled_with_callback(CHARGE_STATE, GPIO_IRQ_EDGE_RISE | GPIO_IRQ_EDGE_FALL, true, chargeState_callback);
+    arm_alarm(); // default interval until settings.ini is read, in case anything below fails
+    gpio_set_irq_enabled_with_callback(CHARGE_STATE, GPIO_IRQ_EDGE_RISE | GPIO_IRQ_EDGE_FALL, true, charge_state_callback);
 
-    if (measureVBAT() < 3.1)
+    if (measure_battery_voltage() < 3.1)
     { // battery power is low
         printf("low power ...\r\n");
         PCF85063_alarm_Time_Disable();
@@ -99,32 +100,32 @@ void setup(void)
         ledPowerOn();
     }
 
-    scanCard();
-    armAlarm(); // re-arm with interval_hours from settings.ini
+    scan_card();
+    arm_alarm(); // re-arm with interval_hours from settings.ini
 
     if (!DEV_Digital_Read(VBUS))
     { // on battery: show the next image and cut power until the RTC alarm wakes us up
-        run_display();
+        show_next();
         printf("power off ...\r\n");
         powerOff(); // BAT off
         return;
     }
 
     // on USB power: stay awake, loop() handles KEY presses until USB is unplugged
-    chargeState_callback();
-    chargingMode = true;
+    charge_state_callback();
+    charging_mode = true;
 }
 
 void loop(void)
 {
-    if (!chargingMode)
+    if (!charging_mode)
         return;
 
     if (!DEV_Digital_Read(VBUS))
     { // USB unplugged
         printf("power off ...\r\n");
         powerOff(); // BAT off
-        chargingMode = false;
+        charging_mode = false;
         return;
     }
 
@@ -133,8 +134,8 @@ void loop(void)
     if (!DEV_Digital_Read(BAT_STATE))
     {
         printf("key or rtc interrupt\r\n");
-        scanCard();
-        run_display();
+        scan_card();
+        show_next();
     }
     DEV_Delay_ms(200);
 }
