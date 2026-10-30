@@ -55,7 +55,6 @@ int display_image(const char *path, float vol)
     Paint_NewImage(image, EPD_7IN3F_WIDTH, EPD_7IN3F_HEIGHT, 0, EPD_7IN3F_WHITE);
     Paint_SetScale(7);
 
-#if 1
     sdcard_mount();
 
     printf("Display BMP\r\n");
@@ -86,7 +85,6 @@ int display_image(const char *path, float vol)
     EPD_7IN3F_Display(image);
 
     sdcard_unmount();
-#endif
     images_save_shown();
 
     printf("Goto Sleep...\r\n\r\n");
@@ -133,62 +131,6 @@ int display_message(float vol, const char *title, const char *hint)
     EPD_7IN3F_Display(image);
 
     printf("Goto Sleep...\r\n\r\n");
-    EPD_7IN3F_Sleep();
-    free(image);
-    image = NULL;
-
-    return 0;
-}
-
-int display_test_pattern(void)
-{
-    printf("e-Paper Init and Clear...\r\n");
-    EPD_7IN3F_Init();
-
-    // Create a new image cache
-    UBYTE *image;
-    UDOUBLE image_size = ((EPD_7IN3F_WIDTH % 2 == 0) ? (EPD_7IN3F_WIDTH / 2) : (EPD_7IN3F_WIDTH / 2 + 1)) * EPD_7IN3F_HEIGHT;
-    if ((image = (UBYTE *)malloc(image_size)) == NULL)
-    {
-        printf("Failed to apply for black memory...\r\n");
-        return -1;
-    }
-    printf("Paint_NewImage\r\n");
-    Paint_NewImage(image, EPD_7IN3F_WIDTH, EPD_7IN3F_HEIGHT, 0, EPD_7IN3F_WHITE);
-    Paint_SetScale(7);
-
-#if 1 // Drawing on the image
-    // 1.Select Image
-    printf("SelectImage:image\r\n");
-    Paint_SelectImage(image);
-    Paint_Clear(EPD_7IN3F_WHITE);
-
-    int h_number, h_width, v_number, v_width;
-    h_number = 20;
-    h_width = EPD_7IN3F_HEIGHT / h_number; // 800/20
-    v_number = 10;
-    v_width = EPD_7IN3F_WIDTH / v_number; // 480/10
-
-    // 2.Drawing on the image
-    printf("Drawing:image\r\n");
-    for (int i = 0; i < v_number; i++)
-    {
-        Paint_DrawRectangle(1, 1 + i * v_width, 800, v_width * (i + 1), EPD_7IN3F_GREEN + (i % 5), DOT_PIXEL_1X1, DRAW_FILL_FULL);
-    }
-    for (int i = 0, j = 0; i < h_number; i++)
-    {
-        if (i % 2)
-        {
-            j++;
-            Paint_DrawRectangle(1 + i * h_width, 1, h_width * (1 + i), 480, j % 2 ? EPD_7IN3F_BLACK : EPD_7IN3F_WHITE, DOT_PIXEL_1X1, DRAW_FILL_FULL);
-        }
-    }
-
-    printf("EPD_Display\r\n");
-    EPD_7IN3F_Display(image);
-#endif
-
-    printf("Goto Sleep...\r\n");
     EPD_7IN3F_Sleep();
     free(image);
     image = NULL;

@@ -88,14 +88,6 @@ static void EPD_7IN3F_ReadBusyH(void)
     }
     printf("e-Paper busy H release\r\n");
 }
-static void EPD_7IN3F_ReadBusyL(void)
-{
-    printf("e-Paper busy L\r\n");
-    while(DEV_Digital_Read(EPD_BUSY_PIN)) {      //LOW: idle, HIGH: busy
-        DEV_Delay_ms(5);
-    }
-    printf("e-Paper busy L release\r\n");
-}
 
 /******************************************************************************
 function :	Turn On Display
@@ -229,35 +221,6 @@ void EPD_7IN3F_Clear(UBYTE color)
         }
     }
 
-    EPD_7IN3F_TurnOnDisplay();
-}
-
-/******************************************************************************
-function :	show 7 kind of color block
-parameter:
-******************************************************************************/
-void EPD_7IN3F_Show7Block(void)
-{
-    unsigned long i,j,k;
-    unsigned char const Color_seven[8] =
-	{EPD_7IN3F_BLACK,EPD_7IN3F_BLUE,EPD_7IN3F_GREEN,EPD_7IN3F_ORANGE,
-	EPD_7IN3F_RED,EPD_7IN3F_YELLOW,EPD_7IN3F_WHITE,EPD_7IN3F_WHITE};
-
-    EPD_7IN3F_SendCommand(0x10);
-    for(i=0; i<240; i++) {
-        for(k = 0 ; k < 4; k ++) {
-            for(j = 0 ; j < 100; j ++) {
-                EPD_7IN3F_SendData((Color_seven[k]<<4) |Color_seven[k]);
-            }
-        }
-    }
-    for(i=0; i<240; i++) {
-        for(k = 4 ; k < 8; k ++) {
-            for(j = 0 ; j < 100; j ++) {
-                EPD_7IN3F_SendData((Color_seven[k]<<4) |Color_seven[k]);
-            }
-        }
-    }
     EPD_7IN3F_TurnOnDisplay();
 }
 

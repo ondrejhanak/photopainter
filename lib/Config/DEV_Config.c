@@ -169,13 +169,3 @@ UBYTE DEV_Module_Init(void)
     printf("DEV_Module_Init OK \r\n");
 	return 0;
 }
-
-/******************************************************************************
-function:	Module exits, closes SPI and BCM2835 library
-parameter:
-Info:
-******************************************************************************/
-void DEV_Module_Exit(void)
-{
-	printf("Module exit \r\n");
-}

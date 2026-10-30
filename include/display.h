@@ -34,7 +34,5 @@
 int display_image(const char *path, float vol);
 // Show a message screen (title, hint and battery voltage)
 int display_message(float vol, const char *title, const char *hint);
-// Color bar test pattern (unused)
-int display_test_pattern(void);
 
 #endif

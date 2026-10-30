@@ -43,7 +43,6 @@ void PCF85063_alarm_Time_Enabled(Time_data time);
 void PCF85063_alarm_Time_Disable();
 int PCF85063_get_alarm_flag();
 void PCF85063_clear_alarm_flag();
-void PCF85063_test();
 void rtcRunAlarm(Time_data time, Time_data alarmTime);
 
 

@@ -51,7 +51,6 @@ Color Index
 
 void EPD_7IN3F_Init(void);
 void EPD_7IN3F_Clear(UBYTE color);
-void EPD_7IN3F_Show7Block(void);
 void EPD_7IN3F_Display(UBYTE *Image);
 void EPD_7IN3F_Sleep(void);
 

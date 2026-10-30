@@ -153,7 +153,6 @@ void PCF85063_alarm_Time_Enabled(Time_data time)
             time.days = time.days - 30;
         }
     }
-    // printf("%d-%d-%d %d:%d:%d\r\n",time.years,time.months,time.days,time.hours,time.minutes,time.seconds);
 	PCF85063_Write_Byte(CONTROL_2_REG, PCF85063_Read_Byte(CONTROL_2_REG)|0x80);	// Alarm on
 	PCF85063_Write_Byte(DAY_ALARM_REG, DecToBcd(time.days) & 0x7F);
     PCF85063_Write_Byte(HOUR_ARARM_REG, DecToBcd(time.hours) & 0x7F);
@@ -181,24 +180,6 @@ int PCF85063_get_alarm_flag()
 void PCF85063_clear_alarm_flag()
 {
 	PCF85063_Write_Byte(CONTROL_2_REG   ,PCF85063_Read_Byte(CONTROL_2_REG)&0xBF);
-}
-
-void PCF85063_test()
-{
-    int count = 0;
-	
-	// PCF85063_SetTime_YMD(21,2,28);
-	// PCF85063_SetTime_HMS(23,59,58);
-	while(1)
-	{
-		Time_data T;
-		T = PCF85063_GetTime();
-		printf("%d-%d-%d %d:%d:%d\r\n",T.years,T.months,T.days,T.hours,T.minutes,T.seconds);
-		count+=1;
-		DEV_Delay_ms(1000);
-		if(count>20)
-		break;
-	}
 }
 
 void rtcRunAlarm(Time_data time, Time_data alarmTime)

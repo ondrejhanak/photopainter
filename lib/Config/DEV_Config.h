@@ -111,6 +111,5 @@ UBYTE I2C_Read_Byte(UBYTE Reg);
 void DEV_Delay_ms(UDOUBLE xms);
 
 UBYTE DEV_Module_Init(void);
-void DEV_Module_Exit(void);
 
 #endif
