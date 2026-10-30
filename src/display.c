@@ -30,6 +30,7 @@
 ******************************************************************************/
 #include "display.h"
 #include "images.h"
+#include "messages.h"
 #include "sdcard.h"
 #include "EPD_7in3f.h"
 #include "GUI_Paint.h"
@@ -66,7 +67,7 @@ int display_image(const char *path, float vol)
         // Show what failed instead of a partial image; the index still advances below
         Paint_SetRotate(180);
         Paint_Clear(EPD_7IN3F_WHITE);
-        Paint_DrawString_EN(10, 42, "Cannot display image:", &Font16, EPD_7IN3F_BLACK, EPD_7IN3F_WHITE);
+        Paint_DrawString_EN(10, 42, msg(MSG_CANNOT_DISPLAY), &Font16, EPD_7IN3F_BLACK, EPD_7IN3F_WHITE);
         Paint_DrawString_EN(10, 58, path, &Font16, EPD_7IN3F_BLACK, EPD_7IN3F_WHITE);
     }
     else if (Paint_GetRotate() == 90)
@@ -77,7 +78,7 @@ int display_image(const char *path, float vol)
     sprintf(voltage_text, "%f V", vol);
     if (vol < 3.3)
     {
-        Paint_DrawString_EN(10, 10, "Low voltage, please charge in time.", &Font16, EPD_7IN3F_BLACK, EPD_7IN3F_WHITE);
+        Paint_DrawString_EN(10, 10, msg(MSG_LOW_VOLTAGE), &Font16, EPD_7IN3F_BLACK, EPD_7IN3F_WHITE);
         Paint_DrawString_EN(10, 26, voltage_text, &Font16, EPD_7IN3F_BLACK, EPD_7IN3F_WHITE);
     }
 
@@ -123,8 +124,8 @@ int display_message(float vol, const char *title, const char *hint)
     Paint_DrawString_EN(250, 224, hint, &Font16, EPD_7IN3F_WHITE, EPD_7IN3F_BLACK);
 
     // Display battery voltage
-    char voltage_text[21] = {0};
-    sprintf(voltage_text, "Battery: %.2fV", vol);
+    char voltage_text[32];
+    snprintf(voltage_text, sizeof(voltage_text), "%s %.2fV", msg(MSG_BATTERY), vol);
     Paint_DrawString_EN(250, 254, voltage_text, &Font16, EPD_7IN3F_WHITE, EPD_7IN3F_BLACK);
 
     printf("EPD_Display\r\n");

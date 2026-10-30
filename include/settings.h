@@ -1,6 +1,8 @@
 #ifndef SETTINGS_H
 #define SETTINGS_H
 
+#include "messages.h" // Language
+
 typedef enum
 {
     ORDER_ALPHABETICAL, // natural name order
@@ -12,6 +14,7 @@ typedef struct
 {
     int interval_hours; // hours between image changes (RTC wake-up), 1..47
     ImageOrder order;
+    Language language; // on-screen messages
 } Settings;
 
 extern Settings settings;

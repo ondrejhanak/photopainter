@@ -52,6 +52,7 @@ typedef struct _tFont
   const uint8_t *table;
   uint16_t Width;
   uint16_t Height;
+  uint16_t Last; // last character in the table, which starts at ' '
 } sFONT;
 
 

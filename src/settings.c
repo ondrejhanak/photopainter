@@ -12,13 +12,16 @@
 #define SETTINGS_FILE "settings.ini"
 #define DEFAULT_INTERVAL_HOURS 12
 #define DEFAULT_ORDER ORDER_ALPHABETICAL
+#define DEFAULT_LANGUAGE LANG_EN
 
 Settings settings = {
     .interval_hours = DEFAULT_INTERVAL_HOURS,
     .order = DEFAULT_ORDER,
+    .language = DEFAULT_LANGUAGE,
 };
 
-// Written when settings.ini is missing, so users can see what can be changed
+// Written when settings.ini is missing, so users can see what can be changed. Comments are English
+// except for language (Czech too), since the language is only known after reading this file
 static const char *default_settings =
     "; PhotoPainter settings\r\n"
     "; Change a value after \"=\" and save the file. Changes apply with the next image change\r\n"
@@ -28,7 +31,11 @@ static const char *default_settings =
     "interval_hours = 12\r\n"
     "\r\n"
     "; Image order: alphabetical or random (random shows every image once before reshuffling)\r\n"
-    "order = alphabetical\r\n";
+    "order = alphabetical\r\n"
+    "\r\n"
+    "; Language of on-screen messages: en (English) or cs (Czech)\r\n"
+    "; Jazyk zpráv na displeji: en (angličtina) nebo cs (čeština)\r\n"
+    "language = en\r\n";
 
 // Parse a whole number in [min, max]; returns false for anything else (text, decimals, out of range)
 static bool parse_int(const char *value, int min, int max, int *out)
@@ -61,6 +68,16 @@ static int handler(void *user, const char *section, const char *name, const char
             printf("settings: invalid order \"%s\", using %s\r\n", value,
                    settings.order == ORDER_RANDOM ? "random" : "alphabetical");
     }
+    else if (strcasecmp(name, "language") == 0)
+    {
+        int i = 0;
+        while (i < LANG_COUNT && strcasecmp(value, language_codes[i]) != 0)
+            i++;
+        if (i < LANG_COUNT)
+            settings.language = (Language)i;
+        else
+            printf("settings: invalid language \"%s\", using %s\r\n", value, language_codes[settings.language]);
+    }
     else
     {
         printf("settings: unknown key \"%s\" ignored\r\n", name);
@@ -92,6 +109,7 @@ void settings_load(void)
 {
     settings.interval_hours = DEFAULT_INTERVAL_HOURS;
     settings.order = DEFAULT_ORDER;
+    settings.language = DEFAULT_LANGUAGE;
 
     sdcard_mount();
 
@@ -115,6 +133,6 @@ void settings_load(void)
 
     sdcard_unmount();
 
-    printf("settings: interval_hours = %d, order = %s\r\n", settings.interval_hours,
-           settings.order == ORDER_RANDOM ? "random" : "alphabetical");
+    printf("settings: interval_hours = %d, order = %s, language = %s\r\n", settings.interval_hours,
+           settings.order == ORDER_RANDOM ? "random" : "alphabetical", language_codes[settings.language]);
 }

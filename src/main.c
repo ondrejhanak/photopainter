@@ -1,5 +1,6 @@
 #include "display.h"
 #include "images.h"
+#include "messages.h"
 #include "sdcard.h"
 #include "led.h"
 #include "waveshare_PCF85063.h" // RTC
@@ -50,9 +51,9 @@ static void arm_alarm(void)
 static void show_next(void)
 {
     if (!card_present)
-        display_message(measure_battery_voltage(), "SD Card Not Found or Unreadable", "Insert an SD card or try another one");
+        display_message(measure_battery_voltage(), msg(MSG_NO_CARD_TITLE), msg(MSG_NO_CARD_HINT));
     else if (!images_select_next())
-        display_message(measure_battery_voltage(), "No Images Found", "Copy .bmp images onto the card, not in a folder");
+        display_message(measure_battery_voltage(), msg(MSG_NO_IMAGES_TITLE), msg(MSG_NO_IMAGES_HINT));
     else
         display_image(images_path, measure_battery_voltage());
 

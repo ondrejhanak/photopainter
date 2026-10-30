@@ -470,17 +470,76 @@ void Paint_DrawCircle(UWORD X_Center, UWORD Y_Center, UWORD Radius,
     }
 }
 
+// Base letters for U+00C0..U+017F (Latin-1 Supplement letters, Latin Extended-A), drawn when the
+// font has no glyph for an accented letter; '?' where there is no sensible base letter
+static const char latin_base[] =
+    "AAAAAAACEEEEIIII" // U+00C0 ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏ
+    "DNOOOOOxOUUUUY?s" // U+00D0 ÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞß
+    "aaaaaaaceeeeiiii" // U+00E0 àáâãäåæçèéêëìíîï
+    "dnooooo?ouuuuy?y" // U+00F0 ðñòóôõö÷øùúûüýþÿ
+    "AaAaAaCcCcCcCcDd" // U+0100 ĀāĂăĄąĆćĈĉĊċČčĎď
+    "DdEeEeEeEeEeGgGg" // U+0110 ĐđĒēĔĕĖėĘęĚěĜĝĞğ
+    "GgGgHhHhIiIiIiIi" // U+0120 ĠġĢģĤĥĦħĨĩĪīĬĭĮį
+    "IiIiJjKkkLlLlLlL" // U+0130 İıĲĳĴĵĶķĸĹĺĻļĽľĿ
+    "lLlNnNnNnnNnOoOo" // U+0140 ŀŁłŃńŅņŇňŉŊŋŌōŎŏ
+    "OoOoRrRrRrSsSsSs" // U+0150 ŐőŒœŔŕŖŗŘřŚśŜŝŞş
+    "SsTtTtTtUuUuUuUu" // U+0160 ŠšŢţŤťŦŧŨũŪūŬŭŮů
+    "UuUuWwYyYZzZzZzs"; // U+0170 ŰűŲųŴŵŶŷŸŹźŻżŽžſ
+_Static_assert(sizeof(latin_base) - 1 == 0x180 - 0xC0, "latin_base must cover U+00C0..U+017F");
+
+// Decode one UTF-8 character and advance *s past it; malformed or truncated sequences give '?'
+// for their first byte, so a broken name still draws one mark per bad byte and never reads past '\0'.
+// The first byte gives the length and the top bits of the code point, each continuation byte
+// (10xxxxxx) adds 6 more bits:
+//   0xxxxxxx                              U+0000..U+007F (ASCII)
+//   110xxxxx 10xxxxxx                     U+0080..U+07FF (č is 0xC4 0x8D)
+//   1110xxxx 10xxxxxx 10xxxxxx            U+0800..U+FFFF
+//   11110xxx 10xxxxxx 10xxxxxx 10xxxxxx   U+10000..U+10FFFF
+static uint32_t utf8_next(const char **s)
+{
+    const unsigned char *p = (const unsigned char *)*s;
+    uint32_t cp;
+    int extra;
+
+    if (p[0] < 0x80) {
+        *s += 1;
+        return p[0];
+    } else if (p[0] >= 0xC2 && p[0] <= 0xDF) { // 0xC0, 0xC1 would encode ASCII in two bytes
+        cp = p[0] & 0x1F;
+        extra = 1;
+    } else if (p[0] >= 0xE0 && p[0] <= 0xEF) {
+        cp = p[0] & 0x0F;
+        extra = 2;
+    } else if (p[0] >= 0xF0 && p[0] <= 0xF4) { // above 0xF4 is past U+10FFFF
+        cp = p[0] & 0x07;
+        extra = 3;
+    } else { // stray continuation byte or invalid first byte
+        *s += 1;
+        return '?';
+    }
+    for (int i = 1; i <= extra; i++) {
+        if ((p[i] & 0xC0) != 0x80) { // also stops at '\0'
+            *s += 1;
+            return '?';
+        }
+        cp = (cp << 6) | (p[i] & 0x3F);
+    }
+    *s += 1 + extra;
+    return cp;
+}
+
 /******************************************************************************
-function: Show English characters
+function: Show one character
+    Glyph from the font if it has one, else the base letter (č -> c), else '?'
 parameter:
     Xpoint           :X coordinate
     Ypoint           :Y coordinate
-    Acsii_Char       :To display the English characters
+    Code_Point       :Unicode code point of the character
     Font             :A structure pointer that displays a character size
     Color_Foreground : Select the foreground color
     Color_Background : Select the background color
 ******************************************************************************/
-void Paint_DrawChar(UWORD Xpoint, UWORD Ypoint, const char Acsii_Char,
+void Paint_DrawChar(UWORD Xpoint, UWORD Ypoint, uint32_t Code_Point,
                     sFONT* Font, UWORD Color_Foreground, UWORD Color_Background)
 {
     UWORD Page, Column;
@@ -490,7 +549,13 @@ void Paint_DrawChar(UWORD Xpoint, UWORD Ypoint, const char Acsii_Char,
         return;
     }
 
-    uint32_t Char_Offset = (Acsii_Char - ' ') * Font->Height * (Font->Width / 8 + (Font->Width % 8 ? 1 : 0));
+    if (Code_Point < ' ' || Code_Point > Font->Last) {
+        if (Code_Point >= 0xC0 && Code_Point <= 0x17F)
+            Code_Point = latin_base[Code_Point - 0xC0]; // ASCII, in every font
+        else
+            Code_Point = '?';
+    }
+    uint32_t Char_Offset = (Code_Point - ' ') * Font->Height * (Font->Width / 8 + (Font->Width % 8 ? 1 : 0));
     const unsigned char *ptr = &Font->table[Char_Offset];
 
     for (Page = 0; Page < Font->Height; Page ++ ) {
@@ -521,7 +586,7 @@ function:	Display the string
 parameter:
     Xstart           :X coordinate
     Ystart           :Y coordinate
-    pString          :The first address of the English string to be displayed
+    pString          :UTF-8 string to be displayed
     Font             :A structure pointer that displays a character size
     Color_Foreground : Select the foreground color
     Color_Background : Select the background color
@@ -549,10 +614,7 @@ void Paint_DrawString_EN(UWORD Xstart, UWORD Ystart, const char * pString,
             Xpoint = Xstart;
             Ypoint = Ystart;
         }
-        Paint_DrawChar(Xpoint, Ypoint, * pString, Font, Color_Background, Color_Foreground);
-
-        //The next character of the address
-        pString ++;
+        Paint_DrawChar(Xpoint, Ypoint, utf8_next(&pString), Font, Color_Background, Color_Foreground);
 
         //The next word of the abscissa increases the font of the broadband
         Xpoint += Font->Width;

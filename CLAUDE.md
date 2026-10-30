@@ -60,6 +60,7 @@ which may be reused or referenced elsewhere.
 - **src/main.c** - Main application logic (mode, refresh interval, power flow), safe to modify
 - **src/display.c, src/sdcard.c, src/images.c, src/image_order.c** - Display screens, SD card access, next-image selection and its order (pure logic), safe to modify
 - **src/settings.c** - `settings.ini` on the SD card (user settings, parsed with inih in `lib/inih/`)
+- **src/messages.c** - All user-visible texts per language (`msg(id)`, `language` setting)
 - **include/** - Headers for the `src/` files
 - **lib/** - Generic reusable libraries (display driver, GUI/BMP decoding, FatFs, RTC), modify with caution
 - **convert/** - Host-side Python script to resize/crop photos and dither them to the exact 7-color palette (24-bit BMP) for the SD card

@@ -24,6 +24,8 @@ reworked to be easier to use and to develop.
   original tried to display every file in `/pic/`.
 - **A tidy card.** The frame's own state lives in a hidden folder; no list, index or temporary files.
 - **Clear on-screen messages** for a missing card or missing images.
+- **Czech or English on-screen messages** (`language` in `settings.ini`); accents shown once the
+  Czech font lands.
 - **Better photo conversion.** `convert/convert.py` crops, enhances and dithers photos against a palette
   modelled on the panel's real ink colors.
 
@@ -45,6 +47,9 @@ reworked to be easier to use and to develop.
   re-initialized; now it is re-read before every image change.
 - **Wrong sort length.** The image list was sorted with the file-name length instead of the number of
   files, so it was sorted only partly or past its end.
+- **Garbled accented file names.** An image named e.g. `Dovolená.bmp` that could not be shown drew
+  garbage instead of its name (bytes from past the font table); accented letters now draw as their
+  base letter.
 - **Buffer overflows** when reading file names (up to 999 bytes read into smaller buffers).
 - **RTC alarm flag never reported.** `PCF85063_get_alarm_flag()` tested `reg & 0x40 == 0x40`, which C
   reads as `reg & 1`, so a fired alarm looked like a KEY press. Needed to tell the two apart.
@@ -75,6 +80,9 @@ interval_hours = 12
 
 ; Image order: alphabetical or random (random shows every image once before reshuffling)
 order = alphabetical
+
+; Language of on-screen messages: en (English) or cs (Czech)
+language = en
 ```
 
 ### Preparing photos
@@ -150,6 +158,7 @@ src/
 ├── sdcard.c                    SD card mount and detection
 ├── images.c                    Next-image selection, frame state
 ├── image_order.c               Natural and random image order (no hardware access)
+├── messages.c                  On-screen texts per language
 └── settings.c                  settings.ini loading (via inih)
 include/                        Headers for src/, one per module
 lib/
