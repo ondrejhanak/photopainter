@@ -171,10 +171,7 @@ void PCF85063_alarm_Time_Disable()
 
 int PCF85063_get_alarm_flag()
 {
-	if(PCF85063_Read_Byte(CONTROL_2_REG)&0x40 == 0x40)
-		return 1;
-	else 
-		return 0;
+	return (PCF85063_Read_Byte(CONTROL_2_REG) & 0x40) != 0; // AF: alarm flag
 }
 
 void PCF85063_clear_alarm_flag()
