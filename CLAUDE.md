@@ -39,6 +39,10 @@ The frame is usually connected over USB, so flashing and logs need no button pre
   Python (`~/.platformio/penv/bin/python`, `pyserial`) and timestamp each chunk, then grep it. The
   port (`/dev/cu.usbmodem*`) reappears a few seconds after flashing; the first character of a line is
   sometimes lost after idle gaps. Stop any capture before flashing (picotool needs the port).
+- **Test screens without card changes:** temporarily force them in `show_next()` (a static step
+  counter choosing the screen, then `if (1) ; else` before the real chain so it is skipped), and set
+  `DEFAULT_LANGUAGE` to `LANG_CS` for Czech. Keep copies of the real files, restore and reflash the
+  real build afterwards. Never commit the temporary change.
 - **Test timer behavior fast:** temporarily set the alarm to seconds (e.g. `alarmTime.seconds += 40`
   in `armAlarm()`), flash, record, then restore and reflash. Never commit the temporary change.
 - **Logic without hardware:** compile `src/` files on the Mac against small stub headers (FatFs,
@@ -60,7 +64,9 @@ which may be reused or referenced elsewhere.
 - **src/main.c** - Main application logic (mode, refresh interval, power flow), safe to modify
 - **src/display.c, src/sdcard.c, src/images.c, src/image_order.c** - Display screens, SD card access, next-image selection and its order (pure logic), safe to modify
 - **src/settings.c** - `settings.ini` on the SD card (user settings, parsed with inih in `lib/inih/`)
-- **src/messages.c** - All user-visible texts per language (`msg(id)`, `language` setting)
+- **src/messages.c** - All user-visible texts per language (`msg(id)`, `language` setting). Every new
+  on-screen text goes here in English and Czech (full diacritics, UTF-8), no trailing full stop; line
+  lengths in the file's comment
 - **include/** - Headers for the `src/` files
 - **lib/** - Generic reusable libraries (display driver, GUI/BMP decoding, FatFs, RTC), modify with caution
 - **tools/gen_font.py** - Generates the font tables in `lib/Fonts/` from Terminus BDF files (don't edit them by hand)
