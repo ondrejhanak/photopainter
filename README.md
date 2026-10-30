@@ -151,7 +151,7 @@ lib/
 │   └── GUI_BMPfile.c           BMP parsing, RGB→7-color mapping
 ├── RTC/waveshare_PCF85063.c    RTC driver, alarm scheduling
 ├── FatFs_SPI/                  SD card filesystem (FatFs library)
-├── Fonts/                      ASCII (8-24pt) and Chinese fonts
+├── Fonts/                      ASCII fonts (16 and 20 px)
 ├── led/led.c                   LED indicators, power control
 └── inih/                       INI parser (r62, BSD) for settings.ini
 convert/                        Host-side image conversion script (Python)
