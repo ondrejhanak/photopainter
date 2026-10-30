@@ -42,6 +42,8 @@ reworked to be easier to use and to develop.
 - **Documented hardware behavior**, e.g. the RTC alarm arriving on the KEY line and the missing SD
   card-detect pin (see [How it behaves](#how-it-behaves)).
 
+Ideas being considered [IDEAS.md](IDEAS.md).
+
 ## Photos & SD card
 
 | On the card | Purpose |
