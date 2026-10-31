@@ -138,10 +138,10 @@ Product details and schematic: [PhotoPainter wiki](https://www.waveshare.com/wik
   powers the board off. Holding KEY for 3 s is a long press; the red LED lights when it is reached.
   The RTC alarm holds the KEY line low until its flag is cleared, so the flag tells it apart from a
   held KEY.
-- **USB drive mode:** a long press with a computer connected offers the SD card as a USB drive next
-  to the serial port (flashing and the log keep working) and shows a "USB Drive" screen; the
-  computer is served during the refresh, so the drive appears within seconds. The frame leaves the
-  card alone until the drive is ejected or KEY is held again, then re-reads the card and
+- **USB drive mode:** on USB the frame is always a USB drive next to the serial port, empty like a
+  card reader without a card (Windows may show an empty drive letter). A long press with a computer
+  connected puts the SD card in: the computer mounts it within a second, while a "USB Drive" screen
+  refreshes (flashing and the log keep working). The frame leaves the card alone until the drive is ejected or KEY is held again, then re-reads the card and
   `settings.ini` and shows the next image. It also ends by itself when the computer does not read
   the drive within a minute (mount failed) or leaves it untouched for 30 minutes (forgotten eject,
   computer asleep), so the photos never stop for good. On a plain charger a long press is ignored

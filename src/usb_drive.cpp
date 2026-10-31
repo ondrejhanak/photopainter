@@ -1,7 +1,7 @@
-// The SD card as a USB mass storage drive next to the serial port, so photos can be copied from a
-// computer. TinyUSB calls the tud_msc_* callbacks below from tud_task(). In drive mode only the
-// firmware runs tud_task() (usb_drive_serve(), Serial), never the core's periodic USB interrupt:
-// the SD driver waits for DMA interrupts, which cannot arrive inside another interrupt
+// The SD card as a USB drive next to the serial port: always attached, empty like a card reader until
+// drive mode inserts the card. Don't re-enumerate the device instead: TinyUSB then panics now and then.
+// In drive mode tud_task() runs only from the firmware, not the core's USB interrupt, as the SD driver
+// waits for DMA interrupts; outside it the callbacks run in that interrupt and must not touch the card
 #include "usb_drive.h"
 #include <Arduino.h>
 #include <USB.h>
@@ -19,11 +19,10 @@ extern "C" {
 #define READ_AHEAD 32
 #define WRITE_BATCH 64
 
-static bool active = false;
+static volatile bool active = false; // drive mode: the medium is present
+static volatile bool media_changed = false; // tell the computer once that the medium appeared
 static volatile bool ejected = false;
-static volatile bool host_configured = false; // set by tud_mount_cb()
 static bool card_failed = false; // a write failed after its status was sent, fail everything after it
-static uint8_t interface_id, endpoint_in, endpoint_out;
 static uint8_t descriptor[TUD_MSC_DESC_LEN];
 static uint32_t sector_count;
 static volatile uint32_t last_command_ms; // millis() of the computer's last drive command
@@ -43,7 +42,6 @@ static bool flush_writes(void)
     return !card_failed;
 }
 
-// Run TinyUSB for ms milliseconds
 static void run_usb(uint32_t ms)
 {
     uint32_t start = millis();
@@ -56,22 +54,13 @@ static void run_usb(uint32_t ms)
     watchdog_update();
 }
 
-// USB.disconnect() only drops the pull-up: TinyUSB keeps the old connection (configured, serial port
-// open) until the computer resets the bus, and printf in between can stall. Reconnect and wait until
-// the computer has configured the device again (up to 5 s, it may be slow or gone)
-static void reconnect(void)
+// Arduino-Pico hook right before USB starts, so the drive is part of the first enumeration
+void initVariant(void)
 {
-    host_configured = false;
-    USB.connect();
-    uint32_t start = millis();
-    while (!host_configured && millis() - start < 5000)
-        run_usb(10);
-}
-
-// Invoked by TinyUSB when the computer configures the device (after its bus reset)
-extern "C" void tud_mount_cb(void)
-{
-    host_configured = true;
+    const uint8_t msc[] = {TUD_MSC_DESCRIPTOR(0 /* set by simpleInterface */, 0, USB.registerEndpointOut(),
+                                              USB.registerEndpointIn(), 64)};
+    memcpy(descriptor, msc, sizeof(descriptor));
+    USB.registerInterface(1, USBClass::simpleInterface, descriptor, sizeof(descriptor), 2, 0);
 }
 
 bool usb_drive_computer_connected(void)
@@ -97,16 +86,9 @@ bool usb_drive_start(void)
     used = false;
     last_command_ms = millis();
 
-    irq_set_enabled(USB.usbTaskIRQ, false);
-    // The computer sees the new interface only after the device reconnects
-    USB.disconnect();
-    endpoint_in = USB.registerEndpointIn();
-    endpoint_out = USB.registerEndpointOut();
-    const uint8_t msc[] = {TUD_MSC_DESCRIPTOR(0 /* set by simpleInterface */, 0, endpoint_out, endpoint_in, 64)};
-    memcpy(descriptor, msc, sizeof(descriptor));
-    interface_id = USB.registerInterface(1, USBClass::simpleInterface, descriptor, sizeof(descriptor), 2, 0);
+    irq_set_enabled(USB.usbTaskIRQ, false); // before active: the callbacks may use the card from now on
+    media_changed = true;
     active = true;
-    reconnect();
     printf("usb drive: %lu sectors\r\n", (unsigned long)sector_count);
     return true;
 }
@@ -116,12 +98,7 @@ void usb_drive_stop(void)
     if (!active)
         return;
     flush_writes();
-    USB.disconnect();
-    USB.unregisterInterface(interface_id);
-    USB.unregisterEndpointIn(endpoint_in);
-    USB.unregisterEndpointOut(endpoint_out);
-    active = false;
-    reconnect();
+    active = false; // the computer sees "medium not present" from its next command on
     irq_set_enabled(USB.usbTaskIRQ, true);
     if (card_failed)
         printf("usb drive: card write failed\r\n");
@@ -158,16 +135,26 @@ extern "C" void tud_msc_inquiry_cb(uint8_t lun, uint8_t vendor_id[8], uint8_t pr
 
 extern "C" bool tud_msc_test_unit_ready_cb(uint8_t lun)
 {
-    (void)lun;
     last_command_ms = millis();
-    return active && !ejected; // after an eject: "medium not present", so the computer lets go
+    if (!active || ejected)
+    { // empty card reader, also right after an eject
+        tud_msc_set_sense(lun, SCSI_SENSE_NOT_READY, 0x3A, 0x00); // medium not present
+        return false;
+    }
+    if (media_changed)
+    { // the computer re-reads the capacity and mounts the drive
+        media_changed = false;
+        tud_msc_set_sense(lun, SCSI_SENSE_UNIT_ATTENTION, 0x28, 0x00); // medium may have changed
+        return false;
+    }
+    return true;
 }
 
 extern "C" void tud_msc_capacity_cb(uint8_t lun, uint32_t *block_count, uint16_t *block_size)
 {
     (void)lun;
     last_command_ms = millis();
-    *block_count = sector_count;
+    *block_count = active ? sector_count : 0; // 0 = medium not present
     *block_size = SECTOR_SIZE;
 }
 
@@ -230,7 +217,6 @@ extern "C" bool tud_msc_start_stop_cb(uint8_t lun, uint8_t power_condition, bool
     return true;
 }
 
-// SCSI commands TinyUSB does not handle itself
 extern "C" int32_t tud_msc_scsi_cb(uint8_t lun, uint8_t const scsi_cmd[16], void *buffer, uint16_t bufsize)
 {
     last_command_ms = millis();
