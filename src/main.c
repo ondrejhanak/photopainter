@@ -21,12 +21,18 @@ static bool charging_mode = false; // powered over USB at boot; loop() only acts
 // KEY on USB: short press (released before LONG_PRESS_MS) = next image, long press = drive mode on/off
 #define LONG_PRESS_MS 3000
 #define LOOP_MS 50 // KEY check interval on USB; shorter taps can be missed
+
+// Drive mode ends by itself when the computer did not read the drive (mount failed, or it gave up)
+// or left it idle for long (forgotten eject, computer asleep), so the photos don't stop for good
+#define DRIVE_UNUSED_MS (60 * 1000UL)
+#define DRIVE_IDLE_MS (30 * 60 * 1000UL)
 static bool key_down = false;
 static uint32_t key_down_ms; // when KEY went down
 static bool long_press_done = false; // long press already handled, wait for release
 
 // Drive mode: the computer owns the SD card, the frame must not touch it (no display, no state.txt)
 static bool drive_mode = false;
+static uint32_t drive_mode_ms; // when drive mode started
 
 // Red LED: steady on in drive mode, otherwise lit while the SD card is in use, so it shows the frame
 // is busy. A long press also lights it when reached, until whatever it does next sets it
@@ -130,6 +136,7 @@ static void enter_drive_mode(const char *reason)
     else
     {
         drive_mode = true;
+        drive_mode_ms = to_ms_since_boot(get_absolute_time());
         set_led(false);
         display_message(msg(MSG_DRIVE_TITLE), msg(MSG_DRIVE_HINT));
     }
@@ -268,10 +275,14 @@ void loop(void)
     // too, so nothing sent meanwhile runs after it
     int command = usb_serial_read();
     if (drive_mode)
-    { // commands are ignored, eject or a long press leaves drive mode
+    { // commands are ignored, eject, a long press or a timeout leaves drive mode
         usb_drive_serve(LOOP_MS); // answers the computer instead of the delay below
         if (usb_drive_ejected())
             leave_drive_mode("ejected");
+        else if (!usb_drive_used() && to_ms_since_boot(get_absolute_time()) - drive_mode_ms > DRIVE_UNUSED_MS)
+            leave_drive_mode("drive not used by the computer");
+        else if (usb_drive_idle_ms() > DRIVE_IDLE_MS)
+            leave_drive_mode("drive idle");
         return;
     }
     if (command == 'n')

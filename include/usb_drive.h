@@ -18,6 +18,10 @@ void usb_drive_stop(void);
 void usb_drive_serve(uint32_t ms);
 // Whether the computer ejected the drive
 bool usb_drive_ejected(void);
+// Whether the computer has read the drive since usb_drive_start() (mounting it always does)
+bool usb_drive_used(void);
+// Milliseconds since the computer's last drive command (macOS sends none while a mounted drive is idle)
+uint32_t usb_drive_idle_ms(void);
 
 #ifdef __cplusplus
 }

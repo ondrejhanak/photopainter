@@ -26,6 +26,8 @@ static bool card_failed = false; // a write failed after its status was sent, fa
 static uint8_t interface_id, endpoint_in, endpoint_out;
 static uint8_t descriptor[TUD_MSC_DESC_LEN];
 static uint32_t sector_count;
+static volatile uint32_t last_command_ms; // millis() of the computer's last drive command
+static volatile bool used = false; // the computer read the drive (mounting always does)
 
 static uint8_t read_buffer[READ_AHEAD * SECTOR_SIZE];
 static uint32_t read_lba, read_sectors; // sectors in read_buffer
@@ -92,6 +94,8 @@ bool usb_drive_start(void)
     write_sectors = 0;
     card_failed = false;
     ejected = false;
+    used = false;
+    last_command_ms = millis();
 
     irq_set_enabled(USB.usbTaskIRQ, false);
     // The computer sees the new interface only after the device reconnects
@@ -133,9 +137,20 @@ bool usb_drive_ejected(void)
     return ejected;
 }
 
+bool usb_drive_used(void)
+{
+    return used;
+}
+
+uint32_t usb_drive_idle_ms(void)
+{
+    return millis() - last_command_ms;
+}
+
 extern "C" void tud_msc_inquiry_cb(uint8_t lun, uint8_t vendor_id[8], uint8_t product_id[16], uint8_t product_rev[4])
 {
     (void)lun;
+    last_command_ms = millis();
     memcpy(vendor_id, "Waveshar", 8);
     memcpy(product_id, "PhotoPainter    ", 16);
     memcpy(product_rev, "1.0 ", 4);
@@ -144,12 +159,14 @@ extern "C" void tud_msc_inquiry_cb(uint8_t lun, uint8_t vendor_id[8], uint8_t pr
 extern "C" bool tud_msc_test_unit_ready_cb(uint8_t lun)
 {
     (void)lun;
+    last_command_ms = millis();
     return active && !ejected; // after an eject: "medium not present", so the computer lets go
 }
 
 extern "C" void tud_msc_capacity_cb(uint8_t lun, uint32_t *block_count, uint16_t *block_size)
 {
     (void)lun;
+    last_command_ms = millis();
     *block_count = sector_count;
     *block_size = SECTOR_SIZE;
 }
@@ -158,6 +175,8 @@ extern "C" void tud_msc_capacity_cb(uint8_t lun, uint32_t *block_count, uint16_t
 extern "C" int32_t tud_msc_read10_cb(uint8_t lun, uint32_t lba, uint32_t offset, void *buffer, uint32_t bufsize)
 {
     (void)lun;
+    last_command_ms = millis();
+    used = true;
     if (!active || lba >= sector_count || !flush_writes())
         return -1;
     if (lba < read_lba || lba >= read_lba + read_sectors)
@@ -178,6 +197,7 @@ extern "C" int32_t tud_msc_read10_cb(uint8_t lun, uint32_t lba, uint32_t offset,
 extern "C" int32_t tud_msc_write10_cb(uint8_t lun, uint32_t lba, uint32_t offset, uint8_t *buffer, uint32_t bufsize)
 {
     (void)lun;
+    last_command_ms = millis();
     if (!active || card_failed || lba >= sector_count)
         return -1;
     read_sectors = 0; // the read-ahead may hold the old content
@@ -203,6 +223,7 @@ extern "C" void tud_msc_write10_complete_cb(uint8_t lun)
 extern "C" bool tud_msc_start_stop_cb(uint8_t lun, uint8_t power_condition, bool start, bool load_eject)
 {
     (void)lun;
+    last_command_ms = millis();
     (void)power_condition;
     if (load_eject && !start)
         ejected = true;
@@ -212,6 +233,7 @@ extern "C" bool tud_msc_start_stop_cb(uint8_t lun, uint8_t power_condition, bool
 // SCSI commands TinyUSB does not handle itself
 extern "C" int32_t tud_msc_scsi_cb(uint8_t lun, uint8_t const scsi_cmd[16], void *buffer, uint16_t bufsize)
 {
+    last_command_ms = millis();
     (void)buffer;
     (void)bufsize;
     if (scsi_cmd[0] == 0x35 && flush_writes()) // SYNCHRONIZE CACHE(10)
