@@ -30,7 +30,7 @@ static bool key_down = false;
 static uint32_t key_down_ms; // when KEY went down
 static bool long_press_done = false; // long press already handled, wait for release
 
-// Drive mode: the computer owns the SD card, the frame must not touch it (no display, no state.txt)
+// Drive mode: the computer owns the SD card, the frame must not touch it (no card reads, no state.txt)
 static bool drive_mode = false;
 static uint32_t drive_mode_ms; // when drive mode started
 
@@ -110,8 +110,8 @@ static void next_image(const char *reason)
     usb_serial_discard(); // commands sent during the refresh would queue more refreshes
 }
 
-// Offer the card to the computer, then show the drive-mode screen; the computer is answered during
-// the refresh (EPD_7IN3F_BusyWait()), so the drive appears without waiting for it
+// Insert the card into the USB drive, then show the drive-mode screen; the computer is served during
+// the refresh (EPD_7IN3F_BusyWait())
 static void enter_drive_mode(const char *reason)
 {
     printf("%s: drive mode\r\n", reason);
@@ -153,7 +153,7 @@ static void leave_drive_mode(const char *reason)
     next_image(reason);
 }
 
-// Runs while the panel refreshes (~30 s): in drive mode the computer keeps being answered
+// Runs while the panel refreshes: in drive mode the computer keeps being served
 void EPD_7IN3F_BusyWait(UDOUBLE ms)
 {
     if (drive_mode)

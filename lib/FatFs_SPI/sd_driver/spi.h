@@ -71,8 +71,8 @@ void set_spi_dma_irq_channel(bool useChannel1, bool shared);
 }
 #endif
 
-// Card selected (active) or deselected, e.g. for an activity light. Weak and empty in sd_spi.c; the
-// application overrides it, as only it knows which LED to use and what else that LED shows
+// Card selected (active) or deselected, e.g. for an activity light; weak and empty in sd_spi.c, for
+// the application to override
 void sd_activity(bool active);
 #define LED_INIT()
 #define LED_ON() sd_activity(true)
