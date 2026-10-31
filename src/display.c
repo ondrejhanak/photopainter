@@ -40,6 +40,21 @@
 #include <stdlib.h> // malloc() free()
 #include <string.h>
 
+#define MESSAGE_X 125 // left edge of message screen text
+
+// Draw a message screen (title, hint and battery voltage) into the selected, cleared image
+static void draw_message(float vol, const char *title, const char *hint)
+{
+    printf("Display message: %s\r\n", title);
+    Paint_SetRotate(180);
+    UWORD y = Paint_DrawString_EN(MESSAGE_X, 200, title, &Font28, EPD_7IN3F_WHITE, EPD_7IN3F_BLACK);
+    y = Paint_DrawString_EN(MESSAGE_X, y + 4, hint, &Font22, EPD_7IN3F_WHITE, EPD_7IN3F_BLACK);
+
+    char voltage_text[32];
+    snprintf(voltage_text, sizeof(voltage_text), "%s %.2fV", msg(MSG_BATTERY), vol);
+    Paint_DrawString_EN(MESSAGE_X, y + 14, voltage_text, &Font22, EPD_7IN3F_WHITE, EPD_7IN3F_BLACK);
+}
+
 int display_image(const char *path, float vol)
 {
     printf("e-Paper Init and Clear...\r\n");
@@ -63,30 +78,21 @@ int display_image(const char *path, float vol)
     Paint_SelectImage(image);
     Paint_Clear(EPD_7IN3F_WHITE);
 
-    bool failed = GUI_ReadBmp_RGB_7Color(path, 0, 0) != 0;
-    if (failed)
-    {
-        // Show what failed instead of a partial image; the index still advances below
-        Paint_SetRotate(180);
+    if (GUI_ReadBmp_RGB_7Color(path, 0, 0) != 0)
+    { // a message screen with the file name instead of a partial image; it still counts as shown below
         Paint_Clear(EPD_7IN3F_WHITE);
+        draw_message(vol, msg(MSG_CANNOT_DISPLAY), path);
     }
-    else if (Paint_GetRotate() == 90)
-        Paint_SetRotate(270);
     else
-        Paint_SetRotate(180);
-
-    UWORD y = 10;
-    if (vol < 3.3)
     {
-        char voltage_text[21] = {0};
-        sprintf(voltage_text, "%f V", vol);
-        y = Paint_DrawString_EN(10, y, msg(MSG_LOW_VOLTAGE), &Font22, EPD_7IN3F_BLACK, EPD_7IN3F_WHITE);
-        y = Paint_DrawString_EN(10, y, voltage_text, &Font22, EPD_7IN3F_BLACK, EPD_7IN3F_WHITE);
-    }
-    if (failed)
-    {
-        y = Paint_DrawString_EN(10, y, msg(MSG_CANNOT_DISPLAY), &Font22, EPD_7IN3F_BLACK, EPD_7IN3F_WHITE);
-        Paint_DrawString_EN(10, y, path, &Font22, EPD_7IN3F_BLACK, EPD_7IN3F_WHITE);
+        Paint_SetRotate(Paint_GetRotate() == 90 ? 270 : 180);
+        if (vol < 3.3)
+        {
+            char voltage_text[21] = {0};
+            sprintf(voltage_text, "%f V", vol);
+            UWORD y = Paint_DrawString_EN(10, 10, msg(MSG_LOW_VOLTAGE), &Font22, EPD_7IN3F_BLACK, EPD_7IN3F_WHITE);
+            Paint_DrawString_EN(10, y, voltage_text, &Font22, EPD_7IN3F_BLACK, EPD_7IN3F_WHITE);
+        }
     }
 
     printf("EPD_Display\r\n");
@@ -102,8 +108,6 @@ int display_image(const char *path, float vol)
 
     return 0;
 }
-
-#define MESSAGE_X 125 // left edge of message screen text
 
 int display_message(float vol, const char *title, const char *hint)
 {
@@ -122,20 +126,9 @@ int display_message(float vol, const char *title, const char *hint)
     Paint_NewImage(image, EPD_7IN3F_WIDTH, EPD_7IN3F_HEIGHT, 0, EPD_7IN3F_WHITE);
     Paint_SetScale(7);
 
-    printf("Display message: %s\r\n", title);
     Paint_SelectImage(image);
     Paint_Clear(EPD_7IN3F_WHITE);
-
-    Paint_SetRotate(180);
-
-    // Display a message
-    UWORD y = Paint_DrawString_EN(MESSAGE_X, 200, title, &Font28, EPD_7IN3F_WHITE, EPD_7IN3F_BLACK);
-    y = Paint_DrawString_EN(MESSAGE_X, y + 4, hint, &Font22, EPD_7IN3F_WHITE, EPD_7IN3F_BLACK);
-
-    // Display battery voltage
-    char voltage_text[32];
-    snprintf(voltage_text, sizeof(voltage_text), "%s %.2fV", msg(MSG_BATTERY), vol);
-    Paint_DrawString_EN(MESSAGE_X, y + 14, voltage_text, &Font22, EPD_7IN3F_WHITE, EPD_7IN3F_BLACK);
+    draw_message(vol, title, hint);
 
     printf("EPD_Display\r\n");
     EPD_7IN3F_Display(image);
