@@ -28,11 +28,11 @@ static bool long_press_done = false; // long press already handled, wait for rel
 // Drive mode: the computer owns the SD card, the frame must not touch it (no display, no state.txt)
 static bool drive_mode = false;
 
-// Red LED: steady on in drive mode and once a long press is reached (until release), otherwise lit
-// while the SD card is in use, so it shows the frame is busy
+// Red LED: steady on in drive mode, otherwise lit while the SD card is in use, so it shows the frame
+// is busy. A long press also lights it when reached, until whatever it does next sets it
 static void set_led(bool card_active)
 {
-    DEV_Digital_Write(LED_ACT, card_active || drive_mode || (key_down && long_press_done));
+    DEV_Digital_Write(LED_ACT, card_active || drive_mode);
 }
 
 // Called by the SD driver on every card access
@@ -247,7 +247,7 @@ void loop(void)
     else if (line_low && !long_press_done && now_ms - key_down_ms >= LONG_PRESS_MS)
     {
         long_press_done = true;
-        set_led(false); // lights up: the user can let go
+        DEV_Digital_Write(LED_ACT, 1); // the user can let go
         printf("long key press\r\n");
         if (drive_mode)
             leave_drive_mode("long key press");
