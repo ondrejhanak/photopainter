@@ -49,12 +49,9 @@ static spi_t spis[] = {  // One for each SPI.
         .mosi_gpio = SD_MOSI_PIN,
         .sck_gpio = SD_CLK_PIN,
 
-        /* The choice of SD card matters! SanDisk runs at the highest speed. PNY
-           can only mangage 5 MHz. Those are all I've tried. */
-        //.baud_rate = 1000 * 1000,
-        .baud_rate = 12500 * 1000,  // The limitation here is SPI slew rate.
-        //.baud_rate = 25 * 1000 * 1000, // Actual frequency: 20833333. Has
-        // worked for me with SanDisk.
+        // SD cards allow up to 25 MHz in SPI mode, and the SPI clock is 48 MHz divided by an even
+        // number, so 24 MHz is the fastest (actual frequency in the log at card init)
+        .baud_rate = 24 * 1000 * 1000,
 
         .dma_isr = spi_dma_isr
     }
