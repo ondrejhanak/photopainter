@@ -22,6 +22,10 @@ static const char *const messages[][MSG_COUNT] = {
         [MSG_CANNOT_DISPLAY] = "Cannot display image:",
         [MSG_LOW_VOLTAGE] = "Low voltage, please charge in time",
         [MSG_BATTERY] = "Battery:",
+        [MSG_DRIVE_TITLE] = "USB Drive",
+        [MSG_DRIVE_HINT] = "Copy .bmp images to the drive, then eject it",
+        [MSG_CONNECT_TITLE] = "Connect to a Computer",
+        [MSG_CONNECT_HINT] = "Then hold the button for 3 s to copy images",
     },
     [LANG_CS] = {
         [MSG_NO_CARD_TITLE] = "SD karta nenalezena nebo nečitelná",
@@ -31,6 +35,10 @@ static const char *const messages[][MSG_COUNT] = {
         [MSG_CANNOT_DISPLAY] = "Nelze zobrazit obrázek:",
         [MSG_LOW_VOLTAGE] = "Slabá baterie, prosím brzy nabijte",
         [MSG_BATTERY] = "Baterie:",
+        [MSG_DRIVE_TITLE] = "USB disk",
+        [MSG_DRIVE_HINT] = "Nakopírujte obrázky .bmp na disk a pak ho vysuňte",
+        [MSG_CONNECT_TITLE] = "Připojte k počítači",
+        [MSG_CONNECT_HINT] = "Pak podržte tlačítko 3 s a nakopírujte obrázky",
     },
 };
 static_assert(sizeof(messages) / sizeof(messages[0]) == LANG_COUNT, "language without messages");

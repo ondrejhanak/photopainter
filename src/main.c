@@ -1,4 +1,5 @@
 #include "display.h"
+#include "EPD_7in3f.h" // EPD_7IN3F_BusyWait()
 #include "images.h"
 #include "messages.h"
 #include "sdcard.h"
@@ -102,18 +103,25 @@ static void next_image(const char *reason)
     usb_serial_discard(); // commands sent during the refresh would queue more refreshes
 }
 
+// Offer the card to the computer, then show the drive-mode screen; the computer is answered during
+// the refresh (EPD_7IN3F_BusyWait()), so the drive appears without waiting for it
 static void enter_drive_mode(const char *reason)
 {
     printf("%s: drive mode\r\n", reason);
+    scan_card(); // card check and language for the screen
     if (!usb_drive_computer_connected())
-        printf("drive mode: no computer connected\r\n");
+        display_message(measure_battery_voltage(), msg(MSG_CONNECT_TITLE), msg(MSG_CONNECT_HINT));
+    else if (!card_present)
+        show_next(); // "no card" screen
     else if (!usb_drive_start())
-        printf("drive mode: card not readable\r\n");
+        show_next();
     else
     {
         drive_mode = true;
         set_led(false);
+        display_message(measure_battery_voltage(), msg(MSG_DRIVE_TITLE), msg(MSG_DRIVE_HINT));
     }
+    usb_serial_discard(); // commands sent during the refresh
 }
 
 // Take the card back, then re-read it and settings.ini (the computer may have changed both) and
@@ -124,6 +132,15 @@ static void leave_drive_mode(const char *reason)
     drive_mode = false;
     set_led(false);
     next_image(reason);
+}
+
+// Runs while the panel refreshes (~30 s): in drive mode the computer keeps being answered
+void EPD_7IN3F_BusyWait(UDOUBLE ms)
+{
+    if (drive_mode)
+        usb_drive_serve(ms);
+    else
+        DEV_Delay_ms(ms);
 }
 
 /*

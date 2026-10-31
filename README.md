@@ -138,10 +138,11 @@ Product details and schematic: [PhotoPainter wiki](https://www.waveshare.com/wik
   The RTC alarm holds the KEY line low until its flag is cleared, so the flag tells it apart from a
   held KEY.
 - **USB drive mode:** a long press with a computer connected offers the SD card as a USB drive next
-  to the serial port (flashing and the log keep working). The frame leaves the card alone until the
-  drive is ejected or KEY is held again, then re-reads the card and `settings.ini` and shows the
-  next image. On a plain charger a long press is ignored. About 0.4 MB/s, limited by USB full speed
-  with 64-byte packets.
+  to the serial port (flashing and the log keep working) and shows a "USB Drive" screen; the
+  computer is served during the refresh, so the drive appears within seconds. The frame leaves the
+  card alone until the drive is ejected or KEY is held again, then re-reads the card and
+  `settings.ini` and shows the next image. On a plain charger a long press shows how to use it.
+  About 0.4 MB/s, limited by USB full speed with 64-byte packets.
 - **LEDs:** green (PWR) is the charging light: on while the battery charges, off when it is full or
   on battery. Red (ACT) blinks 3 times at power-on, flickers while the SD card is in use (the SD
   driver reports activity, the firmware owns the LED), lights once a long KEY press is reached and

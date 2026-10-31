@@ -49,6 +49,7 @@ Color Index
 #define EPD_7IN3F_ORANGE  0x6	///	110
 #define EPD_7IN3F_CLEAN   0x7	///	111   unavailable  Afterimage
 
+void EPD_7IN3F_BusyWait(UDOUBLE ms);
 void EPD_7IN3F_Init(void);
 void EPD_7IN3F_Clear(UBYTE color);
 void EPD_7IN3F_Display(UBYTE *Image);

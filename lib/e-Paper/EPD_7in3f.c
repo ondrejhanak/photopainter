@@ -74,12 +74,18 @@ static void EPD_7IN3F_SendData(UBYTE Data)
 function :	Wait until the busy_pin goes LOW
 parameter:
 ******************************************************************************/
+// Waits while the panel is busy (most of a refresh); weak, so the firmware can do other work meanwhile
+__attribute__((weak)) void EPD_7IN3F_BusyWait(UDOUBLE ms)
+{
+    DEV_Delay_ms(ms);
+}
+
 static void EPD_7IN3F_ReadBusyH(void)
 {
     int cnt = 0;
     printf("e-Paper busy H\r\n");
     while(!DEV_Digital_Read(EPD_BUSY_PIN)) {      //LOW: idle, HIGH: busy
-        DEV_Delay_ms(10);
+        EPD_7IN3F_BusyWait(10);
         cnt++;
         if(cnt > 5000) {
             printf("e-Paper busy H force release\r\n");
