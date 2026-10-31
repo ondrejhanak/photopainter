@@ -55,6 +55,9 @@ reworked to be easier to use and to develop.
 - **Buffer overflows** when reading file names (up to 999 bytes read into smaller buffers).
 - **RTC alarm flag never reported.** `PCF85063_get_alarm_flag()` tested `reg & 0x40 == 0x40`, which C
   reads as `reg & 1`, so a fired alarm looked like a KEY press. Needed to tell the two apart.
+- **SD card never deselected.** The SD pin table set the MOSI, clock and chip-select fields twice, the
+  second time to a drive-strength constant (0), so the driver toggled GPIO 0 while the real chip
+  select stayed low. Worked by luck (the pins were already set up elsewhere), against the SD spec.
 - **`u_int8_t` typo** in the SD driver, which broke builds on toolchains without BSD types (also sent
   [upstream](https://github.com/waveshareteam/PhotoPainter/pull/7)).
 
