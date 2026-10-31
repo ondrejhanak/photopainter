@@ -1,12 +1,7 @@
 /*****************************************************************************
 * | File      	:   DEV_Config.c
 * | Author      :   Waveshare team
-* | Function    :   Hardware underlying interface
-* | Info        :
-*----------------
-* |	This version:   V3.0
-* | Date        :   2019-07-31
-* | Info        :   
+* | Function    :   Board pins and buses (GPIO, SPI, I2C, ADC)
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documnetation files (the "Software"), to deal
@@ -30,9 +25,6 @@
 #include "DEV_Config.h"
 
 
-/**
- * GPIO read and write
-**/
 void DEV_Digital_Write(UWORD Pin, UBYTE Value)
 {
 	gpio_put(Pin, Value);
@@ -43,9 +35,6 @@ UBYTE DEV_Digital_Read(UWORD Pin)
 	return gpio_get(Pin);
 }
 
-/**
- * SPI
-**/
 void DEV_SPI_WriteByte(UBYTE Value)
 {
     spi_write_blocking(EPD_SPI_PORT, &Value, 1);
@@ -56,24 +45,12 @@ void DEV_SPI_Write_nByte(UBYTE *pData, uint32_t Len)
     spi_write_blocking(EPD_SPI_PORT, pData, Len);
 }
 
-/**
- * @brief I2C write byte
- * 
- * @param Reg 
- * @param Value 
- */
 void I2C_Write_Byte(UBYTE Reg, UBYTE Value)
 {
 	UBYTE wbuff[2] = {Reg, Value};
 	i2c_write_blocking(RTC_I2C_PORT, RTC_I2C_Address, wbuff, 2, false);
 }
 
-/**
- * @brief I2C read byte
- * 
- * @param Reg 
- * @return UBYTE 
- */
 UBYTE I2C_Read_Byte(UBYTE Reg)
 {
 	UBYTE Value;
@@ -82,9 +59,6 @@ UBYTE I2C_Read_Byte(UBYTE Reg)
 	return Value;
 }
 
-/**
- * GPIO Mode
-**/
 void DEV_GPIO_Mode(UWORD Pin, UWORD Mode)
 {
     gpio_init(Pin);
@@ -95,9 +69,7 @@ void DEV_GPIO_Mode(UWORD Pin, UWORD Mode)
 	}
 }
 
-/**
- * delay x ms
-**/
+// Also feeds the watchdog, so long waits don't reset the board
 void DEV_Delay_ms(UDOUBLE xms)
 {
 	sleep_ms(xms);
@@ -130,17 +102,12 @@ void DEV_GPIO_Init(void)
 	DEV_GPIO_Mode(VBUS, 0);
 	
 
-	DEV_Digital_Write(LED_ACT, 0);	// LED off
-	DEV_Digital_Write(LED_PWR, 0);	// LED off
+	DEV_Digital_Write(LED_ACT, 0);
+	DEV_Digital_Write(LED_PWR, 0);
 	DEV_Digital_Write(EPD_CS_PIN, 1);
-	DEV_Digital_Write(BAT_OFF, 1);	// BAT on
-	DEV_Digital_Write(EPD_POWER_EN, 1);	// EPD power on
+	DEV_Digital_Write(BAT_OFF, 1); // keep the battery switched on after KEY or the RTC powered the board up
+	DEV_Digital_Write(EPD_POWER_EN, 1);
 }
-/******************************************************************************
-function:	Module Initialize, the library and initialize the pins, SPI protocol
-parameter:
-Info:
-******************************************************************************/
 UBYTE DEV_Module_Init(void)
 {
     // No stdio_init_all(): the Arduino-Pico core starts USB serial before setup(), and printf()
@@ -163,7 +130,6 @@ UBYTE DEV_Module_Init(void)
 	adc_gpio_init(VBAT);
 	adc_select_input(3);
 
-	// GPIO Config
 	DEV_GPIO_Init();
 
     printf("DEV_Module_Init OK \r\n");

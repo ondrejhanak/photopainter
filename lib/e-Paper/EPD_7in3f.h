@@ -1,13 +1,7 @@
 /*****************************************************************************
 * | File      	:   EPD_7in3f.h
 * | Author      :   Waveshare team
-* | Function    :   7.3inch e-Paper (F) Driver
-* | Info        :
-*----------------
-* |	This version:   V1.0
-* | Date        :   2022-08-04
-* | Info        :
-* -----------------------------------------------------------------------------
+* | Function    :   7.3" e-Paper (F) panel driver
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documnetation files (the "Software"), to deal
@@ -37,17 +31,15 @@
 #define EPD_7IN3F_WIDTH       800
 #define EPD_7IN3F_HEIGHT      480
 
-/**********************************
-Color Index
-**********************************/
-#define EPD_7IN3F_BLACK   0x0	/// 000
-#define EPD_7IN3F_WHITE   0x1	///	001
-#define EPD_7IN3F_GREEN   0x2	///	010
-#define EPD_7IN3F_BLUE    0x3	///	011
-#define EPD_7IN3F_RED     0x4	///	100
-#define EPD_7IN3F_YELLOW  0x5	///	101
-#define EPD_7IN3F_ORANGE  0x6	///	110
-#define EPD_7IN3F_CLEAN   0x7	///	111   unavailable  Afterimage
+// Colour index of a pixel (4 bits in the image buffer)
+#define EPD_7IN3F_BLACK   0x0
+#define EPD_7IN3F_WHITE   0x1
+#define EPD_7IN3F_GREEN   0x2
+#define EPD_7IN3F_BLUE    0x3
+#define EPD_7IN3F_RED     0x4
+#define EPD_7IN3F_YELLOW  0x5
+#define EPD_7IN3F_ORANGE  0x6
+#define EPD_7IN3F_CLEAN   0x7 // not a usable colour, leaves an afterimage
 
 void EPD_7IN3F_BusyWait(UDOUBLE ms);
 void EPD_7IN3F_Init(void);

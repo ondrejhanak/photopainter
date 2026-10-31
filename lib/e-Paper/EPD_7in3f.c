@@ -1,13 +1,7 @@
 /*****************************************************************************
 * | File      	:   EPD_7in3f.c
 * | Author      :   Waveshare team
-* | Function    :   7.3inch e-Paper (F) Driver
-* | Info        :
-*----------------
-* |	This version:   V1.0
-* | Date        :   2022-08-04
-* | Info        :
-* -----------------------------------------------------------------------------
+* | Function    :   7.3" e-Paper (F) panel driver
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documnetation files (the "Software"), to deal
@@ -30,10 +24,6 @@
 ******************************************************************************/
 #include "EPD_7in3f.h"
 
-/******************************************************************************
-function :	Software reset
-parameter:
-******************************************************************************/
 static void EPD_7IN3F_Reset(void)
 {
     DEV_Digital_Write(EPD_RST_PIN, 1);
@@ -44,11 +34,6 @@ static void EPD_7IN3F_Reset(void)
     DEV_Delay_ms(20);
 }
 
-/******************************************************************************
-function :	send command
-parameter:
-     Reg : Command register
-******************************************************************************/
 static void EPD_7IN3F_SendCommand(UBYTE Reg)
 {
     DEV_Digital_Write(EPD_DC_PIN, 0);
@@ -57,11 +42,6 @@ static void EPD_7IN3F_SendCommand(UBYTE Reg)
     DEV_Digital_Write(EPD_CS_PIN, 1);
 }
 
-/******************************************************************************
-function :	send data
-parameter:
-    Data : Write data
-******************************************************************************/
 static void EPD_7IN3F_SendData(UBYTE Data)
 {
     DEV_Digital_Write(EPD_DC_PIN, 1);
@@ -70,10 +50,6 @@ static void EPD_7IN3F_SendData(UBYTE Data)
     DEV_Digital_Write(EPD_CS_PIN, 1);
 }
 
-/******************************************************************************
-function :	Wait until the busy_pin goes LOW
-parameter:
-******************************************************************************/
 // Waits while the panel is busy (most of a refresh); weak, so the firmware can do other work meanwhile
 __attribute__((weak)) void EPD_7IN3F_BusyWait(UDOUBLE ms)
 {
@@ -84,7 +60,7 @@ static void EPD_7IN3F_ReadBusyH(void)
 {
     int cnt = 0;
     printf("e-Paper busy H\r\n");
-    while(!DEV_Digital_Read(EPD_BUSY_PIN)) {      //LOW: idle, HIGH: busy
+    while(!DEV_Digital_Read(EPD_BUSY_PIN)) { // BUSY is low while the panel works; at most ~50 s
         EPD_7IN3F_BusyWait(10);
         cnt++;
         if(cnt > 5000) {
@@ -95,10 +71,6 @@ static void EPD_7IN3F_ReadBusyH(void)
     printf("e-Paper busy H release\r\n");
 }
 
-/******************************************************************************
-function :	Turn On Display
-parameter:
-******************************************************************************/
 static void EPD_7IN3F_TurnOnDisplay(void)
 {
     EPD_7IN3F_SendCommand(0x04); // POWER_ON
@@ -113,10 +85,6 @@ static void EPD_7IN3F_TurnOnDisplay(void)
     EPD_7IN3F_ReadBusyH();
 }
 
-/******************************************************************************
-function :	Initialize the e-Paper register
-parameter:
-******************************************************************************/
 void EPD_7IN3F_Init(void)
 {
 	EPD_7IN3F_Reset();
@@ -210,10 +178,6 @@ void EPD_7IN3F_Init(void)
 	
 }
 
-/******************************************************************************
-function :	Clear screen
-parameter:
-******************************************************************************/
 void EPD_7IN3F_Clear(UBYTE color)
 {
     UWORD Width, Height;
@@ -230,10 +194,6 @@ void EPD_7IN3F_Clear(UBYTE color)
     EPD_7IN3F_TurnOnDisplay();
 }
 
-/******************************************************************************
-function :	Sends the image buffer in RAM to e-Paper and displays
-parameter:
-******************************************************************************/
 void EPD_7IN3F_Display(UBYTE *Image)
 {
     UWORD Width, Height;
@@ -249,10 +209,6 @@ void EPD_7IN3F_Display(UBYTE *Image)
     EPD_7IN3F_TurnOnDisplay();
 }
 
-/******************************************************************************
-function :	Enter sleep mode
-parameter:
-******************************************************************************/
 void EPD_7IN3F_Sleep(void)
 {
     EPD_7IN3F_SendCommand(0x07); // DEEP_SLEEP

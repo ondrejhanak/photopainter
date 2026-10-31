@@ -1,30 +1,7 @@
 /*****************************************************************************
 * | File      	:   DEV_Config.h
 * | Author      :   Waveshare team
-* | Function    :   Hardware underlying interface
-* | Info        :
-*                Used to shield the underlying layers of each master
-*                and enhance portability
-*----------------
-* |	This version:   V2.0
-* | Date        :   2018-10-30
-* | Info        :
-* 1.add:
-*   UBYTE\UWORD\UDOUBLE
-* 2.Change:
-*   EPD_RST -> EPD_RST_PIN
-*   EPD_DC -> EPD_DC_PIN
-*   EPD_CS -> EPD_CS_PIN
-*   EPD_BUSY -> EPD_BUSY_PIN
-* 3.Remote:
-*   EPD_RST_1\EPD_RST_0
-*   EPD_DC_1\EPD_DC_0
-*   EPD_CS_1\EPD_CS_0
-*   EPD_BUSY_1\EPD_BUSY_0
-* 3.add:
-*   #define DEV_Digital_Write(_pin, _value) bcm2835_GPIOI_write(_pin, _value)
-*   #define DEV_Digital_Read(_pin) bcm2835_GPIOI_lev(_pin)
-*   #define DEV_SPI_WriteByte(__value) bcm2835_spi_transfer(__value)
+* | Function    :   Board pins and buses (GPIO, SPI, I2C, ADC)
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documnetation files (the "Software"), to deal
@@ -55,9 +32,6 @@
 #include "hardware/watchdog.h"
 #include "stdio.h"
 
-/**
- * data
-**/
 #define UBYTE   uint8_t
 #define UWORD   uint16_t
 #define UDOUBLE uint32_t
@@ -67,9 +41,7 @@
 #define RTC_I2C_PORT    i2c1
 #define RTC_I2C_Address 0x51
 
-/**
- * GPIOI config
-**/
+// GPIO numbers on the PhotoPainter board ("V2": pins of the newer board revision)
 #define EPD_RST_PIN     12
 #define EPD_DC_PIN      8
 #define EPD_CS_PIN      9
@@ -82,12 +54,12 @@
 #define RTC_INT         6
 
 #define EPD_POWER_EN    16
-#define CHARGE_STATE    17  // V2
+#define CHARGE_STATE    17 // V2
 #define BAT_OFF         18
 #define BAT_STATE       19
 
 #define LED_ACT         25
-#define LED_PWR         26  // V2
+#define LED_PWR         26 // V2
 
 #define SD_CS_PIN       5
 #define SD_CLK_PIN      2

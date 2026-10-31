@@ -1,15 +1,7 @@
-/******************************************************************************
+/*****************************************************************************
 * | File      	:   GUI_Paint.h
 * | Author      :   Waveshare electronics
-* | Function    :	Achieve drawing: draw points, lines, boxes, circles and
-*                   their size, solid dotted line, solid rectangle hollow
-*                   rectangle, solid circle hollow circle.
-* | Info        :
-*   Achieve display characters: Display a single character, string
-*----------------
-* |	This version:   V3.1
-* | Date        :   2019-10-10
-* | Info        :
+* | Function    :   Drawing into the image buffer: pixels and UTF-8 text
 *
 * Permission is hereby granted, free of charge, to any person obtaining a copy
 * of this software and associated documnetation files (the "Software"), to deal
@@ -84,34 +76,34 @@ typedef enum {
 #define FONT_FOREGROUND     BLACK
 #define FONT_BACKGROUND     WHITE
 
-//4 Gray level
-#define  GRAY1 0x03 //Blackest
+// 4 grey levels (scale 4), from black to white
+#define  GRAY1 0x03
 #define  GRAY2 0x02
-#define  GRAY3 0x01 //gray
-#define  GRAY4 0x00 //white
+#define  GRAY3 0x01
+#define  GRAY4 0x00
 /**
  * The size of the point
 **/
 typedef enum {
-    DOT_PIXEL_1X1  = 1,		// 1 x 1
-    DOT_PIXEL_2X2  , 		// 2 X 2
-    DOT_PIXEL_3X3  ,		// 3 X 3
-    DOT_PIXEL_4X4  ,		// 4 X 4
-    DOT_PIXEL_5X5  , 		// 5 X 5
-    DOT_PIXEL_6X6  , 		// 6 X 6
-    DOT_PIXEL_7X7  , 		// 7 X 7
-    DOT_PIXEL_8X8  , 		// 8 X 8
+    DOT_PIXEL_1X1  = 1,
+    DOT_PIXEL_2X2  ,
+    DOT_PIXEL_3X3  ,
+    DOT_PIXEL_4X4  ,
+    DOT_PIXEL_5X5  ,
+    DOT_PIXEL_6X6  ,
+    DOT_PIXEL_7X7  ,
+    DOT_PIXEL_8X8  ,
 } DOT_PIXEL;
-#define DOT_PIXEL_DFT  DOT_PIXEL_1X1  //Default dot pilex
+#define DOT_PIXEL_DFT  DOT_PIXEL_1X1
 
 /**
- * Point size fill style
+ * Where a point larger than 1 pixel extends
 **/
 typedef enum {
-    DOT_FILL_AROUND  = 1,		// dot pixel 1 x 1
-    DOT_FILL_RIGHTUP  , 		// dot pixel 2 X 2
+    DOT_FILL_AROUND  = 1, // centred on the point
+    DOT_FILL_RIGHTUP, // from one pixel before the point towards larger x and y
 } DOT_STYLE;
-#define DOT_STYLE_DFT  DOT_FILL_AROUND  //Default dot pilex
+#define DOT_STYLE_DFT  DOT_FILL_AROUND
 
 /**
  * Line style, solid or dashed

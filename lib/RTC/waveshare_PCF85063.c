@@ -1,35 +1,12 @@
-/*****************************************************************************
-* | File      	:   waveshare_PCF85063.c
-* | Author      :   Waveshare team
-* | Function    :   PCF85063 driver
-* | Info        :
-*----------------
-* |	This version:   V1.0
-* | Date        :   2021-02-02
-* | Info        :   Basic version
-*
-******************************************************************************/
+/* PCF85063 real-time clock driver (Waveshare) */
 #include "DEV_Config.h"
 #include "waveshare_PCF85063.h"
 
-/******************************************************************************
-function:	Read one byte of data to EMC2301 via I2C
-parameter:  
-            Addr: Register address
-Info:
-******************************************************************************/
 static UBYTE PCF85063_Read_Byte(UBYTE Addr)
 {
 	return I2C_Read_Byte(Addr);
 }
 
-/******************************************************************************
-function:	Send one byte of data to EMC2301 via I2C
-parameter:
-            Addr: Register address
-           Value: Write to the value of the register
-Info:
-******************************************************************************/
 static void PCF85063_Write_Byte(UBYTE Addr, UBYTE Value)
 {
 	I2C_Write_Byte(Addr, Value);
