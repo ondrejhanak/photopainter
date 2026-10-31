@@ -20,6 +20,7 @@ static bool charging_mode = false; // powered over USB at boot; loop() only acts
 
 // KEY on USB: short press (released before LONG_PRESS_MS) = next image, long press = drive mode on/off
 #define LONG_PRESS_MS 3000
+#define LOOP_MS 50 // KEY check interval on USB; shorter taps can be missed
 static bool key_down = false;
 static uint32_t key_down_ms; // when KEY went down
 static bool long_press_done = false; // long press already handled, wait for release
@@ -257,7 +258,7 @@ void loop(void)
     int command = usb_serial_read();
     if (drive_mode)
     { // commands are ignored, eject or a long press leaves drive mode
-        usb_drive_serve(200); // answers the computer instead of the 200 ms delay below
+        usb_drive_serve(LOOP_MS); // answers the computer instead of the delay below
         if (usb_drive_ejected())
             leave_drive_mode("ejected");
         return;
@@ -267,5 +268,5 @@ void loop(void)
     else if (command == 'd')
         enter_drive_mode("serial command");
 
-    DEV_Delay_ms(200);
+    DEV_Delay_ms(LOOP_MS);
 }

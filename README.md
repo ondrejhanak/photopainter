@@ -217,6 +217,6 @@ tools/gen_font.py               Generates lib/Fonts/fontNN.c from a BDF bitmap f
    the board on again
 7. On USB: enter charging mode and return
 
-`loop()` (only in charging mode, every 200 ms): power off if USB is unplugged; on KEY or RTC alarm,
+`loop()` (only in charging mode, every 50 ms): power off if USB is unplugged; on KEY or RTC alarm,
 `scan_card()` then `show_next()`. In drive mode it serves the computer's reads and writes instead and
 leaves the card alone (the RTC alarm only re-arms); eject leaves drive mode.
