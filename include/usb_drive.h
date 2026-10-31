@@ -8,6 +8,8 @@
 extern "C" {
 #endif
 
+// Whether a computer is connected (not just a charger)
+bool usb_drive_computer_connected(void);
 // Offer the SD card to the computer as a USB drive, next to the serial port; false if the card is unreadable
 bool usb_drive_start(void);
 // Take the drive away from the computer (the serial port stays)

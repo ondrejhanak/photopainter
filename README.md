@@ -22,6 +22,9 @@ reworked to be easier to use and to develop.
 - **Only images are shown.** Only `.bmp` files (any letter case) are used; other files, folders,
   hidden and system files and dot-files (e.g. macOS `._*` companions, `.DS_Store`) are ignored. The
   original tried to display every file in `/pic/`.
+- **No need to remove the card.** Connected to a computer, hold the button for 3 seconds: the card
+  appears as a USB drive. Copy photos, then eject the drive; the frame shows the next photo. The
+  original needed the card taken out of its fiddly slot.
 - **A tidy card.** The frame's own state lives in a hidden folder; no list, index or temporary files.
 - **Clear on-screen messages** for a missing card or missing images.
 - **Czech or English on-screen messages** (`language` in `settings.ini`), with accents, in larger
@@ -37,7 +40,8 @@ reworked to be easier to use and to develop.
   verifies; no button combination or dragging files.
 - **Arduino-Pico `setup()`/`loop()` structure**, with `printf` logging over USB serial.
 - **Serial test commands:** on USB, sending `n` shows the next image like a KEY press and `d` enters
-  USB drive mode (ignored in drive mode, eject leaves it), so tests can run without pressing the button.
+  USB drive mode like a long press (ignored in drive mode, eject leaves it), so tests can run without
+  pressing the button.
 - **Documented hardware behavior**, e.g. the RTC alarm arriving on the KEY line and the missing SD
   card-detect pin (see [How it behaves](#how-it-behaves)).
 
@@ -130,9 +134,14 @@ Product details and schematic: [PhotoPainter wiki](https://www.waveshare.com/wik
   alarm is set `interval_hours` (settings.ini) later; the time is never read.
 - **On USB:** the board stays awake. A short KEY press (released within 3 s) or the RTC alarm shows
   the next image, the SD card is re-scanned each time (cards can be swapped), and unplugging USB
-  powers the board off. Holding KEY for 3 s is a long press (for the coming USB drive mode); the red
-  LED lights when it is reached. The RTC alarm holds the KEY line low until its flag is cleared, so
-  the flag tells it apart from a held KEY.
+  powers the board off. Holding KEY for 3 s is a long press; the red LED lights when it is reached.
+  The RTC alarm holds the KEY line low until its flag is cleared, so the flag tells it apart from a
+  held KEY.
+- **USB drive mode:** a long press with a computer connected offers the SD card as a USB drive next
+  to the serial port (flashing and the log keep working). The frame leaves the card alone until the
+  drive is ejected or KEY is held again, then re-reads the card and `settings.ini` and shows the
+  next image. On a plain charger a long press is ignored. About 0.4 MB/s, limited by USB full speed
+  with 64-byte packets.
 - **LEDs:** green (PWR) is the charging light: on while the battery charges, off when it is full or
   on battery. Red (ACT) blinks 3 times at power-on, flickers while the SD card is in use (the SD
   driver reports activity, the firmware owns the LED), lights once a long KEY press is reached and

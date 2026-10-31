@@ -72,6 +72,11 @@ extern "C" void tud_mount_cb(void)
     host_configured = true;
 }
 
+bool usb_drive_computer_connected(void)
+{
+    return tud_mounted();
+}
+
 bool usb_drive_start(void)
 {
     if (active)

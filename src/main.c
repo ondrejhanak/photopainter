@@ -17,7 +17,7 @@ static Time_data reference_time = {0, 1, 1, 0, 0, 0};
 static bool card_present = false;
 static bool charging_mode = false; // powered over USB at boot; loop() only acts in this mode
 
-// KEY on USB: short press (released before LONG_PRESS_MS) = next image, long press = drive mode (to come)
+// KEY on USB: short press (released before LONG_PRESS_MS) = next image, long press = drive mode on/off
 #define LONG_PRESS_MS 3000
 static bool key_down = false;
 static uint32_t key_down_ms; // when KEY went down
@@ -102,26 +102,28 @@ static void next_image(const char *reason)
     usb_serial_discard(); // commands sent during the refresh would queue more refreshes
 }
 
-static void enter_drive_mode(void)
+static void enter_drive_mode(const char *reason)
 {
-    if (!usb_drive_start())
-    {
+    printf("%s: drive mode\r\n", reason);
+    if (!usb_drive_computer_connected())
+        printf("drive mode: no computer connected\r\n");
+    else if (!usb_drive_start())
         printf("drive mode: card not readable\r\n");
-        return;
+    else
+    {
+        drive_mode = true;
+        set_led(false);
     }
-    drive_mode = true;
-    set_led(false);
-    printf("drive mode on\r\n");
 }
 
-// Take the card back and re-read settings.ini (the computer may have changed it)
+// Take the card back, then re-read it and settings.ini (the computer may have changed both) and
+// show the next image
 static void leave_drive_mode(const char *reason)
 {
     usb_drive_stop();
     drive_mode = false;
     set_led(false);
-    printf("%s: drive mode off\r\n", reason);
-    scan_card();
+    next_image(reason);
 }
 
 /*
@@ -217,6 +219,10 @@ void loop(void)
         long_press_done = true;
         set_led(false); // lights up: the user can let go
         printf("long key press\r\n");
+        if (drive_mode)
+            leave_drive_mode("long key press");
+        else
+            enter_drive_mode("long key press");
     }
     else if (!line_low && key_down)
     {
@@ -232,7 +238,7 @@ void loop(void)
     // too, so nothing sent meanwhile runs after it
     int command = usb_serial_read();
     if (drive_mode)
-    { // commands are ignored
+    { // commands are ignored, eject or a long press leaves drive mode
         usb_drive_serve(200); // answers the computer instead of the 200 ms delay below
         if (usb_drive_ejected())
             leave_drive_mode("ejected");
@@ -241,7 +247,7 @@ void loop(void)
     if (command == 'n')
         next_image("serial command");
     else if (command == 'd')
-        enter_drive_mode();
+        enter_drive_mode("serial command");
 
     DEV_Delay_ms(200);
 }
