@@ -58,6 +58,8 @@ reworked to be easier to use and to develop.
 - **SD card never deselected.** The SD pin table set the MOSI, clock and chip-select fields twice, the
   second time to a drive-strength constant (0), so the driver toggled GPIO 0 while the real chip
   select stayed low. Worked by luck (the pins were already set up elsewhere), against the SD spec.
+- **Red LED switched by the SD driver.** The driver drove the red LED as its card-activity light, so
+  any LED state set by the firmware was switched off by the next card access.
 - **`u_int8_t` typo** in the SD driver, which broke builds on toolchains without BSD types (also sent
   [upstream](https://github.com/waveshareteam/PhotoPainter/pull/7)).
 
@@ -132,7 +134,9 @@ Product details and schematic: [PhotoPainter wiki](https://www.waveshare.com/wik
   LED lights when it is reached. The RTC alarm holds the KEY line low until its flag is cleared, so
   the flag tells it apart from a held KEY.
 - **LEDs:** green (PWR) is the charging light: on while the battery charges, off when it is full or
-  on battery. Red (ACT) blinks 3 times at power-on and lights during a long KEY press.
+  on battery. Red (ACT) blinks 3 times at power-on, flickers while the SD card is in use (the SD
+  driver reports activity, the firmware owns the LED), lights once a long KEY press is reached and
+  stays on in USB drive mode.
 - **SD card:** with no card-detect pin, the firmware forces card re-initialization on every check.
 
 ## Development

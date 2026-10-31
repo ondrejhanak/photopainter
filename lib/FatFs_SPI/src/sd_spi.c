@@ -27,6 +27,8 @@ specific language governing permissions and limitations under the License.
 //#define TRACE_PRINTF(fmt, args...)
 #define TRACE_PRINTF printf  // task_printf
 
+__attribute__((weak)) void sd_activity(bool active) { (void)active; }
+
 void sd_spi_go_high_frequency(sd_card_t *pSD) {
     uint actual = spi_set_baudrate(pSD->spi->hw_inst, pSD->spi->baud_rate);
     TRACE_PRINTF("%s: Actual frequency: %lu\n", __FUNCTION__, (long)actual);

@@ -26,6 +26,19 @@ static bool long_press_done = false; // long press already handled, wait for rel
 // Drive mode: the computer owns the SD card, the frame must not touch it (no display, no state.txt)
 static bool drive_mode = false;
 
+// Red LED: steady on in drive mode and once a long press is reached (until release), otherwise lit
+// while the SD card is in use, so it shows the frame is busy
+static void set_led(bool card_active)
+{
+    DEV_Digital_Write(LED_ACT, card_active || drive_mode || (key_down && long_press_done));
+}
+
+// Called by the SD driver on every card access
+void sd_activity(bool active)
+{
+    set_led(active);
+}
+
 static float measure_battery_voltage(void)
 {
     float voltage = 0.0;
@@ -97,6 +110,7 @@ static void enter_drive_mode(void)
         return;
     }
     drive_mode = true;
+    set_led(false);
     printf("drive mode on\r\n");
 }
 
@@ -105,6 +119,7 @@ static void leave_drive_mode(const char *reason)
 {
     usb_drive_stop();
     drive_mode = false;
+    set_led(false);
     printf("%s: drive mode off\r\n", reason);
     scan_card();
 }
@@ -181,7 +196,7 @@ void loop(void)
     {
         key_down = false;
         long_press_done = false;
-        DEV_Digital_Write(LED_ACT, 0);
+        set_led(false);
         if (drive_mode)
         { // only re-arm, the next image is due after leaving drive mode
             printf("rtc alarm in drive mode\r\n");
@@ -200,14 +215,14 @@ void loop(void)
     else if (line_low && !long_press_done && now_ms - key_down_ms >= LONG_PRESS_MS)
     {
         long_press_done = true;
-        DEV_Digital_Write(LED_ACT, 1); // the user can let go
+        set_led(false); // lights up: the user can let go
         printf("long key press\r\n");
     }
     else if (!line_low && key_down)
     {
         printf("key up after %lu ms\r\n", (unsigned long)(now_ms - key_down_ms));
         key_down = false;
-        DEV_Digital_Write(LED_ACT, 0);
+        set_led(false);
         if (!long_press_done && !drive_mode)
             next_image("short key press");
         long_press_done = false;
