@@ -1,4 +1,5 @@
 #include "settings.h"
+#include "saved_language.h"
 #include "sdcard.h"
 #include "ff.h"
 #include "ini.h"
@@ -105,11 +106,20 @@ static void write_default(void)
     printf("settings: created default %s\r\n", SETTINGS_FILE);
 }
 
+void settings_init(void)
+{
+    int language = saved_language_load();
+    if (language >= 0 && language < LANG_COUNT)
+    {
+        settings.language = (Language)language;
+        printf("settings: saved language %s\r\n", language_codes[language]);
+    }
+}
+
 void settings_load(void)
 {
     settings.interval_hours = DEFAULT_INTERVAL_HOURS;
     settings.order = DEFAULT_ORDER;
-    settings.language = DEFAULT_LANGUAGE;
 
     sdcard_mount();
 
@@ -117,6 +127,7 @@ void settings_load(void)
     FRESULT fr = f_open(&fil, SETTINGS_FILE, FA_READ);
     if (fr == FR_NO_FILE)
     {
+        settings.language = DEFAULT_LANGUAGE;
         write_default();
     }
     else if (fr != FR_OK)
@@ -125,6 +136,7 @@ void settings_load(void)
     }
     else
     {
+        settings.language = DEFAULT_LANGUAGE;
         int err = ini_parse_stream(read_line, &fil, handler, NULL);
         if (err > 0)
             printf("settings: syntax error on line %d (other lines still applied)\r\n", err);
@@ -132,6 +144,7 @@ void settings_load(void)
     }
 
     sdcard_unmount();
+    saved_language_save(settings.language);
 
     printf("settings: interval_hours = %d, order = %s, language = %s\r\n", settings.interval_hours,
            settings.order == ORDER_RANDOM ? "random" : "alphabetical", language_codes[settings.language]);

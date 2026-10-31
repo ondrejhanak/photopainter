@@ -28,7 +28,7 @@ reworked to be easier to use and to develop.
 - **A tidy card.** The frame's own state lives in a hidden folder; no list, index or temporary files.
 - **Clear on-screen messages** for a missing card or missing images.
 - **Czech or English on-screen messages** (`language` in `settings.ini`), with accents, in larger
-  fonts.
+  fonts. The frame remembers the language, so even the "no card" message uses it.
 - **Better photo conversion.** `convert/convert.py` crops, enhances and dithers photos against a palette
   modelled on the panel's real ink colors.
 
@@ -184,6 +184,7 @@ src/
 ├── image_order.c               Natural and random image order (no hardware access)
 ├── messages.c                  On-screen texts per language
 ├── settings.c                  settings.ini loading (via inih)
+├── saved_language.cpp          Last language in CPU flash (for screens without a readable card)
 ├── usb_drive.cpp               SD card as a USB drive (mass storage next to USB serial)
 └── usb_serial.cpp              USB serial input for C code (test commands)
 include/                        Headers for src/, one per module

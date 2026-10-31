@@ -175,6 +175,7 @@ void setup(void)
         ledPowerOn();
     }
 
+    settings_init(); // language for screens shown without a readable card
     scan_card();
     arm_alarm(); // re-arm with interval_hours from settings.ini
 

@@ -19,8 +19,12 @@ typedef struct
 
 extern Settings settings;
 
+// Take the language of the last settings.ini read (saved in flash), for screens shown before or
+// without reading the card
+void settings_init(void);
 // Load settings.ini (creating a commented default file if it is missing).
-// Missing or invalid values keep their defaults. Expects the SD card to be present.
+// Missing or invalid values keep their defaults; the language is kept if the file cannot be read.
+// Expects the SD card to be present.
 void settings_load(void);
 
 #endif
