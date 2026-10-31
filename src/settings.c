@@ -25,8 +25,8 @@ Settings settings = {
 // except for language (Czech too), since the language is only known after reading this file
 static const char *default_settings =
     "; PhotoPainter settings\r\n"
-    "; Change a value after \"=\" and save the file. Changes apply with the next image change\r\n"
-    "; (scheduled, or press KEY). Lines starting with ; are comments.\r\n"
+    "; Change a value after \"=\" and save the file. Changes apply after ejecting the USB drive or with\r\n"
+    "; the next image change (scheduled, or press KEY). Lines starting with ; are comments.\r\n"
     "\r\n"
     "; Hours between image changes (1 to 47)\r\n"
     "interval_hours = 12\r\n"

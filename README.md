@@ -82,7 +82,8 @@ repeats.
 
 ### settings.ini
 
-Edit in any text editor; changes apply with the next image change (scheduled, or press KEY).
+Edit in any text editor; changes apply after ejecting the USB drive or with the next image change
+(scheduled, or press KEY).
 Unknown keys are ignored and invalid values fall back to the default.
 
 ```ini
