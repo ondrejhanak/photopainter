@@ -40,19 +40,16 @@
 #include <stdlib.h> // malloc() free()
 #include <string.h>
 
-#define MESSAGE_X 125 // left edge of message screen text
+#define MESSAGE_X 125 // message screen text position
+#define MESSAGE_Y 160
 
-// Draw a message screen (title, hint and battery voltage) into the selected, cleared image
-static void draw_message(float vol, const char *title, const char *hint)
+// Draw a message screen (title and a smaller hint below it) into the selected, cleared image
+static void draw_message(const char *title, const char *hint)
 {
     printf("Display message: %s\r\n", title);
     Paint_SetRotate(180);
-    UWORD y = Paint_DrawString_EN(MESSAGE_X, 200, title, &Font28, EPD_7IN3F_WHITE, EPD_7IN3F_BLACK);
-    y = Paint_DrawString_EN(MESSAGE_X, y + 4, hint, &Font22, EPD_7IN3F_WHITE, EPD_7IN3F_BLACK);
-
-    char voltage_text[32];
-    snprintf(voltage_text, sizeof(voltage_text), "%s %.2fV", msg(MSG_BATTERY), vol);
-    Paint_DrawString_EN(MESSAGE_X, y + 14, voltage_text, &Font22, EPD_7IN3F_WHITE, EPD_7IN3F_BLACK);
+    UWORD y = Paint_DrawString_EN(MESSAGE_X, MESSAGE_Y, title, &Font28, EPD_7IN3F_WHITE, EPD_7IN3F_BLACK);
+    Paint_DrawString_EN(MESSAGE_X, y + 14, hint, &Font22, EPD_7IN3F_WHITE, EPD_7IN3F_BLACK);
 }
 
 int display_image(const char *path, float vol)
@@ -81,7 +78,7 @@ int display_image(const char *path, float vol)
     if (GUI_ReadBmp_RGB_7Color(path, 0, 0) != 0)
     { // a message screen with the file name instead of a partial image; it still counts as shown below
         Paint_Clear(EPD_7IN3F_WHITE);
-        draw_message(vol, msg(MSG_CANNOT_DISPLAY), path);
+        draw_message(msg(MSG_CANNOT_DISPLAY), path);
     }
     else
     {
@@ -109,7 +106,7 @@ int display_image(const char *path, float vol)
     return 0;
 }
 
-int display_message(float vol, const char *title, const char *hint)
+int display_message(const char *title, const char *hint)
 {
     printf("e-Paper Init and Clear...\r\n");
     EPD_7IN3F_Init();
@@ -128,7 +125,7 @@ int display_message(float vol, const char *title, const char *hint)
 
     Paint_SelectImage(image);
     Paint_Clear(EPD_7IN3F_WHITE);
-    draw_message(vol, title, hint);
+    draw_message(title, hint);
 
     printf("EPD_Display\r\n");
     EPD_7IN3F_Display(image);

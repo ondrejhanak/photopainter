@@ -76,9 +76,9 @@ static void arm_alarm(void)
 static void show_next(void)
 {
     if (!card_present)
-        display_message(measure_battery_voltage(), msg(MSG_NO_CARD_TITLE), msg(MSG_NO_CARD_HINT));
+        display_message(msg(MSG_NO_CARD_TITLE), msg(MSG_NO_CARD_HINT));
     else if (!images_select_next())
-        display_message(measure_battery_voltage(), msg(MSG_NO_IMAGES_TITLE), msg(MSG_NO_IMAGES_HINT));
+        display_message(msg(MSG_NO_IMAGES_TITLE), msg(MSG_NO_IMAGES_HINT));
     else
         display_image(images_path, measure_battery_voltage());
 
@@ -110,7 +110,7 @@ static void enter_drive_mode(const char *reason)
     printf("%s: drive mode\r\n", reason);
     scan_card(); // card check and language for the screen
     if (!usb_drive_computer_connected())
-        display_message(measure_battery_voltage(), msg(MSG_CONNECT_TITLE), msg(MSG_CONNECT_HINT));
+        display_message(msg(MSG_CONNECT_TITLE), msg(MSG_CONNECT_HINT));
     else if (!card_present)
         show_next(); // "no card" screen
     else if (!usb_drive_start())
@@ -119,7 +119,7 @@ static void enter_drive_mode(const char *reason)
     {
         drive_mode = true;
         set_led(false);
-        display_message(measure_battery_voltage(), msg(MSG_DRIVE_TITLE), msg(MSG_DRIVE_HINT));
+        display_message(msg(MSG_DRIVE_TITLE), msg(MSG_DRIVE_HINT));
     }
     usb_serial_discard(); // commands sent during the refresh
 }

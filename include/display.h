@@ -32,7 +32,7 @@
 
 // Show an image file from the SD card, with a low-battery note when vol is low
 int display_image(const char *path, float vol);
-// Show a message screen (title, hint and battery voltage)
-int display_message(float vol, const char *title, const char *hint);
+// Show a message screen: a title and a smaller hint below it
+int display_message(const char *title, const char *hint);
 
 #endif

@@ -68,7 +68,7 @@ which may be reused or referenced elsewhere.
 - **src/display.c, src/sdcard.c, src/images.c, src/image_order.c** - Display screens, SD card access, next-image selection and its order (pure logic), safe to modify
 - **src/settings.c** - `settings.ini` on the SD card (user settings, parsed with inih in `lib/inih/`)
 - **src/messages.c** - All user-visible texts per language (`msg(id)`, `language` setting). Every new
-  on-screen text goes here in English and Czech (full diacritics, UTF-8), no trailing full stop; line
+  on-screen text goes here in English and Czech (full diacritics, UTF-8), titles without a full stop, other lines are sentences with one; line
   lengths in the file's comment
 - **include/** - Headers for the `src/` files
 - **lib/** - Generic reusable libraries (display driver, GUI/BMP decoding, FatFs, RTC), modify with caution
