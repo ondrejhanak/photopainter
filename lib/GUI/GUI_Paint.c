@@ -502,7 +502,7 @@ static const char *line_end(const char *s, int max_chars, const char **next)
 // Draw a UTF-8 string, wrapped at spaces and '\n' at the right edge; lines past the bottom edge are
 // not drawn. Returns the Y coordinate below the last line
 UWORD Paint_DrawString_EN(UWORD Xstart, UWORD Ystart, const char * pString,
-                          sFONT* Font, UWORD Color_Foreground, UWORD Color_Background)
+                          sFONT* Font, UWORD Color_Background, UWORD Color_Foreground)
 {
     UWORD Ypoint = Ystart;
 
@@ -520,7 +520,7 @@ UWORD Paint_DrawString_EN(UWORD Xstart, UWORD Ystart, const char * pString,
         const char *end = line_end(pString, max_chars, &next);
         UWORD Xpoint = Xstart;
         while (pString < end) {
-            Paint_DrawChar(Xpoint, Ypoint, utf8_next(&pString), Font, Color_Background, Color_Foreground);
+            Paint_DrawChar(Xpoint, Ypoint, utf8_next(&pString), Font, Color_Foreground, Color_Background);
             Xpoint += Font->Width;
         }
         pString = next;
