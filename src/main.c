@@ -89,7 +89,7 @@ static void show_next(void)
     else
         display_image(images_path, measure_battery_voltage());
 
-    PCF85063_clear_alarm_flag(); // clear RTC alarm flag
+    PCF85063_clear_alarm_flag();
     arm_alarm();
 }
 
@@ -162,21 +162,18 @@ void EPD_7IN3F_BusyWait(UDOUBLE ms)
         DEV_Delay_ms(ms);
 }
 
-/*
-Arduino-Pico entry points. The core's own main() starts USB serial and then calls
-setup()/loop(), so the firmware runs from setup() instead of defining main().
-*/
+// Arduino-Pico entry points: the core's main() starts USB serial, then calls setup() and loop()
 void setup(void)
 {
     printf("Init...\r\n");
     if (DEV_Module_Init() != 0)
-    { // DEV init
+    {
         return;
     }
 
-    watchdog_enable(8 * 1000, 1); // 8s
+    watchdog_enable(8 * 1000, 1);
     DEV_Delay_ms(1000);
-    PCF85063_init(); // RTC init
+    PCF85063_init();
     arm_alarm(); // default interval until settings.ini is read, in case anything below fails
     gpio_set_irq_enabled_with_callback(CHARGE_STATE, GPIO_IRQ_EDGE_RISE | GPIO_IRQ_EDGE_FALL, true, charge_state_callback);
 
@@ -184,8 +181,8 @@ void setup(void)
     { // battery power is low
         printf("low power ...\r\n");
         PCF85063_alarm_Time_Disable();
-        ledLowPower(); // LED flash for Low power
-        powerOff(); // BAT off
+        ledLowPower();
+        powerOff();
         return;
     }
     else
@@ -202,7 +199,7 @@ void setup(void)
     { // on battery: show the next image and cut power until the RTC alarm wakes us up
         show_next();
         printf("power off ...\r\n");
-        powerOff(); // BAT off
+        powerOff();
         return;
     }
 
@@ -219,7 +216,7 @@ void loop(void)
     if (!DEV_Digital_Read(VBUS))
     { // USB unplugged
         printf("power off ...\r\n");
-        powerOff(); // BAT off
+        powerOff();
         charging_mode = false;
         return;
     }

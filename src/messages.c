@@ -3,7 +3,6 @@
 
 #include <assert.h>
 
-// Keep this file in UTF-8.
 
 const char *const language_codes[] = {
     [LANG_EN] = "en",

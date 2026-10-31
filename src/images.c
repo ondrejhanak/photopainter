@@ -100,15 +100,8 @@ static uint32_t new_seed(void)
     return get_rand_32() | 1; // never 0, which means "no seed yet"
 }
 
-/*
-    function:
-        Pick the image after the last shown one into images_path, in the order set by settings.ini.
-        Alphabetical: natural name order, wrapping around. Random: order of the shuffle key, so every
-        image is shown once per round; at the end of a round a new seed reshuffles.
-        Adding or removing images never causes skips or repeats within a round.
-    return:
-        false if the card root contains no images
-*/
+// Alphabetical wraps around; random follows the shuffle key, so every image is shown once per round
+// and a new seed reshuffles after it. Adding or removing images never causes skips or repeats.
 bool images_select_next(void)
 {
     static char last[FF_LFN_BUF + 1];

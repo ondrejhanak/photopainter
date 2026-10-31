@@ -1,12 +1,7 @@
 /*****************************************************************************
 * | File      	:   display.c
 * | Author      :   Waveshare team
-* | Function    :   7.3inch e-Paper (F) Demo
-* | Info        :
-*----------------
-* |	This version:   V1.0
-* | Date        :   2023-03-13
-* | Info        :
+* | Function    :   Image and message screens on the 7.3" e-Paper (F) panel
 * -----------------------------------------------------------------------------
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -57,7 +52,6 @@ int display_image(const char *path, float vol)
     printf("e-Paper Init and Clear...\r\n");
     EPD_7IN3F_Init();
 
-    // Create a new image cache
     UBYTE *image;
     UDOUBLE image_size = ((EPD_7IN3F_WIDTH % 2 == 0) ? (EPD_7IN3F_WIDTH / 2) : (EPD_7IN3F_WIDTH / 2 + 1)) * EPD_7IN3F_HEIGHT;
     if ((image = (UBYTE *)malloc(image_size)) == NULL)
@@ -111,7 +105,6 @@ int display_message(const char *title, const char *hint)
     printf("e-Paper Init and Clear...\r\n");
     EPD_7IN3F_Init();
 
-    // Create a new image cache
     UBYTE *image;
     UDOUBLE image_size = ((EPD_7IN3F_WIDTH % 2 == 0) ? (EPD_7IN3F_WIDTH / 2) : (EPD_7IN3F_WIDTH / 2 + 1)) * EPD_7IN3F_HEIGHT;
     if ((image = (UBYTE *)malloc(image_size)) == NULL)

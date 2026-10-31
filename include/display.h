@@ -1,12 +1,7 @@
 /*****************************************************************************
 * | File      	:   display.h
 * | Author      :   Waveshare team
-* | Function    :   e-Paper test Demo
-* | Info        :
-*----------------
-* |	This version:   V1.0
-* | Date        :   2022-12-11
-* | Info        :
+* | Function    :   Image and message screens on the 7.3" e-Paper (F) panel
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documnetation files (the "Software"), to deal
