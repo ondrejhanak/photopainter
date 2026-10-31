@@ -103,6 +103,8 @@ int display_image(const char *path, float vol)
     return 0;
 }
 
+#define MESSAGE_X 125 // left edge of message screen text
+
 int display_message(float vol, const char *title, const char *hint)
 {
     printf("e-Paper Init and Clear...\r\n");
@@ -127,13 +129,13 @@ int display_message(float vol, const char *title, const char *hint)
     Paint_SetRotate(180);
 
     // Display a message
-    UWORD y = Paint_DrawString_EN(250, 200, title, &Font28, EPD_7IN3F_WHITE, EPD_7IN3F_BLACK);
-    y = Paint_DrawString_EN(250, y + 4, hint, &Font22, EPD_7IN3F_WHITE, EPD_7IN3F_BLACK);
+    UWORD y = Paint_DrawString_EN(MESSAGE_X, 200, title, &Font28, EPD_7IN3F_WHITE, EPD_7IN3F_BLACK);
+    y = Paint_DrawString_EN(MESSAGE_X, y + 4, hint, &Font22, EPD_7IN3F_WHITE, EPD_7IN3F_BLACK);
 
     // Display battery voltage
     char voltage_text[32];
     snprintf(voltage_text, sizeof(voltage_text), "%s %.2fV", msg(MSG_BATTERY), vol);
-    Paint_DrawString_EN(250, y + 14, voltage_text, &Font22, EPD_7IN3F_WHITE, EPD_7IN3F_BLACK);
+    Paint_DrawString_EN(MESSAGE_X, y + 14, voltage_text, &Font22, EPD_7IN3F_WHITE, EPD_7IN3F_BLACK);
 
     printf("EPD_Display\r\n");
     EPD_7IN3F_Display(image);

@@ -12,7 +12,7 @@ const char *const language_codes[] = {
 static_assert(sizeof(language_codes) / sizeof(language_codes[0]) == LANG_COUNT, "language code missing");
 
 // UTF-8; letters missing from the font draw as their base letter (č -> c).
-// Message screens fit about 39 characters for a title and 50 for other lines
+// Message screens fit about 48 characters for a title and 61 for other lines
 static const char *const messages[][MSG_COUNT] = {
     [LANG_EN] = {
         [MSG_NO_CARD_TITLE] = "SD Card Not Found or Unreadable",
