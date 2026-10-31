@@ -36,8 +36,8 @@ reworked to be easier to use and to develop.
 - **One-command flashing.** `pio run -t upload` reboots the board into BOOTSEL over USB, flashes and
   verifies; no button combination or dragging files.
 - **Arduino-Pico `setup()`/`loop()` structure**, with `printf` logging over USB serial.
-- **Serial test command:** on USB, sending `n` shows the next image like a KEY press (`?` lists
-  commands), so tests can run without pressing the button.
+- **Serial test commands:** on USB, sending `n` shows the next image like a KEY press and `d` enters
+  USB drive mode (ignored in drive mode, eject leaves it), so tests can run without pressing the button.
 - **Documented hardware behavior**, e.g. the RTC alarm arriving on the KEY line and the missing SD
   card-detect pin (see [How it behaves](#how-it-behaves)).
 
@@ -167,6 +167,7 @@ src/
 ├── image_order.c               Natural and random image order (no hardware access)
 ├── messages.c                  On-screen texts per language
 ├── settings.c                  settings.ini loading (via inih)
+├── usb_drive.cpp               SD card as a USB drive (mass storage next to USB serial)
 └── usb_serial.cpp              USB serial input for C code (test commands)
 include/                        Headers for src/, one per module
 lib/
@@ -198,4 +199,5 @@ tools/gen_font.py               Generates lib/Fonts/fontNN.c from a BDF bitmap f
 7. On USB: enter charging mode and return
 
 `loop()` (only in charging mode, every 200 ms): power off if USB is unplugged; on KEY or RTC alarm,
-`scan_card()` then `show_next()`.
+`scan_card()` then `show_next()`. In drive mode it serves the computer's reads and writes instead and
+leaves the card alone (the RTC alarm only re-arms); eject leaves drive mode.

@@ -7,6 +7,7 @@
 #include "DEV_Config.h"
 #include "settings.h"
 #include "usb_serial.h"
+#include "usb_drive.h"
 #include <time.h>
 
 // State shared by setup() and loop()
@@ -21,6 +22,9 @@ static bool charging_mode = false; // powered over USB at boot; loop() only acts
 static bool key_down = false;
 static uint32_t key_down_ms; // when KEY went down
 static bool long_press_done = false; // long press already handled, wait for release
+
+// Drive mode: the computer owns the SD card, the frame must not touch it (no display, no state.txt)
+static bool drive_mode = false;
 
 static float measure_battery_voltage(void)
 {
@@ -83,6 +87,26 @@ static void next_image(const char *reason)
     scan_card();
     show_next();
     usb_serial_discard(); // commands sent during the refresh would queue more refreshes
+}
+
+static void enter_drive_mode(void)
+{
+    if (!usb_drive_start())
+    {
+        printf("drive mode: card not readable\r\n");
+        return;
+    }
+    drive_mode = true;
+    printf("drive mode on\r\n");
+}
+
+// Take the card back and re-read settings.ini (the computer may have changed it)
+static void leave_drive_mode(const char *reason)
+{
+    usb_drive_stop();
+    drive_mode = false;
+    printf("%s: drive mode off\r\n", reason);
+    scan_card();
 }
 
 /*
@@ -158,7 +182,14 @@ void loop(void)
         key_down = false;
         long_press_done = false;
         DEV_Digital_Write(LED_ACT, 0);
-        next_image("rtc alarm");
+        if (drive_mode)
+        { // only re-arm, the next image is due after leaving drive mode
+            printf("rtc alarm in drive mode\r\n");
+            PCF85063_clear_alarm_flag();
+            arm_alarm();
+        }
+        else
+            next_image("rtc alarm");
     }
     else if (line_low && !key_down)
     {
@@ -177,17 +208,25 @@ void loop(void)
         printf("key up after %lu ms\r\n", (unsigned long)(now_ms - key_down_ms));
         key_down = false;
         DEV_Digital_Write(LED_ACT, 0);
-        if (!long_press_done)
+        if (!long_press_done && !drive_mode)
             next_image("short key press");
         long_press_done = false;
     }
 
-    // Test commands over USB serial, so log-only device tests need no KEY press
+    // Test commands over USB serial, so log-only device tests need no KEY press. Read in drive mode
+    // too, so nothing sent meanwhile runs after it
     int command = usb_serial_read();
-    if (command == '?')
-        printf("commands: n = next image\r\n");
-    else if (command == 'n')
+    if (drive_mode)
+    { // commands are ignored
+        usb_drive_serve(200); // answers the computer instead of the 200 ms delay below
+        if (usb_drive_ejected())
+            leave_drive_mode("ejected");
+        return;
+    }
+    if (command == 'n')
         next_image("serial command");
+    else if (command == 'd')
+        enter_drive_mode();
 
     DEV_Delay_ms(200);
 }
