@@ -109,10 +109,21 @@ static void next_image(const char *reason)
 static void enter_drive_mode(const char *reason)
 {
     printf("%s: drive mode\r\n", reason);
-    scan_card(); // card check and language for the screen
     if (!usb_drive_computer_connected())
-        display_message(msg(MSG_CONNECT_TITLE), msg(MSG_CONNECT_HINT));
-    else if (!card_present)
+    { // plain charger: no drive mode, the photo stays; the red LED blinks 3 times instead
+        printf("no computer connected\r\n");
+        for (int i = 0; i < 3; i++)
+        {
+            DEV_Digital_Write(LED_ACT, 0);
+            DEV_Delay_ms(150);
+            DEV_Digital_Write(LED_ACT, 1);
+            DEV_Delay_ms(150);
+        }
+        set_led(false);
+        return;
+    }
+    scan_card(); // card check and language for the screen
+    if (!card_present)
         show_next(); // "no card" screen
     else if (!usb_drive_start())
         show_next();

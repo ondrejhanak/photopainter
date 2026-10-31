@@ -19,8 +19,6 @@ typedef enum
     MSG_LOW_VOLTAGE,
     MSG_DRIVE_TITLE,
     MSG_DRIVE_HINT,
-    MSG_CONNECT_TITLE,
-    MSG_CONNECT_HINT,
     MSG_COUNT
 } MsgId;
 

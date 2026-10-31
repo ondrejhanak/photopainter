@@ -74,7 +74,7 @@ extern "C" void tud_mount_cb(void)
 
 bool usb_drive_computer_connected(void)
 {
-    return tud_mounted();
+    return tud_ready(); // configured by a computer and not suspended (a sleeping computer counts as none)
 }
 
 bool usb_drive_start(void)
