@@ -1,0 +1,6 @@
+{
+    "name": "tjpgd",
+    "build": {
+        "flags": "-fwrapv"
+    }
+}
