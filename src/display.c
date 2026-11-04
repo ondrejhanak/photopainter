@@ -115,6 +115,24 @@ static bool draw_jpeg(const char *path, uint8_t *image)
     return true;
 }
 
+// Set by display_image() for EPD_7IN3F_Refreshing(): the next image to convert and the frame buffer
+static char prefetch_name[FF_LFN_BUF + 1];
+static uint8_t *prefetch_image;
+
+// While the panel refreshes an image, convert the image due next if it is a JPEG without a cache
+// file, in the frame buffer the panel no longer needs
+void EPD_7IN3F_Refreshing(void)
+{
+    if (!prefetch_image)
+        return;
+    uint8_t *image = prefetch_image;
+    prefetch_image = NULL;
+    if (cache_exists(prefetch_name))
+        return;
+    printf("converting %s during the refresh\r\n", prefetch_name);
+    draw_jpeg(prefetch_name, image);
+}
+
 int display_image(const char *path, float vol)
 {
     printf("e-Paper Init and Clear...\r\n");
@@ -155,8 +173,13 @@ int display_image(const char *path, float vol)
         }
     }
 
+    if (images_peek_next(prefetch_name) && images_is_jpeg(prefetch_name))
+        prefetch_image = image;
     printf("EPD_Display\r\n");
-    EPD_7IN3F_Display(image);
+    uint32_t start = to_ms_since_boot(get_absolute_time());
+    EPD_7IN3F_Display(image); // runs EPD_7IN3F_Refreshing()
+    prefetch_image = NULL;
+    printf("refresh: %lu ms\r\n", (unsigned long)(to_ms_since_boot(get_absolute_time()) - start));
 
     sdcard_unmount();
     images_save_shown();

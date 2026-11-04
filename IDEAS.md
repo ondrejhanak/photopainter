@@ -5,10 +5,10 @@ In no particular order; not everything here will happen.
 ## Features
 
 - **JPEG support**: copy photos straight from a computer, no conversion script. Decode, scale and dither once, then cache. Must stream: 264 KB RAM, 192 KB of it the frame buffer.
-  - Cache: 4-bit indexed, top-down BMP, palette indices = panel color codes. Pixel data is the frame buffer as is (one read to display), and the file opens on a computer.
+  - Cache: 4-bit indexed, top-down BMP, palette indices = panel color codes, upright, so the file opens on a computer as the frame shows it.
   - Folder per orientation (`cache/landscape/`, `cache/portrait/`), ~192 KB per photo in each.
   - File name: `hash(name, size, date, time)` of the directory entry, so a replaced file (e.g. another phone's `IMG_0001.jpg`) is converted again. Cleanup removes orphans.
-  - Convert right after eject on USB power, else when the photo is due.
+  - Convert while the panel refreshes the previous photo (the CPU waits anyway), else when the photo is due.
   - EXIF orientation 3/6/8 applied, mirrored ones ignored.
   - Unsupported files (progressive JPEG, HEIC) skipped and logged; drive-mode exit screen can say "N new photos, M cannot be used".
   - Photo in the frame's orientation: fill, center crop. Other: fit whole, white bars.
@@ -59,3 +59,4 @@ In no particular order; not everything here will happen.
 - Photos for a date: needs order exceptions and a hidden naming rule, for a few uses a year.
 - Info screen (battery, photo count, version, last error): little use for the user; owner reads logs on the card.
 - Real clock and fixed change times (`change_at = 07:00`): needs time sync and a DST decision; the interval is good enough.
+- Convert all new photos right after eject on USB power: users unplug after ejecting, and converting during the refresh costs almost nothing.

@@ -31,6 +31,16 @@ static bool cache_path(char path[PATH_LEN], const char *name)
     return true;
 }
 
+bool cache_exists(const char *name)
+{
+    char path[PATH_LEN];
+    FILINFO fno;
+    if (!cache_path(path, name))
+        return false;
+    strcat(path, ".bmp");
+    return f_stat(path, &fno) == FR_OK;
+}
+
 bool cache_load(const char *name, uint8_t *frame)
 {
     char path[PATH_LEN];

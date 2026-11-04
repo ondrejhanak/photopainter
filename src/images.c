@@ -13,6 +13,7 @@
 #define STATE_FILE SDCARD_FRAME_DIR "/state.txt"
 
 char images_path[FF_LFN_BUF + 1]; // file name of the image to display, in the card root
+static char first[FF_LFN_BUF + 1], next[FF_LFN_BUF + 1]; // results of scan_images()
 static uint32_t seed; // random order: identifies the current shuffle; persisted in the state file
 
 static bool has_extension(const char *name, const char *ext)
@@ -112,8 +113,6 @@ static uint32_t new_seed(void)
 bool images_select_next(void)
 {
     static char last[FF_LFN_BUF + 1];
-    static char first[FF_LFN_BUF + 1];
-    static char next[FF_LFN_BUF + 1];
 
     sdcard_mount();
     read_state(last, sizeof(last));
@@ -145,6 +144,18 @@ bool images_select_next(void)
     strcpy(images_path, next[0] ? next : first);
     printf("next image: %s (last shown: %s, seed %08lx)\r\n", images_path, last[0] ? last : "-", (unsigned long)seed);
     return true;
+}
+
+bool images_peek_next(char *name)
+{
+    scan_images(images_path, first, next);
+    if (next[0])
+        strcpy(name, next);
+    else if (settings.order == ORDER_ALPHABETICAL && first[0])
+        strcpy(name, first); // wraps around
+    else
+        return false; // random: the next round's order is drawn when it starts
+    return strcmp(name, images_path) != 0;
 }
 
 // Remember images_path as shown, so the next selection continues after it

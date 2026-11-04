@@ -56,6 +56,9 @@ __attribute__((weak)) void EPD_7IN3F_BusyWait(UDOUBLE ms)
     DEV_Delay_ms(ms);
 }
 
+__attribute__((weak)) void EPD_7IN3F_Refreshing(void)
+{
+}
 static void EPD_7IN3F_ReadBusyH(void)
 {
     int cnt = 0;
@@ -78,6 +81,7 @@ static void EPD_7IN3F_TurnOnDisplay(void)
 
     EPD_7IN3F_SendCommand(0x12); // DISPLAY_REFRESH
     EPD_7IN3F_SendData(0x00);
+    EPD_7IN3F_Refreshing();
     EPD_7IN3F_ReadBusyH();
 
     EPD_7IN3F_SendCommand(0x02); // POWER_OFF
