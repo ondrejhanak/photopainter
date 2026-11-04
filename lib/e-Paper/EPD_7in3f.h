@@ -42,7 +42,7 @@
 #define EPD_7IN3F_CLEAN   0x7 // not a usable colour, leaves an afterimage
 
 void EPD_7IN3F_BusyWait(UDOUBLE ms);
-// Called once when the panel starts refreshing (BUSY stays low for its ~30 s); weak, empty by default
+// Called once when the panel starts refreshing (BUSY stays low for the whole refresh); weak, empty by default
 void EPD_7IN3F_Refreshing(void);
 void EPD_7IN3F_Init(void);
 void EPD_7IN3F_Clear(UBYTE color);

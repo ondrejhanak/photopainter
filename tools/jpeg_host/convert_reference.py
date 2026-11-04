@@ -76,7 +76,7 @@ dither_pal = (
     230, 125, 0     # orange
 )
 
-# Exact RGB values the firmware recognizes, in the same order as dither_pal.
+# Pure panel colours written to the output BMP, in the same order as dither_pal.
 output_pal = (
     0, 0, 0,        # black
     255, 255, 255,  # white

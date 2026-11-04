@@ -167,8 +167,8 @@ JpegResult jpeg_probe(const JpegInput *in, JpegInfo *info, void *work, size_t wo
     }
 }
 
-// convert_reference.py look, as Pillow does it: contrast 1.1 around mid grey (Pillow pivots on the image mean,
-// unknown while streaming), then saturation 1.2 against luma; clipped after each step
+// convert_reference.py look, as Pillow does it: contrast 1.1 around mid grey (Pillow pivots on the
+// image mean, unknown while streaming), then saturation 1.2 against luma; clipped after each step
 static void enhance(const uint8_t rgb[3], int v[3])
 {
     for (int ch = 0; ch < 3; ch++)

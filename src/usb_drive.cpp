@@ -30,7 +30,7 @@ static uint32_t sector_count;
 static volatile uint32_t last_command_ms; // millis() of the computer's last drive command
 static volatile bool used = false; // the computer read the drive (mounting always does)
 
-// Both in work_memory, free in drive mode; their content is lost when drive mode ends
+// In work_memory, which JPEG conversion overwrites outside drive mode
 static uint8_t *const read_buffer = work_memory;
 static uint32_t read_lba, read_sectors; // sectors in read_buffer
 static uint8_t *const write_buffer = work_memory + READ_AHEAD * SECTOR_SIZE;

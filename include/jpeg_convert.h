@@ -7,7 +7,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-// Work memory one conversion needs at most (TJpgDec pool, row buffers, dither errors)
+// Work memory for one conversion: TJpgDec pool, row buffers and dither errors; the rest is read-ahead
 #define JPEG_WORK_SIZE (48 * 1024)
 
 typedef enum
@@ -16,7 +16,7 @@ typedef enum
     JPEG_READ_ERROR, // input ended early or could not be read
     JPEG_BROKEN, // not a JPEG, or damaged data
     JPEG_UNSUPPORTED, // progressive, arithmetic coded, CMYK or unusual chroma subsampling
-    JPEG_TOO_SMALL, // would need more work memory than JPEG_WORK_SIZE (tiny or extremely narrow image)
+    JPEG_TOO_SMALL, // would need more work memory than given (tiny or extremely narrow image)
 } JpegResult;
 
 // Byte source: read(ctx, NULL, n) skips n bytes; returns the bytes read or skipped.
