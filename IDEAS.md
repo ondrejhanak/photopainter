@@ -4,29 +4,15 @@ In no particular order; not everything here will happen.
 
 ## Features
 
-- **JPEG support**: copy photos straight from a computer, no conversion script. Decode, scale and dither once, then cache. Must stream: 264 KB RAM, 192 KB of it the frame buffer.
-  - Cache: 4-bit indexed, top-down BMP, palette indices = panel color codes, upright, so the file opens on a computer as the frame shows it.
-  - Folder per orientation (`cache/landscape/`, `cache/portrait/`), ~192 KB per photo in each.
-  - File name: `hash(name, size, date, time)` of the directory entry, so a replaced file (e.g. another phone's `IMG_0001.jpg`) is converted again. Cache files of deleted or replaced photos are removed after drive mode.
-  - Convert while the panel refreshes the previous photo (the CPU waits anyway), else when the photo is due.
-  - EXIF orientation 3/6/8 applied, mirrored ones ignored.
-  - Unsupported files (progressive JPEG, HEIC) skipped and logged; drive-mode exit screen can say "N new photos, M cannot be used".
-  - Photo in the frame's orientation: fill, center crop. Other: fit whole, with bars.
-  - Bar colour `bars = white | black` (to match the frame's mount), default `white`. Not in the cache: bars are stored as an unused colour code and painted when shown, so switching is instant.
-- **Frame orientation**: `orientation = landscape | portrait`, default `landscape`. Photos, message screens and battery icon follow it.
-- **USB drive mode**: on a computer, long KEY press exposes the SD card as a USB drive; eject or another long press gives it back to the frame.
-- **Localization**: `language = en | cs`, UTF-8 string table with diacritics.
-  - Text drawing decodes UTF-8; missing glyph → base letter (č → c), else `?`.
-  - Font made by a `tools/` script from an open bitmap font (e.g. Terminus), U+0020–U+017F in one table, so a new Latin-script language needs only strings. Sizes 16 and 20, ~10–13 KB each. Check room for accents above capitals.
-  - Word wrap on message screens.
+- **Unusable photos notice**: JPEGs the frame cannot show (progressive, CMYK) are skipped and logged; the drive-mode exit screen could say "M photos cannot be used".
+- **Frame orientation**: `orientation = landscape | portrait`, default `landscape`. Photos, message screens and battery icon follow it; converted photos get a cache folder per orientation (`cache/portrait/` next to `cache/landscape/`).
 - **One new photo after eject**: show the first new photo (natural order) as confirmation, then the normal order. New = hash (the cache key) not in the set taken before drive mode. `state.txt` not updated, so the photo still gets its own slot later.
 - **Low-battery icon**: low = small red icon in a corner, photos keep changing; critical = existing low-battery screen, then no more wake-ups (e-paper keeps it unpowered). Voltage read at the same point every wake, with hysteresis; thresholds from the logged discharge curve.
 - **Photo date caption**: `show_date = no | yes`, default `no`. EXIF `DateTimeOriginal`, fallback `DateTime`, read from the JPEG when shown; plain string, no calendar math. Formatted per `language` (e.g. 24. 12. 1985), black on a small white box in a corner, not in the cache. No EXIF date, no caption.
 
 ## Code and tooling
 
-- **Cleanup**: one naming style (snake_case, module prefixes like `display_*`, `images_*`), files named by content; `lib/` keeps upstream style. Remove Chinese fonts (GB2312 files), CN string drawing, Chinese comments, and unused Font8, Font12, Font24.
-- **Host tests + CI badge**: PlatformIO native + Unity for image order, random rounds and `settings.ini` parsing. GitHub Actions (`ubuntu-latest`, free for public repos) builds firmware and runs `pio test -e native` on every push; badge in README. Later the JPEG pipeline, checked on preview PNGs instead of flashing.
+- **Host tests + CI badge**: PlatformIO native + Unity for image order, random rounds and `settings.ini` parsing. GitHub Actions (`ubuntu-latest`, free for public repos) builds firmware and runs `pio test -e native` on every push; badge in README. The JPEG checks of `tools/jpeg_host/` could run there too.
 - **Fuzzing**: JPEG/EXIF parsing as a repeatable test (CI), to prove "bad files don't break the frame".
 - **Build hygiene**: warnings, static analysis, stack usage and firmware size checks in CI.
 
