@@ -204,6 +204,8 @@ lib/
 └── inih/                       INI parser (r62, BSD) for settings.ini
 convert/                        Host-side image conversion script (Python)
 tools/gen_font.py               Generates lib/Fonts/fontNN.c from a BDF bitmap font
+tools/serial_log.py             Serial log with timestamps, sends test commands (device tests)
+tools/drive_test.py             USB drive mode enter/eject cycles with write and verify (macOS)
 ```
 
 ### Program flow
