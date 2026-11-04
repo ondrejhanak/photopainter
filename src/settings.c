@@ -23,8 +23,7 @@ Settings settings = {
     .bars = DEFAULT_BARS,
 };
 
-// Written when settings.ini is missing, so users can see what can be changed. Comments are English
-// except for language (Czech too), since the language is only known after reading this file
+// Written when settings.ini is missing, so users can see what can be changed (comments in English)
 static const char *default_settings =
     "; PhotoPainter settings\r\n"
     "; Change a value after \"=\" and save the file. Changes apply after ejecting the USB drive or with\r\n"
@@ -40,7 +39,6 @@ static const char *default_settings =
     "bars = white\r\n"
     "\r\n"
     "; Language of on-screen messages: en (English) or cs (Czech)\r\n"
-    "; Jazyk zpráv na displeji: en (angličtina) nebo cs (čeština)\r\n"
     "language = en\r\n";
 
 // Parse a whole number in [min, max]; returns false for anything else (text, decimals, out of range)
