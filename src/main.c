@@ -57,7 +57,7 @@ static float measure_battery_voltage(void)
     return voltage;
 }
 
-static void charge_state_callback()
+static void show_charge_state(void)
 {
     if (DEV_Digital_Read(VBUS))
     {
@@ -70,6 +70,13 @@ static void charge_state_callback()
             ledCharged();
         }
     }
+}
+
+static void charge_state_callback(uint gpio, uint32_t events)
+{
+    (void)gpio;
+    (void)events;
+    show_charge_state();
 }
 
 // Reset the RTC to the reference time and set the alarm interval_hours (settings.ini) later
@@ -204,7 +211,7 @@ void setup(void)
     }
 
     // on USB power: stay awake, loop() handles KEY presses until USB is unplugged
-    charge_state_callback();
+    show_charge_state();
     charging_mode = true;
 }
 

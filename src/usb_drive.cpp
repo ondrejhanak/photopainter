@@ -5,6 +5,7 @@
 #include "usb_drive.h"
 #include <Arduino.h>
 #include <USB.h>
+#include <tusb-msc.h> // links TinyUSB's MSC class; without it the core's empty stubs answer and no drive appears
 #include <hardware/watchdog.h>
 
 extern "C" {
