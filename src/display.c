@@ -27,6 +27,7 @@
 #include "images.h"
 #include "messages.h"
 #include "sdcard.h"
+#include "settings.h"
 #include "EPD_7in3f.h"
 #include "GUI_Paint.h"
 #include "GUI_BMPfile.h"
@@ -155,7 +156,11 @@ int display_image(const char *path, float vol)
     Paint_SelectImage(image);
     Paint_Clear(EPD_7IN3F_WHITE);
 
-    bool shown = images_is_jpeg(path) ? draw_jpeg(path, image) : GUI_ReadBmp_RGB_7Color(path, 0, 0) == 0;
+    bool jpeg = images_is_jpeg(path);
+    bool shown = jpeg ? draw_jpeg(path, image) : GUI_ReadBmp_RGB_7Color(path, 0, 0) == 0;
+    if (jpeg && shown) // the panel must never get the placeholder: an unused code leaves an afterimage
+        palette_replace(image, image_size, palette_7color.bars,
+                        settings.bars == BARS_BLACK ? EPD_7IN3F_BLACK : EPD_7IN3F_WHITE);
     if (!shown)
     { // a message screen with the file name instead of a partial image; it still counts as shown below
         Paint_Clear(EPD_7IN3F_WHITE);

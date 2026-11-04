@@ -15,8 +15,21 @@ static const PaletteColor colors_7color[] = {
 const Palette palette_7color = {
     .colors = colors_7color,
     .count = sizeof(colors_7color) / sizeof(colors_7color[0]),
-    .white = EPD_7IN3F_WHITE,
+    .bars = EPD_7IN3F_CLEAN, // leaves an afterimage, so never a photo colour
 };
+
+void palette_replace(uint8_t *buf, size_t len, uint8_t from, uint8_t to)
+{
+    for (size_t i = 0; i < len; i++)
+    {
+        uint8_t b = buf[i];
+        if ((b >> 4) == from)
+            b = (uint8_t)((b & 0x0F) | to << 4);
+        if ((b & 0x0F) == from)
+            b = (uint8_t)((b & 0xF0) | to);
+        buf[i] = b;
+    }
+}
 
 uint8_t palette_nearest(const Palette *palette, int r, int g, int b, int *pr, int *pg, int *pb)
 {

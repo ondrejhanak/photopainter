@@ -11,7 +11,8 @@ In no particular order; not everything here will happen.
   - Convert while the panel refreshes the previous photo (the CPU waits anyway), else when the photo is due.
   - EXIF orientation 3/6/8 applied, mirrored ones ignored.
   - Unsupported files (progressive JPEG, HEIC) skipped and logged; drive-mode exit screen can say "N new photos, M cannot be used".
-  - Photo in the frame's orientation: fill, center crop. Other: fit whole, white bars.
+  - Photo in the frame's orientation: fill, center crop. Other: fit whole, with bars.
+  - Bar colour `bars = white | black` (to match the frame's mount), default `white`. Not in the cache: bars are stored as an unused colour code and painted when shown, so switching is instant.
 - **Frame orientation**: `orientation = landscape | portrait`, default `landscape`. Photos, message screens and battery icon follow it.
 - **USB drive mode**: on a computer, long KEY press exposes the SD card as a USB drive; eject or another long press gives it back to the frame.
 - **Localization**: `language = en | cs`, UTF-8 string table with diacritics.

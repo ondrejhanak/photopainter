@@ -141,7 +141,7 @@ static int write_pgm(const char *path, const Frame *f)
 
 // 256 greys, code = level: dithering is exact, so the frame shows the scaled photo itself
 static PaletteColor grey_colors[256];
-static const Palette grey_palette = {.colors = grey_colors, .count = 256, .white = 255};
+static const Palette grey_palette = {.colors = grey_colors, .count = 256, .bars = 255};
 
 int main(int argc, char **argv)
 {

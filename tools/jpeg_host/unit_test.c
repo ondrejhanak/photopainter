@@ -2,6 +2,7 @@
 // Includes jpeg_convert.c to reach its static functions.
 #include "../../src/jpeg_convert.c"
 #include "cache_format.h"
+#include "EPD_7in3f.h"
 
 #define SHORT 3 // TIFF field type
 #include <stdio.h>
@@ -125,6 +126,14 @@ static void test_enhance(void)
     }
 }
 
+static void test_palette_replace(void)
+{
+    uint8_t buf[] = {0x77, 0x17, 0x71, 0x12, 0x07};
+    static const uint8_t want[] = {0x00, 0x10, 0x01, 0x12, 0x00};
+    palette_replace(buf, sizeof(buf), 7, 0);
+    expect("bars replaced in both nibbles", memcmp(buf, want, sizeof(buf)), 0);
+}
+
 static void test_cache_format(void)
 {
     // Frame buffer as Paint_SetPixel() fills it with rotation 180: viewed (x, y) at (W-1-x, H-1-y)
@@ -152,7 +161,8 @@ static void test_cache_format(void)
     uint8_t header[CACHE_HEADER_SIZE];
     cache_header(header, &palette_7color);
     expect("cache header accepted", cache_header_ok(header), 1);
-    expect("white palette entry", header[54 + 4 * palette_7color.white + 2], 245);
+    expect("white palette entry", header[54 + 4 * EPD_7IN3F_WHITE + 2], 245);
+    expect("bar placeholder grey", header[54 + 4 * palette_7color.bars + 2], 128);
     header[22] ^= 1; // other height
     expect("other header refused", cache_header_ok(header), 0);
 
@@ -194,6 +204,7 @@ int main(void)
     test_exif();
     test_enhance();
     test_cache_format();
+    test_palette_replace();
     printf(failures ? "%d failed\n" : "unit tests passed\n", failures);
     return failures != 0;
 }

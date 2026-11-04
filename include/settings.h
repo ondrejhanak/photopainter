@@ -5,6 +5,12 @@
 
 typedef enum
 {
+    BARS_WHITE,
+    BARS_BLACK,
+} BarsColour; // around photos that don't fill the frame (match the frame's mount)
+
+typedef enum
+{
     ORDER_ALPHABETICAL, // natural name order
     ORDER_RANDOM, // shuffled; every image once per round, reshuffled after each round
 } ImageOrder;
@@ -15,6 +21,7 @@ typedef struct
     int interval_hours; // hours between image changes (RTC wake-up), 1..47
     ImageOrder order;
     Language language; // on-screen messages
+    BarsColour bars;
 } Settings;
 
 extern Settings settings;

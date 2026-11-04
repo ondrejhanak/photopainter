@@ -16,6 +16,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 HARNESS = os.path.join(ROOT, 'build', 'jpeg_host')
 LOOK_PHOTOS = ['IMG_7365.jpeg', 'olomouc.jpeg', 'IMG_9077.jpeg'] # landscape photos compared with convert.py
 LOOK_MAX_DIFF = 6
+BARS = 7 # palette.c: placeholder for the bars (EPD_7IN3F_CLEAN)
 STREAM_MAX_DIFF = 1.5 # decoders differ by IDCT rounding only
 BOX_MAX_DIFF = 4
 # convert.py's exact output colours -> the soft colours our cache BMP shows
@@ -130,16 +131,16 @@ def main():
             check(f'{label} orientation {value} matches upright (diff {good:.1f}, ignored tag {bad:.1f})',
                   good < 4 and bad > 3 * good, f'{good:.1f} vs {bad:.1f}')
 
-    # Fill vs fit: a 3:4 portrait in the landscape frame is 360 wide, white bars of 220 each side
-    img = Image.open(s('portrait_o1.bmp'))
-    white = img.getpixel((0, 0))
-    cols = [all(img.getpixel((x, y)) == white for y in range(0, 480, 7)) for x in range(800)]
-    check('portrait fits with 220 px white bars', all(cols[:220]) and all(cols[580:]) and not any(cols[222:578]),
-          f'bar columns left {cols[:240].count(True)}, right {cols[560:].count(True)}')
-    img = Image.open(s('landscape_o1.bmp'))
-    edge = [img.getpixel((x, y)) for x in (0, 799) for y in range(0, 480, 5)] + \
-           [img.getpixel((x, y)) for y in (0, 479) for x in range(0, 800, 5)]
-    check('landscape fills the frame (edges not all white)', edge.count(white) < len(edge) * 0.9)
+    # Fill vs fit: a 3:4 portrait in the landscape frame is 360 wide, bars of 220 each side. Bars are
+    # the placeholder code (painted in the bar colour when shown), which no photo pixel may use
+    def placeholders(path):
+        img = Image.open(path) # palette index = panel code
+        return [x for x in range(800) for y in range(480) if img.getpixel((x, y)) == BARS]
+    bars = placeholders(s('portrait_o1.bmp'))
+    check(f'portrait fits between two 220 px bars ({len(bars)} placeholder pixels)',
+          len(bars) == 2 * 220 * 480 and all(x < 220 or x >= 580 for x in bars), '')
+    n = len(placeholders(s('landscape_o1.bmp')))
+    check('landscape fills the frame (no placeholder pixels)', n == 0, f'{n}')
 
     # Formats TJpgDec handles, and some it rejects
     small = land.resize((800, 600))
@@ -222,6 +223,8 @@ def main():
             for x in range(ref.width):
                 px[x, y] = SOFT.get(px[x, y], px[x, y])
         run(src, src + '.bmp')
+        n = len(placeholders(src + '.bmp'))
+        check(f'{f} fills the frame (no placeholder pixels)', n == 0, f'{n}')
         d = mean_diff(blurred(src + '.bmp'), ref.filter(ImageFilter.BoxBlur(6)))
         check(f'{f} looks like convert.py output (diff {d:.1f})', d < LOOK_MAX_DIFF, f'{d:.1f}')
 

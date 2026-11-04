@@ -48,7 +48,7 @@ typedef struct
 JpegResult jpeg_probe(const JpegInput *in, JpegInfo *info, void *work, size_t work_size);
 
 // Decode, scale and dither a JPEG onto the frame: a photo in the frame's orientation fills it
-// (centre crop), any other photo fits in whole between white bars
+// (centre crop), any other photo fits in whole between bars (Palette.bars)
 JpegResult jpeg_convert(const JpegInput *in, const JpegOutput *out, void *work, size_t work_size);
 
 const char *jpeg_result_str(JpegResult result);

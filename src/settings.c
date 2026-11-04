@@ -14,11 +14,13 @@
 #define DEFAULT_INTERVAL_HOURS 12
 #define DEFAULT_ORDER ORDER_ALPHABETICAL
 #define DEFAULT_LANGUAGE LANG_EN
+#define DEFAULT_BARS BARS_WHITE
 
 Settings settings = {
     .interval_hours = DEFAULT_INTERVAL_HOURS,
     .order = DEFAULT_ORDER,
     .language = DEFAULT_LANGUAGE,
+    .bars = DEFAULT_BARS,
 };
 
 // Written when settings.ini is missing, so users can see what can be changed. Comments are English
@@ -33,6 +35,9 @@ static const char *default_settings =
     "\r\n"
     "; Image order: alphabetical or random (random shows every image once before reshuffling)\r\n"
     "order = alphabetical\r\n"
+    "\r\n"
+    "; Colour around photos that don't fill the screen: white or black\r\n"
+    "bars = white\r\n"
     "\r\n"
     "; Language of on-screen messages: en (English) or cs (Czech)\r\n"
     "; Jazyk zpráv na displeji: en (angličtina) nebo cs (čeština)\r\n"
@@ -68,6 +73,15 @@ static int handler(void *user, const char *section, const char *name, const char
         else
             printf("settings: invalid order \"%s\", using %s\r\n", value,
                    settings.order == ORDER_RANDOM ? "random" : "alphabetical");
+    }
+    else if (strcasecmp(name, "bars") == 0)
+    {
+        if (strcasecmp(value, "white") == 0)
+            settings.bars = BARS_WHITE;
+        else if (strcasecmp(value, "black") == 0)
+            settings.bars = BARS_BLACK;
+        else
+            printf("settings: invalid bars \"%s\", using %s\r\n", value, settings.bars == BARS_BLACK ? "black" : "white");
     }
     else if (strcasecmp(name, "language") == 0)
     {
@@ -120,6 +134,7 @@ void settings_load(void)
 {
     settings.interval_hours = DEFAULT_INTERVAL_HOURS;
     settings.order = DEFAULT_ORDER;
+    settings.bars = DEFAULT_BARS;
 
     sdcard_mount();
 
@@ -146,6 +161,7 @@ void settings_load(void)
     sdcard_unmount();
     saved_language_save(settings.language);
 
-    printf("settings: interval_hours = %d, order = %s, language = %s\r\n", settings.interval_hours,
-           settings.order == ORDER_RANDOM ? "random" : "alphabetical", language_codes[settings.language]);
+    printf("settings: interval_hours = %d, order = %s, language = %s, bars = %s\r\n", settings.interval_hours,
+           settings.order == ORDER_RANDOM ? "random" : "alphabetical", language_codes[settings.language],
+           settings.bars == BARS_BLACK ? "black" : "white");
 }

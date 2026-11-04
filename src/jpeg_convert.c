@@ -477,11 +477,11 @@ JpegResult jpeg_convert(const JpegInput *in, const JpegOutput *out, void *work, 
         c.inbuf = (uint8_t *)c.err + ((err_bytes(&c) + 3) & ~(size_t)3);
     c.next_cy = c.ay.c0;
 
-    // White bars around a photo that fits in whole
+    // Bars around a photo that fits in whole
     for (int y = 0; y < out->height; y++)
         for (int x = 0; x < out->width; x++)
             if (x < c.ox || x >= c.ox + c.pw || y < c.oy || y >= c.oy + c.ph)
-                out->put_pixel(out->ctx, x, y, out->palette->white);
+                out->put_pixel(out->ctx, x, y, out->palette->bars);
 
     jr = jd_decomp(&c.jd, jd_output, (uint8_t)k);
     if (c.failed)

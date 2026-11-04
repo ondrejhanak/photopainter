@@ -3,7 +3,8 @@
 #include <stdio.h>
 #include <string.h>
 
-#define CACHE_VERSION 1 // bump when the conversion's output changes
+#define CACHE_VERSION 2 // bump when the conversion's output changes
+#define BARS_SHOWN_AS 128 // grey: the bar placeholder on a computer
 
 static void put16(uint8_t *p, uint32_t v)
 {
@@ -81,6 +82,7 @@ void cache_header(uint8_t out[CACHE_HEADER_SIZE], const Palette *palette)
         e[1] = palette->colors[i].g;
         e[2] = palette->colors[i].r;
     }
+    memset(out + 54 + 4 * palette->bars, BARS_SHOWN_AS, 3);
 }
 
 bool cache_header_ok(const uint8_t header[CACHE_HEADER_SIZE])
