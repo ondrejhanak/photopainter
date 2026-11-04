@@ -22,6 +22,12 @@ void sdcard_unmount(void)
         printf("f_unmount error: %s (%d)\r\n", FRESULT_str(fr), fr);
 }
 
+void sdcard_make_frame_dir(void)
+{
+    if (f_mkdir(SDCARD_FRAME_DIR) == FR_OK)
+        f_chmod(SDCARD_FRAME_DIR, AM_HID, AM_HID);
+}
+
 bool sdcard_present(void)
 {
     sd_card_t *sd = sd_get_by_num(0);

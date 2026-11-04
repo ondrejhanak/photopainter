@@ -10,9 +10,7 @@
 #include <string.h>
 #include <strings.h> // strcasecmp()
 
-// Frame state, hidden from users: a dot-folder (hidden on macOS) with the FAT hidden attribute (Windows)
-#define STATE_DIR "/.photopainter"
-#define STATE_FILE STATE_DIR "/state.txt"
+#define STATE_FILE SDCARD_FRAME_DIR "/state.txt"
 
 char images_path[FF_LFN_BUF + 1]; // file name of the image to display, in the card root
 static uint32_t seed; // random order: identifies the current shuffle; persisted in the state file
@@ -64,8 +62,7 @@ static void read_state(char *name, int len)
 static void write_state(const char *name)
 {
     char line[16];
-    if (f_mkdir(STATE_DIR) == FR_OK)
-        f_chmod(STATE_DIR, AM_HID, AM_HID);
+    sdcard_make_frame_dir();
 
     FIL fil;
     FRESULT fr = f_open(&fil, STATE_FILE, FA_CREATE_ALWAYS | FA_WRITE);

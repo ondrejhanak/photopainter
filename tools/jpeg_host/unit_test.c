@@ -1,6 +1,7 @@
-// Unit checks for EXIF parsing and the colour enhancement; run by check.py. Includes
-// jpeg_convert.c to reach its static functions.
+// Unit checks for EXIF parsing, the colour enhancement and the cache format; run by check.py.
+// Includes jpeg_convert.c to reach its static functions.
 #include "../../src/jpeg_convert.c"
+#include "cache_format.h"
 
 #define SHORT 3 // TIFF field type
 #include <stdio.h>
@@ -124,10 +125,57 @@ static void test_enhance(void)
     }
 }
 
+static void test_cache_format(void)
+{
+    // Frame buffer as Paint_SetPixel() fills it with rotation 180: viewed (x, y) at (W-1-x, H-1-y)
+    static uint8_t frame[CACHE_ROW_BYTES * CACHE_HEIGHT], back[sizeof(frame)];
+    for (size_t i = 0; i < sizeof(frame); i++)
+        frame[i] = (uint8_t)(i * 7 + i / 400);
+    uint8_t row[CACHE_ROW_BYTES];
+    int wrong = 0;
+    for (int y = 0; y < CACHE_HEIGHT; y++)
+    {
+        cache_row_from_frame(row, frame, y);
+        for (int x = 0; x < CACHE_WIDTH; x++)
+        {
+            int px = CACHE_WIDTH - 1 - x, py = CACHE_HEIGHT - 1 - y;
+            uint8_t b = frame[py * CACHE_ROW_BYTES + px / 2];
+            int panel = px % 2 ? b & 0x0F : b >> 4;
+            int file = x % 2 ? row[x / 2] & 0x0F : row[x / 2] >> 4; // BMP: left pixel in the high nibble
+            wrong += panel != file;
+        }
+        cache_row_to_frame(back, row, y);
+    }
+    expect("cache rows upright", wrong, 0);
+    expect("cache rows round trip", memcmp(frame, back, sizeof(frame)), 0);
+
+    uint8_t header[CACHE_HEADER_SIZE];
+    cache_header(header, &palette_7color);
+    expect("cache header accepted", cache_header_ok(header), 1);
+    expect("white palette entry", header[54 + 4 * palette_7color.white + 2], 245);
+    header[22] ^= 1; // other height
+    expect("other header refused", cache_header_ok(header), 0);
+
+    char a[CACHE_NAME_LEN + 1], b[CACHE_NAME_LEN + 1];
+    cache_name(a, "IMG_0001.jpg", 1000, 0x5964, 0x8000);
+    expect("cache name length", (int)strlen(a), CACHE_NAME_LEN);
+    cache_name(b, "IMG_0001.jpg", 1000, 0x5964, 0x8000);
+    expect("cache name stable", strcmp(a, b), 0);
+    cache_name(b, "IMG_0002.jpg", 1000, 0x5964, 0x8000);
+    expect("cache name follows the name", strcmp(a, b) != 0, 1);
+    cache_name(b, "IMG_0001.jpg", 1001, 0x5964, 0x8000);
+    expect("cache name follows the size", strcmp(a, b) != 0, 1);
+    cache_name(b, "IMG_0001.jpg", 1000, 0x5965, 0x8000);
+    expect("cache name follows the date", strcmp(a, b) != 0, 1);
+    cache_name(b, "IMG_0001.jpg", 1000, 0x5964, 0x8001);
+    expect("cache name follows the time", strcmp(a, b) != 0, 1);
+}
+
 int main(void)
 {
     test_exif();
     test_enhance();
+    test_cache_format();
     printf(failures ? "%d failed\n" : "unit tests passed\n", failures);
     return failures != 0;
 }

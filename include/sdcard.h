@@ -9,4 +9,10 @@ bool sdcard_present(void);
 void sdcard_mount(void);
 void sdcard_unmount(void);
 
+// The frame's own folder on the card (state, cache): a dot-folder (hidden on macOS) with the FAT
+// hidden attribute (Windows)
+#define SDCARD_FRAME_DIR "/.photopainter"
+// Create SDCARD_FRAME_DIR if it is missing
+void sdcard_make_frame_dir(void);
+
 #endif

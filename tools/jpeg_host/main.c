@@ -1,5 +1,6 @@
 // Runs the on-device JPEG conversion on the Mac: writes the frame as the 4-bit cache BMP and
 // reports the result, the photo's headers and the work memory used. Build with build.sh.
+#include "cache_format.h"
 #include "jpeg_convert.h"
 #include "palette.h"
 
@@ -12,6 +13,7 @@ typedef struct
     int width, height;
     uint8_t *codes;
     uint8_t *writes; // per pixel, to check that each is set exactly once
+    uint8_t panel[CACHE_ROW_BYTES * CACHE_HEIGHT]; // landscape: the panel frame buffer, as on the device
 } Frame;
 
 static unsigned read_calls; // reads with data, i.e. card commands on the device
@@ -47,6 +49,12 @@ static void frame_put(void *ctx, int x, int y, uint8_t code)
     }
     f->codes[y * f->width + x] = code;
     f->writes[y * f->width + x]++;
+    if (f->width == CACHE_WIDTH && f->height == CACHE_HEIGHT)
+    { // as Paint_SetPixel() with rotation 180 on the device
+        int px = CACHE_WIDTH - 1 - x, py = CACHE_HEIGHT - 1 - y;
+        uint8_t *b = &f->panel[py * CACHE_ROW_BYTES + px / 2];
+        *b = px % 2 ? (uint8_t)((*b & 0xF0) | code) : (uint8_t)((*b & 0x0F) | code << 4);
+    }
 }
 
 static void put16(uint8_t *p, uint32_t v)
@@ -61,7 +69,24 @@ static void put32(uint8_t *p, uint32_t v)
     put16(p + 2, v >> 16);
 }
 
-// 4-bit indexed, top-down (negative height), palette index = panel code
+// The landscape frame as the device's cache file
+static int write_cache(const char *path, const Frame *f)
+{
+    FILE *out = fopen(path, "wb");
+    if (!out)
+        return -1;
+    uint8_t header[CACHE_HEADER_SIZE], row[CACHE_ROW_BYTES];
+    cache_header(header, &palette_7color);
+    fwrite(header, 1, sizeof(header), out);
+    for (int y = 0; y < CACHE_HEIGHT; y++)
+    {
+        cache_row_from_frame(row, f->panel, y);
+        fwrite(row, 1, sizeof(row), out);
+    }
+    return fclose(out);
+}
+
+// Other frame sizes: 4-bit indexed, top-down (negative height), palette index = panel code
 static int write_bmp(const char *path, const Frame *f, const Palette *palette)
 {
     uint8_t h[118] = {0};
@@ -153,9 +178,10 @@ int main(int argc, char **argv)
     uint8_t *work = malloc(work_size);
     memset(work, 0xA5, work_size);
     JpegInput input = {.read = file_read, .rewind = file_rewind, .ctx = in};
-    Frame frame = {.width = width, .height = height,
-                   .codes = calloc((size_t)width * (size_t)height, 1),
-                   .writes = calloc((size_t)width * (size_t)height, 1)};
+    static Frame frame;
+    frame = (Frame){.width = width, .height = height,
+                    .codes = calloc((size_t)width * (size_t)height, 1),
+                    .writes = calloc((size_t)width * (size_t)height, 1)};
     for (int i = 0; i < 256; i++)
         grey_colors[i] = (PaletteColor){(uint8_t)i, (uint8_t)i, (uint8_t)i, (uint8_t)i};
     JpegOutput output = {.width = width, .height = height, .palette = grey ? &grey_palette : &palette_7color,
@@ -190,7 +216,9 @@ int main(int argc, char **argv)
             printf("frame: %zu pixels not set, %zu set more than once\n", missing, twice);
             status = 3;
         }
-        if (argc - arg == 2 && (grey ? write_pgm(argv[arg + 1], &frame) : write_bmp(argv[arg + 1], &frame, &palette_7color)) != 0)
+        if (argc - arg == 2 && (grey ? write_pgm(argv[arg + 1], &frame)
+                                   : width == CACHE_WIDTH ? write_cache(argv[arg + 1], &frame)
+                                                          : write_bmp(argv[arg + 1], &frame, &palette_7color)) != 0)
         {
             perror(argv[arg + 1]);
             status = 2;

@@ -30,6 +30,7 @@
 #include "EPD_7in3f.h"
 #include "GUI_Paint.h"
 #include "GUI_BMPfile.h"
+#include "cache.h"
 #include "jpeg_convert.h"
 #include "palette.h"
 #include "work_memory.h"
@@ -80,9 +81,16 @@ static void feed_watchdog(void *ctx)
     watchdog_update();
 }
 
-// Decode, scale and dither a JPEG into the selected image (landscape frame)
-static bool draw_jpeg(const char *path)
+// A JPEG into the selected image (landscape frame): from its cache file, or decoded, scaled and
+// dithered and then cached
+static bool draw_jpeg(const char *path, uint8_t *image)
 {
+    uint32_t start = to_ms_since_boot(get_absolute_time());
+    if (cache_load(path, image))
+    {
+        printf("jpeg: from cache, %lu ms\r\n", (unsigned long)(to_ms_since_boot(get_absolute_time()) - start));
+        return true;
+    }
     FIL fil;
     FRESULT fr = f_open(&fil, path, FA_READ);
     if (fr != FR_OK)
@@ -94,13 +102,17 @@ static bool draw_jpeg(const char *path)
     JpegInput in = {.read = fat_read, .rewind = fat_rewind, .ctx = &fil};
     JpegOutput out = {.width = EPD_7IN3F_WIDTH, .height = EPD_7IN3F_HEIGHT, .palette = &palette_7color,
                       .put_pixel = put_pixel, .progress = feed_watchdog};
-    uint32_t start = to_ms_since_boot(get_absolute_time());
     JpegResult r = jpeg_convert(&in, &out, work_memory, sizeof(work_memory));
     uint32_t ms = to_ms_since_boot(get_absolute_time()) - start;
     printf("jpeg: %s, %lu ms, read %lu of %lu bytes\r\n", jpeg_result_str(r), (unsigned long)ms,
            (unsigned long)f_tell(&fil), (unsigned long)f_size(&fil));
     f_close(&fil);
-    return r == JPEG_OK;
+    if (r != JPEG_OK)
+        return false;
+    start = to_ms_since_boot(get_absolute_time());
+    if (cache_save(path, image))
+        printf("jpeg: cached, %lu ms\r\n", (unsigned long)(to_ms_since_boot(get_absolute_time()) - start));
+    return true;
 }
 
 int display_image(const char *path, float vol)
@@ -125,7 +137,7 @@ int display_image(const char *path, float vol)
     Paint_SelectImage(image);
     Paint_Clear(EPD_7IN3F_WHITE);
 
-    bool shown = images_is_jpeg(path) ? draw_jpeg(path) : GUI_ReadBmp_RGB_7Color(path, 0, 0) == 0;
+    bool shown = images_is_jpeg(path) ? draw_jpeg(path, image) : GUI_ReadBmp_RGB_7Color(path, 0, 0) == 0;
     if (!shown)
     { // a message screen with the file name instead of a partial image; it still counts as shown below
         Paint_Clear(EPD_7IN3F_WHITE);

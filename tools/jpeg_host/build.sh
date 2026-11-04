@@ -11,7 +11,7 @@ build() {
     cc -std=c2x -g ${FLAGS:--O1 -fsanitize=address,undefined -fno-sanitize-recover=undefined} \
         -Wall -Wextra -Wno-unused-parameter -fwrapv \
         -I include -I lib/tjpgd -I lib/e-Paper -I tools/jpeg_host/stub \
-        "$@" src/exif.c src/palette.c lib/tjpgd/tjpgd.c -o "build/$out"
+        "$@" src/exif.c src/palette.c src/cache_format.c lib/tjpgd/tjpgd.c -o "build/$out"
 }
 FLAGS=$1
 build jpeg_host src/jpeg_convert.c tools/jpeg_host/main.c
