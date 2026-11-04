@@ -27,9 +27,7 @@ bool images_is_jpeg(const char *name)
     return has_extension(name, ".jpg") || has_extension(name, ".jpeg");
 }
 
-// A displayable image: a .bmp or JPEG file, not a folder, not hidden/system, and not a dot-file
-// (skips macOS "._" companion files and similar)
-static bool is_image(const FILINFO *fno)
+bool images_is_image(const FILINFO *fno)
 {
     if (fno->fattrib & (AM_DIR | AM_HID | AM_SYS))
         return false;
@@ -93,7 +91,7 @@ static void scan_images(const char *last, char *first, char *next)
     }
     while (f_readdir(&dir, &fno) == FR_OK && fno.fname[0])
     {
-        if (!is_image(&fno))
+        if (!images_is_image(&fno))
             continue;
         if (!first[0] || order_compare(fno.fname, first) < 0)
             strcpy(first, fno.fname);

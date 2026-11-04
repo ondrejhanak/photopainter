@@ -1,5 +1,6 @@
 #include "display.h"
 #include "EPD_7in3f.h" // EPD_7IN3F_BusyWait()
+#include "cache.h"
 #include "images.h"
 #include "messages.h"
 #include "sdcard.h"
@@ -150,14 +151,20 @@ static void enter_drive_mode(const char *reason)
     usb_serial_discard(); // commands sent during the refresh
 }
 
-// Take the card back, then re-read it and settings.ini (the computer may have changed both) and
-// show the next image
+// Take the card back, then re-read it and settings.ini (the computer may have changed both), show
+// the next image and remove cache files of photos the computer deleted or replaced
 static void leave_drive_mode(const char *reason)
 {
     usb_drive_stop();
     drive_mode = false;
     set_led(false);
     next_image(reason);
+    if (card_present)
+    {
+        sdcard_mount();
+        cache_prune();
+        sdcard_unmount();
+    }
 }
 
 // Runs while the panel refreshes: in drive mode the computer keeps being served

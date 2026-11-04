@@ -26,15 +26,38 @@ static uint64_t hash_bytes(uint64_t h, const void *data, size_t len)
     return h;
 }
 
-void cache_name(char out[CACHE_NAME_LEN + 1], const char *name, uint32_t size, uint16_t date, uint16_t time)
+uint64_t cache_key(const char *name, uint32_t size, uint16_t date, uint16_t time)
 {
     uint8_t entry[1 + 4 + 2 + 2] = {CACHE_VERSION};
     put32(entry + 1, size);
     put16(entry + 5, date);
     put16(entry + 7, time);
     uint64_t h = hash_bytes(0xcbf29ce484222325ULL, name, strlen(name) + 1); // with the NUL: no ambiguity
-    h = hash_bytes(h, entry, sizeof(entry));
-    snprintf(out, CACHE_NAME_LEN + 1, "%08lx%08lx", (unsigned long)(h >> 32), (unsigned long)(h & 0xFFFFFFFF));
+    return hash_bytes(h, entry, sizeof(entry));
+}
+
+void cache_name(char out[CACHE_NAME_LEN + 1], uint64_t key)
+{
+    snprintf(out, CACHE_NAME_LEN + 1, "%08lx%08lx", (unsigned long)(key >> 32), (unsigned long)(key & 0xFFFFFFFF));
+}
+
+bool cache_parse_name(const char *file_name, uint64_t *key, bool *tmp)
+{
+    uint64_t k = 0;
+    for (int i = 0; i < CACHE_NAME_LEN; i++)
+    {
+        char c = file_name[i];
+        int digit = c >= '0' && c <= '9' ? c - '0' : c >= 'a' && c <= 'f' ? c - 'a' + 10 : -1;
+        if (digit < 0)
+            return false;
+        k = k << 4 | (uint64_t)digit;
+    }
+    const char *ext = file_name + CACHE_NAME_LEN;
+    if (strcmp(ext, ".bmp") != 0 && strcmp(ext, ".tmp") != 0)
+        return false;
+    *key = k;
+    *tmp = ext[1] == 't';
+    return true;
 }
 
 void cache_header(uint8_t out[CACHE_HEADER_SIZE], const Palette *palette)

@@ -156,19 +156,37 @@ static void test_cache_format(void)
     header[22] ^= 1; // other height
     expect("other header refused", cache_header_ok(header), 0);
 
-    char a[CACHE_NAME_LEN + 1], b[CACHE_NAME_LEN + 1];
-    cache_name(a, "IMG_0001.jpg", 1000, 0x5964, 0x8000);
-    expect("cache name length", (int)strlen(a), CACHE_NAME_LEN);
-    cache_name(b, "IMG_0001.jpg", 1000, 0x5964, 0x8000);
-    expect("cache name stable", strcmp(a, b), 0);
-    cache_name(b, "IMG_0002.jpg", 1000, 0x5964, 0x8000);
-    expect("cache name follows the name", strcmp(a, b) != 0, 1);
-    cache_name(b, "IMG_0001.jpg", 1001, 0x5964, 0x8000);
-    expect("cache name follows the size", strcmp(a, b) != 0, 1);
-    cache_name(b, "IMG_0001.jpg", 1000, 0x5965, 0x8000);
-    expect("cache name follows the date", strcmp(a, b) != 0, 1);
-    cache_name(b, "IMG_0001.jpg", 1000, 0x5964, 0x8001);
-    expect("cache name follows the time", strcmp(a, b) != 0, 1);
+    uint64_t k = cache_key("IMG_0001.jpg", 1000, 0x5964, 0x8000);
+    expect("cache key stable", k == cache_key("IMG_0001.jpg", 1000, 0x5964, 0x8000), 1);
+    expect("cache key follows the name", k != cache_key("IMG_0002.jpg", 1000, 0x5964, 0x8000), 1);
+    expect("cache key follows the size", k != cache_key("IMG_0001.jpg", 1001, 0x5964, 0x8000), 1);
+    expect("cache key follows the date", k != cache_key("IMG_0001.jpg", 1000, 0x5965, 0x8000), 1);
+    expect("cache key follows the time", k != cache_key("IMG_0001.jpg", 1000, 0x5964, 0x8001), 1);
+
+    // File names: written by cache_name(), read back by cache_parse_name()
+    char name[CACHE_NAME_LEN + 1 + 4];
+    static const uint64_t keys[] = {0, 1, 0xfedcba9876543210ULL, 0xffffffffffffffffULL};
+    for (size_t i = 0; i < sizeof(keys) / sizeof(keys[0]); i++)
+    {
+        cache_name(name, keys[i]);
+        expect("cache name length", (int)strlen(name), CACHE_NAME_LEN);
+        strcat(name, i % 2 ? ".tmp" : ".bmp");
+        uint64_t back = 0;
+        bool tmp = !(i % 2);
+        expect("cache name parsed", cache_parse_name(name, &back, &tmp), 1);
+        expect("cache name round trip", back == keys[i], 1);
+        expect("cache name .tmp", tmp, i % 2);
+    }
+    static const char *const others[] = {"fedcba987654321.bmp", "fedcba9876543210.bmpx", "FEDCBA9876543210.bmp",
+                                         "fedcba9876543210.jpg", "fedcba987654321g.bmp", "fedcba9876543210", ""};
+    for (size_t i = 0; i < sizeof(others) / sizeof(others[0]); i++)
+    {
+        uint64_t key;
+        bool tmp;
+        char label[64];
+        snprintf(label, sizeof(label), "not a cache name: \"%s\"", others[i]);
+        expect(label, cache_parse_name(others[i], &key, &tmp), 0);
+    }
 }
 
 int main(void)

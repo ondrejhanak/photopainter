@@ -16,9 +16,14 @@
 #define CACHE_FILE_SIZE (CACHE_HEADER_SIZE + CACHE_ROW_BYTES * CACHE_HEIGHT)
 #define CACHE_NAME_LEN 16 // hex digits
 
-// Cache file name (without extension) for a photo's directory entry: a replaced photo with the same
-// name gets a new one. Changing CACHE_VERSION in cache_format.c makes every photo convert again.
-void cache_name(char out[CACHE_NAME_LEN + 1], const char *name, uint32_t size, uint16_t date, uint16_t time);
+// Cache key of a photo's directory entry: a replaced photo with the same name gets a new one.
+// Changing CACHE_VERSION in cache_format.c makes every photo convert again.
+uint64_t cache_key(const char *name, uint32_t size, uint16_t date, uint16_t time);
+// Cache file name of a key, without extension (hex digits)
+void cache_name(char out[CACHE_NAME_LEN + 1], uint64_t key);
+// Key of a cache file name ("<hex>.bmp", or "<hex>.tmp" left by a power cut: *tmp set); false for
+// any other name
+bool cache_parse_name(const char *file_name, uint64_t *key, bool *tmp);
 
 void cache_header(uint8_t out[CACHE_HEADER_SIZE], const Palette *palette);
 // Whether a header describes a cache file (size, depth, top-down); the palette is not checked

@@ -12,6 +12,9 @@ bool images_select_next(void);
 // The image to be shown after images_path, without changing any state; false if it is not known yet
 // (end of a random round) or the same image. Expects the card mounted; name holds FF_LFN_BUF + 1.
 bool images_peek_next(char *name);
+// A displayable image: a .bmp or JPEG file, not a folder, not hidden/system, and not a dot-file
+// (skips macOS "._" companion files and similar)
+bool images_is_image(const FILINFO *fno);
 // Whether a file name has a JPEG extension (.jpg, .jpeg)
 bool images_is_jpeg(const char *name);
 // Remember images_path as shown, so the next selection continues after it

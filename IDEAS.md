@@ -7,7 +7,7 @@ In no particular order; not everything here will happen.
 - **JPEG support**: copy photos straight from a computer, no conversion script. Decode, scale and dither once, then cache. Must stream: 264 KB RAM, 192 KB of it the frame buffer.
   - Cache: 4-bit indexed, top-down BMP, palette indices = panel color codes, upright, so the file opens on a computer as the frame shows it.
   - Folder per orientation (`cache/landscape/`, `cache/portrait/`), ~192 KB per photo in each.
-  - File name: `hash(name, size, date, time)` of the directory entry, so a replaced file (e.g. another phone's `IMG_0001.jpg`) is converted again. Cleanup removes orphans.
+  - File name: `hash(name, size, date, time)` of the directory entry, so a replaced file (e.g. another phone's `IMG_0001.jpg`) is converted again. Cache files of deleted or replaced photos are removed after drive mode.
   - Convert while the panel refreshes the previous photo (the CPU waits anyway), else when the photo is due.
   - EXIF orientation 3/6/8 applied, mirrored ones ignored.
   - Unsupported files (progressive JPEG, HEIC) skipped and logged; drive-mode exit screen can say "N new photos, M cannot be used".

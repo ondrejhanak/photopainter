@@ -11,6 +11,9 @@ bool cache_exists(const char *name);
 // Load the cached frame of photo `name` (in the card root) into the panel frame buffer; false if there
 // is none or it cannot be read
 bool cache_load(const char *name, uint8_t *frame);
+// Delete cache files whose photo is gone or was replaced, and leftovers of a power cut while
+// saving; returns how many. Must not run while a cache file is being written.
+int cache_prune(void);
 // Save the frame buffer as the cache file of photo `name`. Written under a temporary name and renamed
 // when complete, so a power cut never leaves a partial cache file
 bool cache_save(const char *name, const uint8_t *frame);

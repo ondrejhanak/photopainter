@@ -1,5 +1,6 @@
 #include "cache.h"
 #include "cache_format.h"
+#include "images.h"
 #include "palette.h"
 #include "sdcard.h"
 #include "work_memory.h"
@@ -8,6 +9,7 @@
 #include "hardware/watchdog.h"
 
 #include <stdio.h>
+#include <stdlib.h> // qsort(), bsearch()
 #include <string.h>
 
 #define CACHE_DIR SDCARD_FRAME_DIR "/cache"
@@ -26,7 +28,7 @@ static bool cache_path(char path[PATH_LEN], const char *name)
         return false;
     }
     char key[CACHE_NAME_LEN + 1];
-    cache_name(key, fno.fname, (uint32_t)fno.fsize, fno.fdate, fno.ftime);
+    cache_name(key, cache_key(fno.fname, (uint32_t)fno.fsize, fno.fdate, fno.ftime));
     snprintf(path, PATH_LEN, LANDSCAPE_DIR "/%s", key);
     return true;
 }
@@ -66,6 +68,58 @@ bool cache_load(const char *name, uint8_t *frame)
     if (!ok)
         printf("cache file %s unreadable, converting again\r\n", path);
     return ok;
+}
+
+static int compare_keys(const void *a, const void *b)
+{
+    uint64_t x = *(const uint64_t *)a, y = *(const uint64_t *)b;
+    return x < y ? -1 : x > y;
+}
+
+int cache_prune(void)
+{
+    // Keys of the photos in the card root, in the work memory
+    uint64_t *keys = (uint64_t *)(void *)work_memory;
+    size_t max = WORK_MEMORY_SIZE / sizeof(uint64_t), count = 0;
+    DIR dir;
+    FILINFO fno;
+    if (f_opendir(&dir, "/") != FR_OK)
+        return 0;
+    while (f_readdir(&dir, &fno) == FR_OK && fno.fname[0])
+    {
+        if (!images_is_image(&fno) || !images_is_jpeg(fno.fname))
+            continue;
+        if (count == max)
+        { // an incomplete list would delete cache files still in use
+            printf("cache cleanup skipped: more than %u photos\r\n", (unsigned)max);
+            f_closedir(&dir);
+            return 0;
+        }
+        keys[count++] = cache_key(fno.fname, (uint32_t)fno.fsize, fno.fdate, fno.ftime);
+    }
+    f_closedir(&dir);
+    qsort(keys, count, sizeof(keys[0]), compare_keys);
+
+    int removed = 0;
+    if (f_opendir(&dir, LANDSCAPE_DIR) != FR_OK)
+        return 0; // no cache yet
+    while (f_readdir(&dir, &fno) == FR_OK && fno.fname[0])
+    {
+        uint64_t key;
+        bool tmp;
+        if (!cache_parse_name(fno.fname, &key, &tmp))
+            continue; // not ours
+        if (!tmp && bsearch(&key, keys, count, sizeof(keys[0]), compare_keys))
+            continue;
+        char path[PATH_LEN];
+        snprintf(path, sizeof(path), LANDSCAPE_DIR "/%s", fno.fname);
+        if (f_unlink(path) == FR_OK)
+            removed++;
+        watchdog_update();
+    }
+    f_closedir(&dir);
+    printf("cache cleanup: %d photos, %d cache files removed\r\n", (int)count, removed);
+    return removed;
 }
 
 bool cache_save(const char *name, const uint8_t *frame)
