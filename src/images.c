@@ -17,7 +17,18 @@
 char images_path[FF_LFN_BUF + 1]; // file name of the image to display, in the card root
 static uint32_t seed; // random order: identifies the current shuffle; persisted in the state file
 
-// A displayable image: a .bmp file, not a folder, not hidden/system, and not a dot-file
+static bool has_extension(const char *name, const char *ext)
+{
+    size_t len = strlen(name), ext_len = strlen(ext);
+    return len > ext_len && strcasecmp(name + len - ext_len, ext) == 0;
+}
+
+bool images_is_jpeg(const char *name)
+{
+    return has_extension(name, ".jpg") || has_extension(name, ".jpeg");
+}
+
+// A displayable image: a .bmp or JPEG file, not a folder, not hidden/system, and not a dot-file
 // (skips macOS "._" companion files and similar)
 static bool is_image(const FILINFO *fno)
 {
@@ -25,8 +36,7 @@ static bool is_image(const FILINFO *fno)
         return false;
     if (fno->fname[0] == '.')
         return false;
-    size_t len = strlen(fno->fname);
-    return len > 4 && strcasecmp(fno->fname + len - 4, ".bmp") == 0;
+    return has_extension(fno->fname, ".bmp") || images_is_jpeg(fno->fname);
 }
 
 // Display order of two names under the current settings

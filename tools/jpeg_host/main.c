@@ -14,11 +14,16 @@ typedef struct
     uint8_t *writes; // per pixel, to check that each is set exactly once
 } Frame;
 
+static unsigned read_calls; // reads with data, i.e. card commands on the device
+
 static size_t file_read(void *ctx, uint8_t *buf, size_t n)
 {
     FILE *f = ctx;
     if (buf)
+    {
+        read_calls++;
         return fread(buf, 1, n, f);
+    }
     long pos = ftell(f);
     fseek(f, 0, SEEK_END);
     long end = ftell(f);
@@ -161,14 +166,15 @@ int main(int argc, char **argv)
     printf("probe: %s, %ux%u, orientation %d\n", jpeg_result_str(r), info.width, info.height, info.orientation);
     file_rewind(in);
     memset(work, 0xA5, work_size);
+    read_calls = 0;
     r = jpeg_convert(&input, &output, work, work_size);
     size_t used = work_size;
     while (used > 0 && work[used - 1] == 0xA5)
         used--;
     long read_to = ftell(in);
     fseek(in, 0, SEEK_END);
-    printf("convert: %s, work memory %zu of %zu bytes, read %ld of %ld bytes\n", jpeg_result_str(r), used,
-           work_size, read_to, ftell(in));
+    printf("convert: %s, work memory %zu of %zu bytes, read %ld of %ld bytes in %u calls\n", jpeg_result_str(r),
+           used, work_size, read_to, ftell(in), read_calls);
 
     int status = r == JPEG_OK ? 0 : 1;
     if (r == JPEG_OK)

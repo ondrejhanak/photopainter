@@ -5,6 +5,7 @@
 #include <string.h>
 
 #define EXIF_PROBE_BYTES 512 // start of APP1 searched for the orientation (IFD0 comes first)
+#define IN_BUFFER_MAX (16 * 1024) // read-ahead, if the work memory has room
 
 // Scaling runs on a grid of cells per axis, n = min(decoded size d, placed output size s):
 // shrinking, a cell is one output pixel averaging its span of decoded pixels; enlarging, a cell
@@ -32,6 +33,10 @@ typedef struct
     int16_t *err; // Floyd-Steinberg errors, RGB per output pixel plus one at each end
     int next_cy; // next cell row to dither
     bool failed;
+    // Read-ahead from the rest of the work memory: TJpgDec reads 512 bytes at a time, and a card
+    // takes milliseconds per read command however short
+    uint8_t *inbuf;
+    size_t in_size, in_pos, in_len;
 } Conv;
 
 static int src_start(const Axis *a, int c)
@@ -251,7 +256,25 @@ static void emit_cell_row(Conv *c, int cy)
 static size_t jd_input(JDEC *jd, uint8_t *buf, size_t n)
 {
     Conv *c = jd->device;
-    return c->in->read(c->in->ctx, buf, n);
+    if (!c->inbuf)
+        return c->in->read(c->in->ctx, buf, n);
+    size_t done = 0;
+    while (done < n)
+    {
+        if (c->in_pos == c->in_len)
+        {
+            c->in_pos = 0;
+            c->in_len = c->in->read(c->in->ctx, c->inbuf, c->in_size);
+            if (c->in_len == 0)
+                break;
+        }
+        size_t part = c->in_len - c->in_pos < n - done ? c->in_len - c->in_pos : n - done;
+        if (buf)
+            memcpy(buf + done, c->inbuf + c->in_pos, part);
+        c->in_pos += part;
+        done += part;
+    }
+    return done;
 }
 
 // One decoded block (an MCU at the decode scale), RGB888, arriving left to right, top to bottom
@@ -447,6 +470,11 @@ JpegResult jpeg_convert(const JpegInput *in, const JpegOutput *out, void *work, 
     c.ring = c.jd.pool;
     c.err = (int16_t *)(c.ring + ring_bytes(&c));
     memset(c.err, 0, err_bytes(&c));
+    // Read-ahead: whole sectors, as TJpgDec's reads from here on start at a multiple of 512
+    size_t left = avail - ring_bytes(&c) - err_bytes(&c);
+    c.in_size = (left < IN_BUFFER_MAX ? left : IN_BUFFER_MAX) & ~(size_t)511;
+    if (c.in_size)
+        c.inbuf = (uint8_t *)c.err + ((err_bytes(&c) + 3) & ~(size_t)3);
     c.next_cy = c.ay.c0;
 
     // White bars around a photo that fits in whole

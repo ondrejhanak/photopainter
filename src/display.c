@@ -30,6 +30,10 @@
 #include "EPD_7in3f.h"
 #include "GUI_Paint.h"
 #include "GUI_BMPfile.h"
+#include "jpeg_convert.h"
+#include "palette.h"
+#include "work_memory.h"
+#include "f_util.h"
 
 #include <stdbool.h>
 #include <stdlib.h> // malloc() free()
@@ -45,6 +49,58 @@ static void draw_message(const char *title, const char *hint)
     Paint_SetRotate(180);
     UWORD y = Paint_DrawString_EN(MESSAGE_X, MESSAGE_Y, title, &Font28, EPD_7IN3F_WHITE, EPD_7IN3F_BLACK);
     Paint_DrawString_EN(MESSAGE_X, y + 14, hint, &Font22, EPD_7IN3F_WHITE, EPD_7IN3F_BLACK);
+}
+
+static size_t fat_read(void *ctx, uint8_t *buf, size_t n)
+{
+    FIL *fil = ctx;
+    UINT br = 0;
+    if (buf)
+        return f_read(fil, buf, n, &br) == FR_OK ? br : 0;
+    FSIZE_t from = f_tell(fil);
+    if (f_lseek(fil, from + n) != FR_OK) // stops at the end of the file (opened for reading)
+        return 0;
+    return (size_t)(f_tell(fil) - from);
+}
+
+static bool fat_rewind(void *ctx)
+{
+    return f_lseek(ctx, 0) == FR_OK;
+}
+
+static void put_pixel(void *ctx, int x, int y, uint8_t code)
+{
+    (void)ctx;
+    Paint_SetPixel((UWORD)x, (UWORD)y, code);
+}
+
+static void feed_watchdog(void *ctx)
+{
+    (void)ctx;
+    watchdog_update();
+}
+
+// Decode, scale and dither a JPEG into the selected image (landscape frame)
+static bool draw_jpeg(const char *path)
+{
+    FIL fil;
+    FRESULT fr = f_open(&fil, path, FA_READ);
+    if (fr != FR_OK)
+    {
+        printf("f_open(%s) error: %s (%d)\r\n", path, FRESULT_str(fr), fr);
+        return false;
+    }
+    Paint_SetRotate(180); // the panel is mounted upside down
+    JpegInput in = {.read = fat_read, .rewind = fat_rewind, .ctx = &fil};
+    JpegOutput out = {.width = EPD_7IN3F_WIDTH, .height = EPD_7IN3F_HEIGHT, .palette = &palette_7color,
+                      .put_pixel = put_pixel, .progress = feed_watchdog};
+    uint32_t start = to_ms_since_boot(get_absolute_time());
+    JpegResult r = jpeg_convert(&in, &out, work_memory, sizeof(work_memory));
+    uint32_t ms = to_ms_since_boot(get_absolute_time()) - start;
+    printf("jpeg: %s, %lu ms, read %lu of %lu bytes\r\n", jpeg_result_str(r), (unsigned long)ms,
+           (unsigned long)f_tell(&fil), (unsigned long)f_size(&fil));
+    f_close(&fil);
+    return r == JPEG_OK;
 }
 
 int display_image(const char *path, float vol)
@@ -69,7 +125,8 @@ int display_image(const char *path, float vol)
     Paint_SelectImage(image);
     Paint_Clear(EPD_7IN3F_WHITE);
 
-    if (GUI_ReadBmp_RGB_7Color(path, 0, 0) != 0)
+    bool shown = images_is_jpeg(path) ? draw_jpeg(path) : GUI_ReadBmp_RGB_7Color(path, 0, 0) == 0;
+    if (!shown)
     { // a message screen with the file name instead of a partial image; it still counts as shown below
         Paint_Clear(EPD_7IN3F_WHITE);
         draw_message(msg(MSG_CANNOT_DISPLAY), path);

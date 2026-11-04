@@ -205,8 +205,10 @@ def main():
 
     # Decoding stops once the visible part is done: a 4:3 photo cropped to 5:3 skips its bottom rows
     code, log = run(s('landscape_o1.jpg'))
-    read, size = map(int, re.search(r'read (\d+) of (\d+) bytes', log).groups())
+    read, size, calls = map(int, re.search(r'read (\d+) of (\d+) bytes in (\d+) calls', log).groups())
     check(f'cropped photo stops early (read {read} of {size} bytes)', read < size * 0.95, log)
+    # Reads come in big chunks: on the card each read is a command with a fixed delay
+    check(f'reads ahead ({calls} reads for {read} bytes)', read / calls > 4096, log) # 512 without
 
     # Same look as convert.py: blurred, both dithers average to the same colours
     convert = os.path.join(ROOT, 'convert', 'convert.py')

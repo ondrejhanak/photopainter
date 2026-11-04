@@ -3,6 +3,7 @@
 // In drive mode tud_task() runs only from the firmware, not the core's USB interrupt, as the SD driver
 // waits for DMA interrupts; outside it the callbacks run in that interrupt and must not touch the card
 #include "usb_drive.h"
+#include "work_memory.h"
 #include <Arduino.h>
 #include <USB.h>
 #include <tusb-msc.h> // links TinyUSB's MSC class; without it the core's empty stubs answer and no drive appears
@@ -29,9 +30,11 @@ static uint32_t sector_count;
 static volatile uint32_t last_command_ms; // millis() of the computer's last drive command
 static volatile bool used = false; // the computer read the drive (mounting always does)
 
-static uint8_t read_buffer[READ_AHEAD * SECTOR_SIZE];
+// Both in work_memory, free in drive mode; their content is lost when drive mode ends
+static uint8_t *const read_buffer = work_memory;
 static uint32_t read_lba, read_sectors; // sectors in read_buffer
-static uint8_t write_buffer[WRITE_BATCH * SECTOR_SIZE];
+static uint8_t *const write_buffer = work_memory + READ_AHEAD * SECTOR_SIZE;
+static_assert((READ_AHEAD + WRITE_BATCH) * SECTOR_SIZE <= WORK_MEMORY_SIZE, "drive buffers exceed work memory");
 static uint32_t write_lba, write_sectors; // complete sectors in write_buffer, not yet on the card
 
 static bool flush_writes(void)
