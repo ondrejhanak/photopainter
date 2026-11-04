@@ -14,12 +14,12 @@ from PIL import Image, ImageFilter
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 HARNESS = os.path.join(ROOT, 'build', 'jpeg_host')
-LOOK_PHOTOS = ['IMG_7365.jpeg', 'olomouc.jpeg', 'IMG_9077.jpeg'] # landscape photos compared with convert.py
+LOOK_PHOTOS = ['IMG_7365.jpeg', 'olomouc.jpeg', 'IMG_9077.jpeg'] # landscape photos compared with convert_reference.py
 LOOK_MAX_DIFF = 6
 BARS = 7 # palette.c: placeholder for the bars (EPD_7IN3F_CLEAN)
 STREAM_MAX_DIFF = 1.5 # decoders differ by IDCT rounding only
 BOX_MAX_DIFF = 4
-# convert.py's exact output colours -> the soft colours our cache BMP shows
+# convert_reference.py's exact output colours -> the soft colours our cache BMP shows
 SOFT = {(0, 0, 0): (5, 5, 5), (255, 255, 255): (245, 245, 245), (0, 255, 0): (65, 140, 30),
         (0, 0, 255): (30, 65, 240), (255, 0, 0): (190, 0, 0), (255, 255, 0): (255, 245, 55),
         (255, 128, 0): (230, 125, 0)}
@@ -211,8 +211,8 @@ def main():
     # Reads come in big chunks: on the card each read is a command with a fixed delay
     check(f'reads ahead ({calls} reads for {read} bytes)', read / calls > 4096, log) # 512 without
 
-    # Same look as convert.py: blurred, both dithers average to the same colours
-    convert = os.path.join(ROOT, 'convert', 'convert.py')
+    # Same look as convert_reference.py: blurred, both dithers average to the same colours
+    convert = os.path.join(ROOT, 'tools', 'jpeg_host', 'convert_reference.py')
     for f in LOOK_PHOTOS:
         src = os.path.join(scratch, 'look_' + f)
         shutil.copyfile(os.path.join(photos, f), src)
@@ -226,7 +226,7 @@ def main():
         n = len(placeholders(src + '.bmp'))
         check(f'{f} fills the frame (no placeholder pixels)', n == 0, f'{n}')
         d = mean_diff(blurred(src + '.bmp'), ref.filter(ImageFilter.BoxBlur(6)))
-        check(f'{f} looks like convert.py output (diff {d:.1f})', d < LOOK_MAX_DIFF, f'{d:.1f}')
+        check(f'{f} looks like convert_reference.py output (diff {d:.1f})', d < LOOK_MAX_DIFF, f'{d:.1f}')
 
     # Every photo in the folder, landscape and portrait frame
     for f in sorted(os.listdir(photos)):

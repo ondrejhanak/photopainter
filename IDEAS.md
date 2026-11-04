@@ -27,9 +27,8 @@ In no particular order; not everything here will happen.
 
 - **Cleanup**: one naming style (snake_case, module prefixes like `display_*`, `images_*`), files named by content; `lib/` keeps upstream style. Remove Chinese fonts (GB2312 files), CN string drawing, Chinese comments, and unused Font8, Font12, Font24.
 - **Host tests + CI badge**: PlatformIO native + Unity for image order, random rounds and `settings.ini` parsing. GitHub Actions (`ubuntu-latest`, free for public repos) builds firmware and runs `pio test -e native` on every push; badge in README. Later the JPEG pipeline, checked on preview PNGs instead of flashing.
-- **Fuzzing**: BMP, later EXIF/JPEG parsing, to prove "bad files don't break the frame".
+- **Fuzzing**: JPEG/EXIF parsing as a repeatable test (CI), to prove "bad files don't break the frame".
 - **Build hygiene**: warnings, static analysis, stack usage and firmware size checks in CI.
-- **BMP decoder**: nearest-colour match instead of exact; read whole rows, not three 1-byte reads per pixel.
 
 ## Battery
 
@@ -60,4 +59,5 @@ In no particular order; not everything here will happen.
 - Photos for a date: needs order exceptions and a hidden naming rule, for a few uses a year.
 - Info screen (battery, photo count, version, last error): little use for the user; owner reads logs on the card.
 - Real clock and fixed change times (`change_at = 07:00`): needs time sync and a DST decision; the interval is good enough.
+- User BMP images (made with a conversion script): JPEGs are converted on the frame; BMPs needed a computer.
 - Convert all new photos right after eject on USB power: users unplug after ejecting, and converting during the refresh costs almost nothing.

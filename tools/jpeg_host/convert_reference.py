@@ -1,3 +1,5 @@
+# Reference for the look of the frame's own JPEG conversion (tools/jpeg_host/check.py compares the
+# two): crop, enhance and dither a photo with Pillow, written as an exact-palette 24-bit BMP.
 import sys
 import os.path
 from PIL import Image, ImagePalette, ImageOps, ImageEnhance, ImageFilter

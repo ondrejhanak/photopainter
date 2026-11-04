@@ -19,9 +19,13 @@ reworked to be easier to use and to develop.
 - **Settings without rebuilding.** Interval and order live in `settings.ini` on the card, created with
   comments on first start; the original needed code changes and a rebuild.
 - **Sensible default interval:** 12 hours instead of 15 minutes, which drained the battery quickly.
-- **Only images are shown.** Only `.bmp` files (any letter case) are used; other files, folders,
-  hidden and system files and dot-files (e.g. macOS `._*` companions, `.DS_Store`) are ignored. The
-  original tried to display every file in `/pic/`.
+- **Photos as they come from a phone or camera.** JPEGs are decoded, scaled and dithered on the
+  frame itself, once; the result is kept in the frame's hidden folder, and the next photo is prepared
+  while the screen refreshes. Rotated phone photos are turned upright. The original needed every
+  photo converted on a computer to an exact-palette BMP.
+- **Only photos are shown.** Only `.jpg` and `.jpeg` files (any letter case) are used; other files,
+  folders, hidden and system files and dot-files (e.g. macOS `._*` companions, `.DS_Store`) are
+  ignored. The original tried to display every file in `/pic/`.
 - **No need to remove the card.** Connected to a computer, hold the button for 3 seconds: the card
   appears as a USB drive. Copy photos, then eject the drive; the frame shows the next photo. The
   original needed the card taken out of its fiddly slot.
@@ -29,8 +33,7 @@ reworked to be easier to use and to develop.
 - **Clear on-screen messages** for a missing card or missing images.
 - **Czech or English on-screen messages** (`language` in `settings.ini`), with accents, in larger
   fonts. The frame remembers the language, so even the "no card" message uses it.
-- **Better photo conversion.** `convert/convert.py` crops, enhances and dithers photos against a palette
-  modelled on the panel's real ink colors.
+- **Colors modelled on the panel's real inks**, so photos are dithered against what the panel can show.
 
 ### Developing
 
@@ -42,6 +45,8 @@ reworked to be easier to use and to develop.
 - **Serial test commands:** on USB, sending `n` shows the next image like a KEY press and `d` enters
   USB drive mode like a long press (ignored in drive mode, eject leaves it), so tests can run without
   pressing the button.
+- **JPEG pipeline on the computer:** `tools/jpeg_host/` builds the frame's conversion on a computer (macOS, Linux)
+  and checks it on real photos and edge cases in seconds; its output is identical to the frame's.
 - **Documented hardware behavior**, e.g. the RTC alarm arriving on the KEY line and the missing SD
   card-detect pin (see [How it behaves](#how-it-behaves)).
 
@@ -53,7 +58,7 @@ reworked to be easier to use and to develop.
   re-initialized; now it is re-read before every image change.
 - **Wrong sort length.** The image list was sorted with the file-name length instead of the number of
   files, so it was sorted only partly or past its end.
-- **Garbled accented file names.** An image named e.g. `Dovolená.bmp` that could not be shown drew
+- **Garbled accented file names.** An image named e.g. `Dovolená.jpg` that could not be shown drew
   garbage instead of its name (bytes from past the font table); accented letters now draw as their
   base letter.
 - **Buffer overflows** when reading file names (up to 999 bytes read into smaller buffers).
@@ -73,9 +78,9 @@ Ideas being considered [IDEAS.md](IDEAS.md).
 
 | On the card | Purpose |
 |---|---|
-| `*.bmp` in the root | Photos (subfolders, dot-files and non-`.bmp` files are ignored) |
+| `*.jpg`, `*.jpeg` in the root | Photos (subfolders, dot-files and other files are ignored) |
 | `settings.ini` | Settings, created with comments on first start |
-| `.photopainter/` | The frame's own state (hidden) |
+| `.photopainter/` | The frame's own state and converted photos (hidden) |
 
 Photos are shown in natural name order or randomly; adding or removing photos never causes skips or
 repeats.
@@ -93,24 +98,21 @@ interval_hours = 12
 ; Image order: alphabetical or random (random shows every image once before reshuffling)
 order = alphabetical
 
+; Colour around photos that don't fill the screen: white or black
+bars = white
+
 ; Language of on-screen messages: en (English) or cs (Czech)
 language = en
 ```
 
-### Preparing photos
+### Photos
 
-Images must be 800x480 (or 480x800) 24-bit BMPs that use only the panel's 7 colors: black
-`(0,0,0)`, white `(255,255,255)`, green `(0,255,0)`, blue `(0,0,255)`, red `(255,0,0)`,
-yellow `(255,255,0)`, orange `(255,128,0)`.
-
-`convert/convert.py` (needs [Pillow](https://pypi.org/project/pillow/)) produces exactly that: it
-crops a photo to fill the frame, enhances it slightly and dithers it to the palette, saving
-`<name>_output.bmp`. `convert/convert_all.sh` converts all JPEGs in the current folder.
-
-```bash
-python3 convert/convert.py photo.jpg                  # orientation from the aspect ratio
-python3 convert/convert.py photo.jpg --dir portrait   # or force landscape/portrait
-```
+Copy JPEGs as they come; no preparation. A landscape photo fills the screen (cropped at the
+edges); portrait and square photos are shown whole, with bars at the sides (`bars` in
+`settings.ini`, to match the frame's mount). The first time a photo is shown it is converted (up
+to about 40 s for a 24-megapixel photo), and usually that already happens while the previous photo
+is on screen. Progressive JPEGs and CMYK JPEGs cannot be shown, nor HEIC (an iPhone's default; the
+Photos app exports JPEG).
 
 ## Hardware
 
@@ -182,6 +184,11 @@ platformio.ini                  Build configuration (flags, include paths, ignor
 src/
 ├── main.c                      Entry point, power management, main loop, configuration
 ├── display.c                   Image and message screens on the panel
+├── jpeg_convert.c              JPEG decode (TJpgDec), scale, crop, dither (no hardware access)
+├── exif.c                      EXIF orientation (no hardware access)
+├── palette.c                   Panel colors as dithering sees them
+├── cache.c, cache_format.c     Converted photos on the card (format: no hardware access)
+├── work_memory.c               48 KB shared by USB drive mode and JPEG conversion
 ├── sdcard.c                    SD card mount and detection
 ├── images.c                    Next-image selection, frame state
 ├── image_order.c               Natural and random image order (no hardware access)
@@ -194,15 +201,14 @@ include/                        Headers for src/, one per module
 lib/
 ├── Config/DEV_Config.h         Pin definitions, SPI/I2C/GPIO init
 ├── e-Paper/EPD_7in3f.c         Display driver (init, display, sleep, clear)
-├── GUI/
-│   ├── GUI_Paint.c             Drawing primitives, text rendering
-│   └── GUI_BMPfile.c           BMP parsing, RGB→7-color mapping
+├── GUI/GUI_Paint.c             Drawing primitives, text rendering
+├── tjpgd/                      TJpgDec R0.03 JPEG decoder (ChaN)
 ├── RTC/waveshare_PCF85063.c    RTC driver, alarm scheduling
 ├── FatFs_SPI/                  SD card filesystem (FatFs library)
 ├── Fonts/                      Fonts from Terminus Font (22 and 28 px, U+0020-U+017F, SIL OFL 1.1)
 ├── led/led.c                   LED indicators, power control
 └── inih/                       INI parser (r62, BSD) for settings.ini
-convert/                        Host-side image conversion script (Python)
+tools/jpeg_host/                JPEG pipeline on the computer: harness, checks, reference converter
 tools/gen_font.py               Generates lib/Fonts/fontNN.c from a BDF bitmap font
 tools/serial_log.py             Serial log with timestamps, sends test commands (device tests)
 tools/drive_test.py             USB drive mode enter/eject cycles with write and verify (macOS)

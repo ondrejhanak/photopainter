@@ -1,7 +1,7 @@
 #include "palette.h"
 #include "EPD_7in3f.h"
 
-// RGB values as in convert.py's dither palette, so on-device photos look like converted ones
+// RGB values as the dither palette of tools/jpeg_host/convert_reference.py, the look the frame matches
 static const PaletteColor colors_7color[] = {
     {EPD_7IN3F_BLACK, 5, 5, 5},
     {EPD_7IN3F_WHITE, 245, 245, 245},

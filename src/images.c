@@ -22,18 +22,13 @@ static bool has_extension(const char *name, const char *ext)
     return len > ext_len && strcasecmp(name + len - ext_len, ext) == 0;
 }
 
-bool images_is_jpeg(const char *name)
-{
-    return has_extension(name, ".jpg") || has_extension(name, ".jpeg");
-}
-
 bool images_is_image(const FILINFO *fno)
 {
     if (fno->fattrib & (AM_DIR | AM_HID | AM_SYS))
         return false;
     if (fno->fname[0] == '.')
         return false;
-    return has_extension(fno->fname, ".bmp") || images_is_jpeg(fno->fname);
+    return has_extension(fno->fname, ".jpg") || has_extension(fno->fname, ".jpeg");
 }
 
 // Display order of two names under the current settings

@@ -30,7 +30,6 @@
 #include "settings.h"
 #include "EPD_7in3f.h"
 #include "GUI_Paint.h"
-#include "GUI_BMPfile.h"
 #include "cache.h"
 #include "jpeg_convert.h"
 #include "palette.h"
@@ -120,8 +119,8 @@ static bool draw_jpeg(const char *path, uint8_t *image)
 static char prefetch_name[FF_LFN_BUF + 1];
 static uint8_t *prefetch_image;
 
-// While the panel refreshes an image, convert the image due next if it is a JPEG without a cache
-// file, in the frame buffer the panel no longer needs
+// While the panel refreshes an image, convert the image due next if it has no cache file yet, in
+// the frame buffer the panel no longer needs
 void EPD_7IN3F_Refreshing(void)
 {
     if (!prefetch_image)
@@ -152,13 +151,11 @@ int display_image(const char *path, float vol)
 
     sdcard_mount();
 
-    printf("Display BMP\r\n");
     Paint_SelectImage(image);
     Paint_Clear(EPD_7IN3F_WHITE);
 
-    bool jpeg = images_is_jpeg(path);
-    bool shown = jpeg ? draw_jpeg(path, image) : GUI_ReadBmp_RGB_7Color(path, 0, 0) == 0;
-    if (jpeg && shown) // the panel must never get the placeholder: an unused code leaves an afterimage
+    bool shown = draw_jpeg(path, image);
+    if (shown) // the panel must never get the placeholder: an unused code leaves an afterimage
         palette_replace(image, image_size, palette_7color.bars,
                         settings.bars == BARS_BLACK ? EPD_7IN3F_BLACK : EPD_7IN3F_WHITE);
     if (!shown)
@@ -178,7 +175,7 @@ int display_image(const char *path, float vol)
         }
     }
 
-    if (images_peek_next(prefetch_name) && images_is_jpeg(prefetch_name))
+    if (images_peek_next(prefetch_name))
         prefetch_image = image;
     printf("EPD_Display\r\n");
     uint32_t start = to_ms_since_boot(get_absolute_time());

@@ -87,7 +87,7 @@ int cache_prune(void)
         return 0;
     while (f_readdir(&dir, &fno) == FR_OK && fno.fname[0])
     {
-        if (!images_is_image(&fno) || !images_is_jpeg(fno.fname))
+        if (!images_is_image(&fno))
             continue;
         if (count == max)
         { // an incomplete list would delete cache files still in use

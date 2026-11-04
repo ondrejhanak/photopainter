@@ -46,7 +46,7 @@ The frame is usually connected over USB, so flashing and logs need no button pre
   (`-n` cycles, `-w MB` write and verify after remount, `-x` command on the mounted card, `-v` volume
   name) and stops at a reboot. The log loses nothing around enter/leave (no re-enumeration).
 - **Test screens without card slot changes:** in drive mode, change the card from the Mac (move images
-  into a folder, add a broken `.bmp`, edit `settings.ini`), eject, and look at the screen. For
+  into a folder, add a broken `.jpg`, edit `settings.ini`), eject, and look at the screen. For
   screens that need the card out, temporarily force them in `show_next()` instead; never commit that.
 - **Finding hangs and reboots (watchdog):** write step markers to `watchdog_hw->scratch[0..3]` (they
   survive the reset; the SDK uses 4-7, `watchdog_enable()` overwrites 4) and print them at boot. A
@@ -72,13 +72,14 @@ which may be reused or referenced elsewhere.
 
 - **src/main.c** - Main application logic (mode, refresh interval, power flow), safe to modify
 - **src/display.c, src/sdcard.c, src/images.c, src/image_order.c** - Display screens, SD card access, next-image selection and its order (pure logic), safe to modify
+- **src/jpeg_convert.c, src/exif.c, src/palette.c, src/cache_format.c** - JPEG decode, scale and dither, EXIF orientation, panel colours, cache file format (pure logic, also built on the Mac by `tools/jpeg_host/`); **src/cache.c** - cache files on the card
 - **src/settings.c** - `settings.ini` on the SD card (user settings, parsed with inih in `lib/inih/`)
 - **src/messages.c** - All user-visible texts per language (`msg(id)`, `language` setting). Every new
   on-screen text goes here in English and Czech (full diacritics, UTF-8), titles without a full stop, other lines are sentences with one; line
   lengths in the file's comment
 - **include/** - Headers for the `src/` files
-- **lib/** - Generic reusable libraries (display driver, GUI/BMP decoding, FatFs, RTC), modify with caution
+- **lib/** - Generic reusable libraries (display driver, drawing, FatFs, RTC, TJpgDec in `lib/tjpgd/`), modify with caution
 - **tools/gen_font.py** - Generates the font tables in `lib/Fonts/` from Terminus BDF files (don't edit them by hand)
 - **tools/serial_log.py, tools/drive_test.py** - Host-side device test tools (serial log + commands, drive mode cycles)
-- **convert/** - Host-side Python script to resize/crop photos and dither them to the exact 7-color palette (24-bit BMP) for the SD card
+- **tools/jpeg_host/** - The JPEG pipeline on the Mac: `build.sh`, then `check.py PHOTO_DIR SCRATCH_DIR` (edge cases, unit tests, look vs `convert_reference.py`); its output is byte-identical to the device's cache files
 - **platformio.ini** - Build flags, include paths, ignored framework libraries
