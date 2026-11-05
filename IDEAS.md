@@ -6,7 +6,7 @@ In no particular order; not everything here will happen.
 
 - **Photos that cannot be shown**: progressive or CMYK JPEGs and HEIC/PNG/WebP files are skipped (remembered, never deleted), the next photo is shown instead, with a two-line note at the bottom naming them; also checked right after eject. No extra screen.
 - **Frame orientation**: `orientation = landscape | portrait`, default `landscape`. Photos, message screens and battery icon follow it; converted photos get a cache folder per orientation (`cache/portrait/` next to `cache/landscape/`).
-- **One new photo after eject**: show the first new photo (natural order) as confirmation, then the normal order. New = hash (the cache key) not in the set taken before drive mode. `state.txt` not updated, so the photo still gets its own slot later.
+- **New photos first**: after eject, the photos just added over USB are shown first, one per change, in the frame's order (the first one right after eject, as confirmation); then the normal order continues where it was. New = hash (the cache key) not in the set taken before drive mode; no limit on how many. A new batch replaces an unfinished one (its leftovers come in the normal order); an eject without new photos keeps the running batch.
 - **Low-battery icon**: low = small red icon in a corner, photos keep changing; critical = existing low-battery screen, then no more wake-ups (e-paper keeps it unpowered). Voltage read at the same point every wake, with hysteresis; thresholds from the logged discharge curve.
 - **Photo date caption**: `show_date = no | yes`, default `no`. EXIF `DateTimeOriginal`, fallback `DateTime`, read from the JPEG when shown; plain string, no calendar math. Formatted per `language` (e.g. 24. 12. 1985), black on a small white box in a corner, not in the cache. No EXIF date, no caption.
 
@@ -46,4 +46,5 @@ In no particular order; not everything here will happen.
 - Info screen (battery, photo count, version, last error): little use for the user; owner reads logs on the card.
 - Real clock and fixed change times (`change_at = 07:00`): needs time sync and a DST decision; the interval is good enough.
 - User BMP images (made with a conversion script): JPEGs are converted on the frame; BMPs needed a computer.
+- Only one new photo after eject as confirmation: in random order (the default) the other new photos could wait months for their slot.
 - Convert all new photos right after eject on USB power: users unplug after ejecting, and converting during the refresh costs almost nothing.
