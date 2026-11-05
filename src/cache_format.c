@@ -37,6 +37,12 @@ uint64_t cache_key(const char *name, uint32_t size, uint16_t date, uint16_t time
     return hash_bytes(h, entry, sizeof(entry));
 }
 
+int cache_compare_keys(const void *a, const void *b)
+{
+    uint64_t x = *(const uint64_t *)a, y = *(const uint64_t *)b;
+    return x < y ? -1 : x > y;
+}
+
 void cache_name(char out[CACHE_NAME_LEN + 1], uint64_t key)
 {
     snprintf(out, CACHE_NAME_LEN + 1, "%08lx%08lx", (unsigned long)(key >> 32), (unsigned long)(key & 0xFFFFFFFF));

@@ -14,8 +14,10 @@ reworked to be easier to use and to develop.
 - **Photos go straight onto the card.** Copy them to the card root under any name; the original only
   looked in a `/pic/` folder.
 - **Random or natural order.** Random order (the default) shows every photo once before reshuffling;
-  natural order puts `Photo 2` before `Photo 10`. Adding or removing photos never causes skips or repeats (the original kept a
-  position in a list file, which shifted whenever photos changed).
+  natural order puts `Photo 2` before `Photo 10`. Photos copied over USB are shown first, one per
+  change (the first right after eject), then the order goes on where it was. Otherwise adding or
+  removing photos never causes skips or repeats (the original kept a position in a list file, which
+  shifted whenever photos changed).
 - **Settings without rebuilding.** Interval and order live in `settings.ini` on the card, created with
   comments on first start; the original needed code changes and a rebuild.
 - **Sensible default interval:** 12 hours instead of 15 minutes, which drained the battery quickly.
@@ -27,7 +29,7 @@ reworked to be easier to use and to develop.
   folders, hidden and system files and dot-files (e.g. macOS `._*` companions, `.DS_Store`) are
   ignored. The original tried to display every file in `/pic/`.
 - **No need to remove the card.** Connected to a computer, hold the button for 3 seconds: the card
-  appears as a USB drive. Copy photos, then eject the drive; the frame shows the next photo. The
+  appears as a USB drive. Copy photos, then eject the drive; the frame shows the first new photo. The
   original needed the card taken out of its fiddly slot.
 - **A tidy card.** The frame's own state lives in a hidden folder; no list, index or temporary files.
 - **Clear on-screen messages** for a missing card or missing images.
@@ -82,8 +84,8 @@ Ideas being considered [IDEAS.md](IDEAS.md).
 | `settings.ini` | Settings, created with comments on first start |
 | `.photopainter/` | The frame's own state and converted photos (hidden) |
 
-Photos are shown in natural name order or randomly; adding or removing photos never causes skips or
-repeats.
+Photos are shown in natural name order or randomly; photos copied over USB come first (see above),
+otherwise adding or removing photos never causes skips or repeats.
 
 ### settings.ini
 
@@ -143,9 +145,10 @@ Product details and schematic: [PhotoPainter wiki](https://www.waveshare.com/wik
 - **USB drive mode:** on USB the frame is always a USB drive next to the serial port, empty like a
   card reader without a card (Windows may show an empty drive letter). A long press with a computer
   connected puts the SD card in: the computer mounts it within a second, while a "USB Drive" screen
-  refreshes (flashing and the log keep working). The frame leaves the card alone until the drive is ejected or KEY is held again, then re-reads the card and
-  `settings.ini` and shows the next image. It also ends by itself when the computer does not read
-  the drive within a minute (mount failed) or leaves it untouched for 30 minutes (forgotten eject,
+  refreshes (flashing and the log keep working). The frame leaves the card alone until the drive is
+  ejected or KEY is held again, then re-reads the card and `settings.ini` and shows the first new
+  photo (or the next image). It also ends by itself when the computer does not read the drive
+  within a minute (mount failed) or leaves it untouched for 30 minutes (forgotten eject,
   computer asleep), so the photos never stop for good. On a plain charger a long press is ignored
   and the red LED blinks 3 times. About 0.4 MB/s, limited by USB full speed with 64-byte packets.
 - **LEDs:** green (PWR) is the charging light: on while the battery charges, off when it is full or

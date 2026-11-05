@@ -70,12 +70,6 @@ bool cache_load(const char *name, uint8_t *frame)
     return ok;
 }
 
-static int compare_keys(const void *a, const void *b)
-{
-    uint64_t x = *(const uint64_t *)a, y = *(const uint64_t *)b;
-    return x < y ? -1 : x > y;
-}
-
 size_t cache_root_keys(uint64_t *keys, size_t max)
 {
     size_t count = 0;
@@ -95,7 +89,7 @@ size_t cache_root_keys(uint64_t *keys, size_t max)
         keys[count++] = cache_key(fno.fname, (uint32_t)fno.fsize, fno.fdate, fno.ftime);
     }
     f_closedir(&dir);
-    qsort(keys, count, sizeof(keys[0]), compare_keys);
+    qsort(keys, count, sizeof(keys[0]), cache_compare_keys);
     return count;
 }
 
@@ -123,7 +117,7 @@ int cache_prune(void)
         bool tmp;
         if (!cache_parse_name(fno.fname, &key, &tmp))
             continue; // not ours
-        if (!tmp && bsearch(&key, keys, count, sizeof(keys[0]), compare_keys))
+        if (!tmp && bsearch(&key, keys, count, sizeof(keys[0]), cache_compare_keys))
             continue;
         char path[PATH_LEN];
         snprintf(path, sizeof(path), LANDSCAPE_DIR "/%s", fno.fname);

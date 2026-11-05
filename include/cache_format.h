@@ -19,6 +19,8 @@
 // Cache key of a photo's directory entry: a replaced photo with the same name gets a new one.
 // Changing CACHE_VERSION in cache_format.c makes every photo convert again.
 uint64_t cache_key(const char *name, uint32_t size, uint16_t date, uint16_t time);
+// Order of two keys, for qsort() and bsearch()
+int cache_compare_keys(const void *a, const void *b);
 // Cache file name of a key, without extension (hex digits)
 void cache_name(char out[CACHE_NAME_LEN + 1], uint64_t key);
 // Key of a cache file name ("<hex>.bmp", or "<hex>.tmp" left by a power cut: *tmp set); false for

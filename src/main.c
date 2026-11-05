@@ -137,6 +137,8 @@ static void enter_drive_mode(const char *reason)
         return;
     }
     scan_card(); // card check and language for the screen
+    if (card_present)
+        images_remember_photos();
     if (!card_present)
         show_next(); // "no card" screen
     else if (!usb_drive_start())
@@ -152,13 +154,18 @@ static void enter_drive_mode(const char *reason)
 }
 
 // Take the card back, then re-read it and settings.ini (the computer may have changed both), show
-// the next image and remove cache files of photos the computer deleted or replaced
+// the first photo it added (or the next image) and remove cache files of photos it deleted or replaced
 static void leave_drive_mode(const char *reason)
 {
     usb_drive_stop();
     drive_mode = false;
     set_led(false);
-    next_image(reason);
+    printf("%s: leaving drive mode\r\n", reason);
+    scan_card();
+    if (card_present)
+        images_find_new();
+    show_next();
+    usb_serial_discard(); // commands sent during the refresh
     if (card_present)
     {
         sdcard_mount();
