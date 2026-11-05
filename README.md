@@ -49,6 +49,8 @@ reworked to be easier to use and to develop.
   pressing the button.
 - **JPEG pipeline on the computer:** `tools/jpeg_host/` builds the frame's conversion on a computer (macOS, Linux)
   and checks it on real photos and edge cases in seconds; its output is identical to the frame's.
+- **Photo order tests on the computer:** `tools/images_host/build.sh` runs the photo selection (order,
+  new photos first, cache cleanup) on the real FatFs over a RAM disk.
 - **Documented hardware behavior**, e.g. the RTC alarm arriving on the KEY line and the missing SD
   card-detect pin (see [How it behaves](#how-it-behaves)).
 
@@ -212,6 +214,7 @@ lib/
 ├── led/led.c                   LED indicators, power control
 └── inih/                       INI parser (r62, BSD) for settings.ini
 tools/jpeg_host/                JPEG pipeline on the computer: harness, checks, reference converter
+tools/images_host/              Photo selection tests on the computer (FatFs on a RAM disk)
 tools/gen_font.py               Generates lib/Fonts/fontNN.c from a BDF bitmap font
 tools/serial_log.py             Serial log with timestamps, sends test commands (device tests)
 tools/drive_test.py             USB drive mode enter/eject cycles with write and verify (macOS)
