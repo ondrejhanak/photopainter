@@ -76,31 +76,45 @@ static int compare_keys(const void *a, const void *b)
     return x < y ? -1 : x > y;
 }
 
-int cache_prune(void)
+size_t cache_root_keys(uint64_t *keys, size_t max)
 {
-    // Keys of the photos in the card root, in the work memory
-    uint64_t *keys = (uint64_t *)(void *)work_memory;
-    size_t max = WORK_MEMORY_SIZE / sizeof(uint64_t), count = 0;
+    size_t count = 0;
     DIR dir;
     FILINFO fno;
     if (f_opendir(&dir, "/") != FR_OK)
-        return 0;
+        return SIZE_MAX;
     while (f_readdir(&dir, &fno) == FR_OK && fno.fname[0])
     {
         if (!images_is_image(&fno))
             continue;
         if (count == max)
-        { // an incomplete list would delete cache files still in use
-            printf("cache cleanup skipped: more than %u photos\r\n", (unsigned)max);
+        {
             f_closedir(&dir);
-            return 0;
+            return SIZE_MAX;
         }
         keys[count++] = cache_key(fno.fname, (uint32_t)fno.fsize, fno.fdate, fno.ftime);
     }
     f_closedir(&dir);
     qsort(keys, count, sizeof(keys[0]), compare_keys);
+    return count;
+}
+
+int cache_prune(void)
+{
+    // Keys of the photos in the card root, in the work memory; an incomplete list would delete cache
+    // files still in use
+    uint64_t *keys = (uint64_t *)(void *)work_memory;
+    size_t max = WORK_MEMORY_SIZE / sizeof(uint64_t);
+    size_t count = cache_root_keys(keys, max);
+    if (count == SIZE_MAX)
+    {
+        printf("cache cleanup skipped: card root unreadable or more than %u photos\r\n", (unsigned)max);
+        return 0;
+    }
 
     int removed = 0;
+    DIR dir;
+    FILINFO fno;
     if (f_opendir(&dir, LANDSCAPE_DIR) != FR_OK)
         return 0; // no cache yet
     while (f_readdir(&dir, &fno) == FR_OK && fno.fname[0])
