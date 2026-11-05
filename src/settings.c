@@ -12,7 +12,7 @@
 
 #define SETTINGS_FILE "settings.ini"
 #define DEFAULT_INTERVAL_HOURS 12
-#define DEFAULT_ORDER ORDER_ALPHABETICAL
+#define DEFAULT_ORDER ORDER_RANDOM
 #define DEFAULT_LANGUAGE LANG_EN
 #define DEFAULT_BARS BARS_WHITE
 
@@ -32,8 +32,8 @@ static const char *default_settings =
     "; Hours between image changes (1 to 47)\r\n"
     "interval_hours = 12\r\n"
     "\r\n"
-    "; Image order: alphabetical or random (random shows every image once before reshuffling)\r\n"
-    "order = alphabetical\r\n"
+    "; Image order: random or alphabetical (random shows every image once before reshuffling)\r\n"
+    "order = random\r\n"
     "\r\n"
     "; Colour around photos that don't fill the screen: white or black\r\n"
     "bars = white\r\n"

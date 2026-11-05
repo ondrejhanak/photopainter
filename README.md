@@ -13,8 +13,8 @@ reworked to be easier to use and to develop.
 
 - **Photos go straight onto the card.** Copy them to the card root under any name; the original only
   looked in a `/pic/` folder.
-- **Natural or random order.** `Photo 2` comes before `Photo 10`; random order shows every photo once
-  before reshuffling. Adding or removing photos never causes skips or repeats (the original kept a
+- **Random or natural order.** Random order (the default) shows every photo once before reshuffling;
+  natural order puts `Photo 2` before `Photo 10`. Adding or removing photos never causes skips or repeats (the original kept a
   position in a list file, which shifted whenever photos changed).
 - **Settings without rebuilding.** Interval and order live in `settings.ini` on the card, created with
   comments on first start; the original needed code changes and a rebuild.
@@ -95,8 +95,8 @@ Unknown keys are ignored and invalid values fall back to the default.
 ; Hours between image changes (1 to 47)
 interval_hours = 12
 
-; Image order: alphabetical or random (random shows every image once before reshuffling)
-order = alphabetical
+; Image order: random or alphabetical (random shows every image once before reshuffling)
+order = random
 
 ; Colour around photos that don't fill the screen: white or black
 bars = white
