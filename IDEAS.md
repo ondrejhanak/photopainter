@@ -4,7 +4,7 @@ In no particular order; not everything here will happen.
 
 ## Features
 
-- **Unusable photos notice**: JPEGs the frame cannot show (progressive, CMYK) are skipped and logged; the drive-mode exit screen could say "M photos cannot be used".
+- **Photos that cannot be shown**: progressive or CMYK JPEGs and HEIC/PNG/WebP files are skipped (remembered, never deleted), the next photo is shown instead, with a two-line note at the bottom naming them; also checked right after eject. No extra screen.
 - **Frame orientation**: `orientation = landscape | portrait`, default `landscape`. Photos, message screens and battery icon follow it; converted photos get a cache folder per orientation (`cache/portrait/` next to `cache/landscape/`).
 - **One new photo after eject**: show the first new photo (natural order) as confirmation, then the normal order. New = hash (the cache key) not in the set taken before drive mode. `state.txt` not updated, so the photo still gets its own slot later.
 - **Low-battery icon**: low = small red icon in a corner, photos keep changing; critical = existing low-battery screen, then no more wake-ups (e-paper keeps it unpowered). Voltage read at the same point every wake, with hysteresis; thresholds from the logged discharge curve.
