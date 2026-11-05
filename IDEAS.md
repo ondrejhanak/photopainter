@@ -4,9 +4,8 @@ In no particular order; not everything here will happen.
 
 ## Features
 
-- **Photos that cannot be shown**: progressive or CMYK JPEGs and HEIC/PNG/WebP files are skipped (remembered, never deleted), the next photo is shown instead, with a two-line note at the bottom naming them; also checked right after eject. No extra screen.
+- **Photos that cannot be shown**: a JPEG that fails (progressive, CMYK, broken, too small) is skipped like a shown photo and the next one is tried, at most 5 per change; the photo shown instead gets a note at the bottom naming the failed ones. Nothing is remembered, so a broken photo is tried again (and named again) once per round. When all 5 fail, a screen lists their names. Never deleted or renamed; other file types stay ignored.
 - **Frame orientation**: `orientation = landscape | portrait`, default `landscape`. Photos, message screens and battery icon follow it; converted photos get a cache folder per orientation (`cache/portrait/` next to `cache/landscape/`).
-- **New photos first**: after eject, the photos just added over USB are shown first, one per change, in the frame's order (the first one right after eject, as confirmation); then the normal order continues where it was. New = hash (the cache key) not in the set taken before drive mode; no limit on how many. A new batch replaces an unfinished one (its leftovers come in the normal order); an eject without new photos keeps the running batch.
 - **Low-battery icon**: low = small red icon in a corner, photos keep changing; critical = existing low-battery screen, then no more wake-ups (e-paper keeps it unpowered). Voltage read at the same point every wake, with hysteresis; thresholds from the logged discharge curve.
 - **Photo date caption**: `show_date = no | yes`, default `no`. EXIF `DateTimeOriginal`, fallback `DateTime`, read from the JPEG when shown; plain string, no calendar math. Formatted per `language` (e.g. 24. 12. 1985), black on a small white box in a corner, not in the cache. No EXIF date, no caption.
 
@@ -28,6 +27,7 @@ In no particular order; not everything here will happen.
   - wake reason: RTC alarm, KEY, USB plugged in, power-on, watchdog reset
   - battery voltage (same point every wake), USB present, charging
   - time per phase: boot, SD mount, image scan, image load/decode, panel refresh
+  - photos that could not be shown
   - image shown, result (ok / error code), image count on card
   - later: JPEG cache hit/miss, decode time per megapixel
 - **Events**: firmware version at boot, drive-mode sessions (duration, photos added), SD/FatFs errors.
