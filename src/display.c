@@ -65,9 +65,9 @@ static void draw_message(const char *title, const char *hint)
     select_rotation();
     bool portrait = Paint.Width < Paint.Height;
     UWORD x = portrait ? MESSAGE_PORTRAIT_X : MESSAGE_X;
-    UWORD y = Paint_DrawString_EN(x, portrait ? MESSAGE_PORTRAIT_Y : MESSAGE_Y, title, &Font28, EPD_7IN3F_WHITE,
-                                  EPD_7IN3F_BLACK);
-    Paint_DrawString_EN(x, y + 14, hint, &Font22, EPD_7IN3F_WHITE, EPD_7IN3F_BLACK);
+    UWORD y = Paint_DrawString(x, portrait ? MESSAGE_PORTRAIT_Y : MESSAGE_Y, title, &Font28, EPD_7IN3F_BLACK,
+                               EPD_7IN3F_WHITE);
+    Paint_DrawString(x, y + 14, hint, &Font22, EPD_7IN3F_BLACK, EPD_7IN3F_WHITE);
 }
 
 static size_t fat_read(void *ctx, uint8_t *buf, size_t n)
@@ -165,9 +165,9 @@ static void draw_failed_note(void)
     select_rotation();
     UWORD top = Paint.Height - 2 * Font22.Height - 2 * NOTE_PADDING;
     Paint_ClearWindows(0, top, Paint.Width, Paint.Height, EPD_7IN3F_WHITE);
-    UWORD y = Paint_DrawString_EN(NOTE_X, top + NOTE_PADDING, msg(MSG_CANNOT_SHOW_TITLE), &Font22,
-                                  EPD_7IN3F_WHITE, EPD_7IN3F_BLACK);
-    Paint_DrawString_EN(NOTE_X, y, failed, &Font22, EPD_7IN3F_WHITE, EPD_7IN3F_BLACK);
+    UWORD y = Paint_DrawString(NOTE_X, top + NOTE_PADDING, msg(MSG_CANNOT_SHOW_TITLE), &Font22,
+                               EPD_7IN3F_BLACK, EPD_7IN3F_WHITE);
+    Paint_DrawString(NOTE_X, y, failed, &Font22, EPD_7IN3F_BLACK, EPD_7IN3F_WHITE);
 }
 
 // Small battery with a little red charge on a white box, so it shows on any photo

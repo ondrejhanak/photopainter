@@ -501,13 +501,13 @@ static const char *line_end(const char *s, int max_chars, const char **next)
 
 // Draw a UTF-8 string, wrapped at spaces and '\n' at the right edge; lines past the bottom edge are
 // not drawn. Returns the Y coordinate below the last line
-UWORD Paint_DrawString_EN(UWORD Xstart, UWORD Ystart, const char * pString,
-                          sFONT* Font, UWORD Color_Background, UWORD Color_Foreground)
+UWORD Paint_DrawString(UWORD Xstart, UWORD Ystart, const char * pString,
+                       sFONT* Font, UWORD Color_Foreground, UWORD Color_Background)
 {
     UWORD Ypoint = Ystart;
 
     if (Xstart > Paint.Width || Ystart > Paint.Height) {
-        Debug("Paint_DrawString_EN Input exceeds the normal display range\r\n");
+        Debug("Paint_DrawString Input exceeds the normal display range\r\n");
         return Ystart;
     }
 
