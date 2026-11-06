@@ -21,6 +21,10 @@ reworked to be easier to use and to develop.
 - **Settings without rebuilding.** Interval and order live in `settings.ini` on the card, created with
   comments on first start; the original needed code changes and a rebuild.
 - **Sensible default interval:** 12 hours instead of 15 minutes, which drained the battery quickly.
+- **Low battery shown on the photo.** A small battery icon in the top-right corner when the battery
+  runs low; when it is empty, a "Battery Empty" screen asks for charging and the frame stops changing
+  photos until it is charged. The original put a voltage message over the photo below 3.3 V and
+  stopped without a word below 3.1 V.
 - **Photos as they come from a phone or camera.** JPEGs are decoded, scaled and dithered on the
   frame itself, once; the result is kept in the frame's hidden folder, and the next photo is prepared
   while the screen refreshes. Rotated phone photos are turned upright. The original needed every
@@ -230,10 +234,11 @@ tools/drive_test.py             USB drive mode enter/eject cycles with write and
 1. `DEV_Module_Init()` - GPIO, SPI, I2C, ADC setup
 2. `watchdog_enable(8000)` - 8s watchdog
 3. RTC reset to the reference time, alarm set 12 h later (safe default)
-4. Battery check (min 3.1V) → low power shutdown if below
+4. Battery measured once (average of 8 ADC readings); below 3.1 V → shutdown without a refresh
 5. `scan_card()` - SD card detection and `settings.ini`; alarm re-armed with `interval_hours`
-6. On battery: `show_next()` shows the next image, then `powerOff()`; the RTC alarm or KEY powers
-   the board on again
+6. On battery: `show_next()` shows the next image (battery icon below 3.5 V), then `powerOff()`; the
+   RTC alarm or KEY powers the board on again. Below 3.3 V the "Battery Empty" screen instead, and
+   the RTC alarm is turned off until the frame is charged
 7. On USB: enter charging mode and return
 
 `loop()` (only in charging mode, every 50 ms): power off if USB is unplugged; on KEY or RTC alarm,

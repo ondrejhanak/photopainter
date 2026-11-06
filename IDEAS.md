@@ -6,7 +6,6 @@ In no particular order; not everything here will happen.
 
 - **Photos that cannot be shown**: a JPEG that fails (progressive, CMYK, broken, too small) is skipped like a shown photo and the next one is tried, at most 5 per change; the photo shown instead gets a note at the bottom naming the failed ones. Nothing is remembered, so a broken photo is tried again (and named again) once per round. When all 5 fail, a screen lists their names. Never deleted or renamed; other file types stay ignored.
 - **Frame orientation**: `orientation = landscape | portrait`, default `landscape`. Photos, message screens and battery icon follow it; converted photos get a cache folder per orientation (`cache/portrait/` next to `cache/landscape/`).
-- **Low-battery icon**: low = small red icon in a corner, photos keep changing; critical = existing low-battery screen, then no more wake-ups (e-paper keeps it unpowered). Voltage read at the same point every wake, with hysteresis; thresholds from the logged discharge curve.
 - **Photo date caption**: `show_date = no | yes`, default `no`. EXIF `DateTimeOriginal`, fallback `DateTime`, read from the JPEG when shown; plain string, no calendar math. Formatted per `language` (e.g. 24. 12. 1985), black on a small white box in a corner, not in the cache. No EXIF date, no caption.
 
 ## Code and tooling

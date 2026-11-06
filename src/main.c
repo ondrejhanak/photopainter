@@ -48,13 +48,20 @@ void sd_activity(bool active)
     set_led(active);
 }
 
+// Battery levels, provisional until tuned from a logged discharge curve. Measured once per wake at
+// boot, before the card and the panel draw current
+#define BATTERY_LOW_V 3.5f // battery icon on the photo
+#define BATTERY_EMPTY_V 3.3f // "Battery Empty" screen, then no changes until charged
+#define BATTERY_FLOOR_V 3.1f // no refresh at all: a brown-out mid-refresh leaves the panel black
+static float battery_voltage;
+
 static float measure_battery_voltage(void)
 {
-    float voltage = 0.0;
-    const float conversion_factor = 3.3f / (1 << 12);
-    uint16_t result = adc_read();
-    voltage = result * conversion_factor * 3;
-    printf("Raw value: 0x%03x, voltage: %f V\n", result, voltage);
+    uint32_t sum = 0;
+    for (int i = 0; i < 8; i++)
+        sum += adc_read();
+    float voltage = sum / 8.0f * 3.3f / (1 << 12) * 3; // the board divides VBAT by 3
+    printf("battery: %.2f V\r\n", voltage);
     return voltage;
 }
 
@@ -95,7 +102,7 @@ static void show_next(void)
     else if (!images_select_next())
         display_message(msg(MSG_NO_IMAGES_TITLE), msg(MSG_NO_IMAGES_HINT));
     else
-        display_image(measure_battery_voltage());
+        display_image(!DEV_Digital_Read(VBUS) && battery_voltage < BATTERY_LOW_V); // charging on USB
 
     PCF85063_clear_alarm_flag();
     arm_alarm();
@@ -198,7 +205,8 @@ void setup(void)
     arm_alarm(); // default interval until settings.ini is read, in case anything below fails
     gpio_set_irq_enabled_with_callback(CHARGE_STATE, GPIO_IRQ_EDGE_RISE | GPIO_IRQ_EDGE_FALL, true, charge_state_callback);
 
-    if (measure_battery_voltage() < 3.1)
+    battery_voltage = measure_battery_voltage();
+    if (battery_voltage < BATTERY_FLOOR_V)
     { // battery power is low
         printf("low power ...\r\n");
         PCF85063_alarm_Time_Disable();
@@ -218,7 +226,13 @@ void setup(void)
 
     if (!DEV_Digital_Read(VBUS))
     { // on battery: show the next image and cut power until the RTC alarm wakes us up
-        show_next();
+        if (battery_voltage < BATTERY_EMPTY_V)
+        { // no more wake-ups: KEY or USB power starts the frame again
+            display_message(msg(MSG_BATTERY_EMPTY_TITLE), msg(MSG_BATTERY_EMPTY_HINT));
+            PCF85063_alarm_Time_Disable();
+        }
+        else
+            show_next();
         printf("power off ...\r\n");
         powerOff();
         return;

@@ -44,6 +44,8 @@
 #define MESSAGE_Y 160
 #define NOTE_X 10 // note strip at the bottom of a photo
 #define NOTE_PADDING 6
+#define BATTERY_X 740 // battery icon box in the top-right corner, 50 x 28 px
+#define BATTERY_Y 10
 #define MAX_TRIES 5 // photos tried per change: bounds the awake time, a broken big file decodes for long
 
 // Draw a message screen (title and a smaller hint below it) into the selected, cleared image
@@ -152,6 +154,19 @@ static void draw_failed_note(void)
     Paint_DrawString_EN(NOTE_X, y, failed, &Font22, EPD_7IN3F_WHITE, EPD_7IN3F_BLACK);
 }
 
+// Small battery with a little red charge on a white box, so it shows on any photo
+static void draw_battery_icon(void)
+{
+    const UWORD x = BATTERY_X, y = BATTERY_Y;
+    printf("Display battery icon\r\n");
+    Paint_SetRotate(180);
+    Paint_ClearWindows(x, y, x + 50, y + 28, EPD_7IN3F_WHITE);
+    Paint_ClearWindows(x + 6, y + 6, x + 40, y + 22, EPD_7IN3F_BLACK); // body, 2 px outline
+    Paint_ClearWindows(x + 8, y + 8, x + 38, y + 20, EPD_7IN3F_WHITE);
+    Paint_ClearWindows(x + 40, y + 10, x + 44, y + 18, EPD_7IN3F_BLACK); // terminal
+    Paint_ClearWindows(x + 9, y + 9, x + 19, y + 19, EPD_7IN3F_RED);
+}
+
 // Draw images_path into the image; a photo that fails is saved as shown, so the order moves past
 // it, and the next one is tried. Stops after MAX_TRIES or when the first failed photo comes round
 // again (a card with few photos). Expects the card mounted and leaves it mounted.
@@ -179,7 +194,7 @@ static bool draw_photo(uint8_t *image)
     }
 }
 
-int display_image(float vol)
+int display_image(bool battery_low)
 {
     printf("e-Paper Init and Clear...\r\n");
     EPD_7IN3F_Init();
@@ -204,14 +219,8 @@ int display_image(float vol)
         // The panel must never get the placeholder: an unused code leaves an afterimage
         palette_replace(image, image_size, palette_7color.bars,
                         settings.bars == BARS_BLACK ? EPD_7IN3F_BLACK : EPD_7IN3F_WHITE);
-        Paint_SetRotate(Paint_GetRotate() == 90 ? 270 : 180);
-        if (vol < 3.3)
-        {
-            char voltage_text[21] = {0};
-            sprintf(voltage_text, "%f V", vol);
-            UWORD y = Paint_DrawString_EN(10, 10, msg(MSG_LOW_VOLTAGE), &Font22, EPD_7IN3F_BLACK, EPD_7IN3F_WHITE);
-            Paint_DrawString_EN(10, y, voltage_text, &Font22, EPD_7IN3F_BLACK, EPD_7IN3F_WHITE);
-        }
+        if (battery_low)
+            draw_battery_icon();
         if (failed[0])
             draw_failed_note();
         if (images_peek_next(prefetch_name))

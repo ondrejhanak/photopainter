@@ -25,9 +25,11 @@
 #ifndef DISPLAY_H
 #define DISPLAY_H
 
-// Show the photo images_path, with a low-battery note when vol is low. A photo that cannot be shown
+#include <stdbool.h>
+
+// Show the photo images_path, with a battery icon when battery_low. A photo that cannot be shown
 // is skipped (saved as shown) and the next one is tried; the photo shown names the skipped ones.
-int display_image(float vol);
+int display_image(bool battery_low);
 // Show a message screen: a title and a smaller hint below it
 int display_message(const char *title, const char *hint);
 
