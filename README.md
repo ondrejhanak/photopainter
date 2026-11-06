@@ -4,8 +4,8 @@ Firmware for the Waveshare PhotoPainter: a battery-powered 7.3" 7-color e-paper 
 RP2040 microcontroller. Copy photos onto its SD card and it shows a new one every few hours, switching
 itself off in between.
 
-This is a fork of the [official Waveshare firmware](https://github.com/waveshareteam/PhotoPainter),
-reworked to be easier to use and to develop.
+Based on the [official Waveshare firmware](https://github.com/waveshareteam/PhotoPainter), reworked to
+be easier to use and to develop.
 
 ## What's improved over the original firmware
 
