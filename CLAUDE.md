@@ -45,6 +45,8 @@ The frame is usually connected over USB, so flashing and logs need no button pre
 - **Drive mode:** `python3 tools/drive_test.py` runs `d` / mount / eject cycles against the logger
   (`-n` cycles, `-w MB` write and verify after remount, `-x` command on the mounted card, `-v` volume
   name) and stops at a reboot. The log loses nothing around enter/leave (no re-enumeration).
+  The Mac must be unlocked: with the screen locked it does not mount the drive (looks like drive mode
+  failing; the frame gives up after 60 s).
 - **Test screens without card slot changes:** in drive mode, change the card from the Mac (move images
   into a folder, add a broken `.jpg`, edit `settings.ini`), eject, and look at the screen. For
   screens that need the card out, temporarily force them in `show_next()` instead; never commit that.
