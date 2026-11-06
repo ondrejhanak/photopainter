@@ -26,7 +26,7 @@ static uint32_t rand_state;
 static const char *test_name;
 static int failures;
 
-alignas(4) uint8_t work_memory[WORK_MEMORY_SIZE];
+alignas(8) uint8_t work_memory[WORK_MEMORY_SIZE];
 Settings settings;
 
 uint32_t get_rand_32(void)

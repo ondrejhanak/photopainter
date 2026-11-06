@@ -64,7 +64,7 @@ reworked to be easier to use and to develop.
 ### Bugs fixed
 
 - **Frozen on a bad file.** A broken or unsupported image made the frame freeze and reboot on the same
-  file over and over; now it shows an error screen with the file name and moves on.
+  file over and over; now it is skipped and named at the bottom of the next photo.
 - **Swapped card ignored.** On USB the card was checked only at boot and a swapped card was never
   re-initialized; now it is re-read before every image change.
 - **Wrong sort length.** The image list was sorted with the file-name length instead of the number of
@@ -80,6 +80,9 @@ reworked to be easier to use and to develop.
   select stayed low. Worked by luck (the pins were already set up elsewhere), against the SD spec.
 - **Red LED switched by the SD driver.** The driver drove the red LED as its card-activity light, so
   any LED state set by the firmware was switched off by the next card access.
+- **Misaligned key lists.** The shared work memory, which also holds 64-bit photo keys, was only aligned
+  for 32-bit values: undefined in C (found by the host tests' sanitizer), harmless on the RP2040, which
+  moves 64-bit values as two 32-bit ones; now aligned for 64-bit values.
 - **`u_int8_t` typo** in the SD driver, which broke builds on toolchains without BSD types (also sent
   [upstream](https://github.com/waveshareteam/PhotoPainter/pull/7)).
 
