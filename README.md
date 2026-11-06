@@ -198,6 +198,14 @@ If the board has no working USB serial (first flash, crashed firmware), enter BO
 **BOOT**, press and release **RUN**, release **BOOT**), then run the upload again or drag the `.uf2`
 onto the `RPI-RP2` drive. Extra library debug output: add `-D DEBUG=1` to `build_flags`.
 
+### Tests
+
+`tools/jpeg_host/` (JPEG conversion) and `tools/images_host/` (photo selection, cache cleanup) run the
+firmware's own C files on a computer, with sanitizers. Every new test is proven by mutation: the code
+it guards is broken on purpose (a dropped call, a loosened check) and the test must fail; a test no
+mutation fails is dropped. Code that only runs on the frame (screens, the skip loop) is checked the
+same way by flashing a deliberately broken build and reading the serial log.
+
 ### Architecture
 
 ```
