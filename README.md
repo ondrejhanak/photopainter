@@ -91,6 +91,13 @@ reworked to be easier to use and to develop.
 
 Ideas being considered [IDEAS.md](IDEAS.md).
 
+## Installing
+
+Download `photopainter-7color-<version>.uf2` from [Releases](https://github.com/ondrejhanak/photopainter/releases).
+Hold **BOOT** while connecting the frame to a computer over USB (or hold **BOOT**, press and release
+**RUN**, release **BOOT**): it appears as a drive named `RPI-RP2`. Copy the `.uf2` onto it; the frame
+restarts with the new firmware. Photos, settings and converted photos on the SD card stay as they are.
+
 ## Photos & SD card
 
 | On the card | Purpose |
@@ -198,6 +205,9 @@ If the board has no working USB serial (first flash, crashed firmware), enter BO
 **BOOT**, press and release **RUN**, release **BOOT**), then run the upload again or drag the `.uf2`
 onto the `RPI-RP2` drive. Extra library debug output: add `-D DEBUG=1` to `build_flags`.
 
+The firmware prints its version at boot: the nearest `v*` tag (`git describe`), e.g. `v1.0.0`, or
+`v1.0.0-3-g725e442` between tags and `-dirty` with uncommitted changes (`tools/version.py`).
+
 ### Tests
 
 `tools/jpeg_host/` (JPEG conversion) and `tools/images_host/` (photo selection, cache cleanup) run the
@@ -242,6 +252,7 @@ tools/images_host/              Photo selection tests on the computer (FatFs on 
 tools/gen_font.py               Generates lib/Fonts/fontNN.c from a BDF bitmap font
 tools/serial_log.py             Serial log with timestamps, sends test commands (device tests)
 tools/drive_test.py             USB drive mode enter/eject cycles with write and verify (macOS)
+tools/version.py                Build step: firmware version from git tags (firmware_version.h)
 ```
 
 ### Program flow
