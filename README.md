@@ -28,6 +28,9 @@ reworked to be easier to use and to develop.
 - **Only photos are shown.** Only `.jpg` and `.jpeg` files (any letter case) are used; other files,
   folders, hidden and system files and dot-files (e.g. macOS `._*` companions, `.DS_Store`) are
   ignored. The original tried to display every file in `/pic/`.
+- **Broken photos are skipped.** A JPEG the frame cannot show (progressive, CMYK, damaged) is passed
+  over and the next photo is shown, with its name in a strip at the bottom; it is tried again in
+  the next round.
 - **No need to remove the card.** Connected to a computer, hold the button for 3 seconds: the card
   appears as a USB drive. Copy photos, then eject the drive; the frame shows the first new photo. The
   original needed the card taken out of its fiddly slot.

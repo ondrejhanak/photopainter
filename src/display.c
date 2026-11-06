@@ -42,6 +42,9 @@
 
 #define MESSAGE_X 125 // message screen text position
 #define MESSAGE_Y 160
+#define NOTE_X 10 // note strip at the bottom of a photo
+#define NOTE_PADDING 6
+#define MAX_TRIES 5 // photos tried per change: bounds the awake time, a broken big file decodes for long
 
 // Draw a message screen (title and a smaller hint below it) into the selected, cleared image
 static void draw_message(const char *title, const char *hint)
@@ -133,7 +136,50 @@ void EPD_7IN3F_Refreshing(void)
     draw_jpeg(prefetch_name, image);
 }
 
-int display_image(const char *path, float vol)
+// Names of the photos that failed in this change, joined with ", "
+static char failed[MAX_TRIES * (FF_LFN_BUF + 2) + 1];
+
+// White strip at the bottom of the frame: the title, then the failed names. Only one line of names
+// fits above the edge, longer lists are cut at a word.
+static void draw_failed_note(void)
+{
+    UWORD top = EPD_7IN3F_HEIGHT - 2 * Font22.Height - 2 * NOTE_PADDING;
+    printf("Display note: %s\r\n", failed);
+    Paint_SetRotate(180);
+    Paint_ClearWindows(0, top, EPD_7IN3F_WIDTH, EPD_7IN3F_HEIGHT, EPD_7IN3F_WHITE);
+    UWORD y = Paint_DrawString_EN(NOTE_X, top + NOTE_PADDING, msg(MSG_CANNOT_SHOW_TITLE), &Font22,
+                                  EPD_7IN3F_WHITE, EPD_7IN3F_BLACK);
+    Paint_DrawString_EN(NOTE_X, y, failed, &Font22, EPD_7IN3F_WHITE, EPD_7IN3F_BLACK);
+}
+
+// Draw images_path into the image; a photo that fails is saved as shown, so the order moves past
+// it, and the next one is tried. Stops after MAX_TRIES or when the first failed photo comes round
+// again (a card with few photos). Expects the card mounted and leaves it mounted.
+static bool draw_photo(uint8_t *image)
+{
+    char first_failed[FF_LFN_BUF + 1];
+    failed[0] = '\0';
+    for (int tries = 1;; tries++)
+    {
+        Paint_Clear(EPD_7IN3F_WHITE);
+        if (draw_jpeg(images_path, image))
+            return true;
+        printf("cannot show %s\r\n", images_path);
+        if (tries == 1)
+            strcpy(first_failed, images_path);
+        else
+            strcat(failed, ", ");
+        strcat(failed, images_path);
+        sdcard_unmount(); // both below mount the card themselves
+        images_save_shown();
+        bool next = tries < MAX_TRIES && images_select_next() && strcmp(images_path, first_failed) != 0;
+        sdcard_mount();
+        if (!next)
+            return false;
+    }
+}
+
+int display_image(float vol)
 {
     printf("e-Paper Init and Clear...\r\n");
     EPD_7IN3F_Init();
@@ -150,21 +196,14 @@ int display_image(const char *path, float vol)
     Paint_SetScale(7);
 
     sdcard_mount();
-
     Paint_SelectImage(image);
-    Paint_Clear(EPD_7IN3F_WHITE);
 
-    bool shown = draw_jpeg(path, image);
-    if (shown) // the panel must never get the placeholder: an unused code leaves an afterimage
+    bool shown = draw_photo(image);
+    if (shown)
+    {
+        // The panel must never get the placeholder: an unused code leaves an afterimage
         palette_replace(image, image_size, palette_7color.bars,
                         settings.bars == BARS_BLACK ? EPD_7IN3F_BLACK : EPD_7IN3F_WHITE);
-    if (!shown)
-    { // a message screen with the file name instead of a partial image; it still counts as shown below
-        Paint_Clear(EPD_7IN3F_WHITE);
-        draw_message(msg(MSG_CANNOT_DISPLAY), path);
-    }
-    else
-    {
         Paint_SetRotate(Paint_GetRotate() == 90 ? 270 : 180);
         if (vol < 3.3)
         {
@@ -173,10 +212,17 @@ int display_image(const char *path, float vol)
             UWORD y = Paint_DrawString_EN(10, 10, msg(MSG_LOW_VOLTAGE), &Font22, EPD_7IN3F_BLACK, EPD_7IN3F_WHITE);
             Paint_DrawString_EN(10, y, voltage_text, &Font22, EPD_7IN3F_BLACK, EPD_7IN3F_WHITE);
         }
+        if (failed[0])
+            draw_failed_note();
+        if (images_peek_next(prefetch_name))
+            prefetch_image = image;
+    }
+    else
+    { // every try failed, all of them already saved as shown
+        Paint_Clear(EPD_7IN3F_WHITE);
+        draw_message(msg(MSG_CANNOT_SHOW_TITLE), failed);
     }
 
-    if (images_peek_next(prefetch_name))
-        prefetch_image = image;
     printf("EPD_Display\r\n");
     uint32_t start = to_ms_since_boot(get_absolute_time());
     EPD_7IN3F_Display(image); // runs EPD_7IN3F_Refreshing()
@@ -184,7 +230,8 @@ int display_image(const char *path, float vol)
     printf("refresh: %lu ms\r\n", (unsigned long)(to_ms_since_boot(get_absolute_time()) - start));
 
     sdcard_unmount();
-    images_save_shown();
+    if (shown)
+        images_save_shown();
 
     printf("Goto Sleep...\r\n\r\n");
     EPD_7IN3F_Sleep();

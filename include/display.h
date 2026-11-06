@@ -25,8 +25,9 @@
 #ifndef DISPLAY_H
 #define DISPLAY_H
 
-// Show an image file from the SD card, with a low-battery note when vol is low
-int display_image(const char *path, float vol);
+// Show the photo images_path, with a low-battery note when vol is low. A photo that cannot be shown
+// is skipped (saved as shown) and the next one is tried; the photo shown names the skipped ones.
+int display_image(float vol);
 // Show a message screen: a title and a smaller hint below it
 int display_message(const char *title, const char *hint);
 

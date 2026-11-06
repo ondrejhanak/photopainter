@@ -95,7 +95,7 @@ static void show_next(void)
     else if (!images_select_next())
         display_message(msg(MSG_NO_IMAGES_TITLE), msg(MSG_NO_IMAGES_HINT));
     else
-        display_image(images_path, measure_battery_voltage());
+        display_image(measure_battery_voltage());
 
     PCF85063_clear_alarm_flag();
     arm_alarm();
