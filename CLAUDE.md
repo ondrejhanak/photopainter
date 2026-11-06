@@ -74,7 +74,7 @@ which may be reused or referenced elsewhere.
 
 - **src/main.c** - Main application logic (mode, refresh interval, power flow), safe to modify
 - **src/display.c, src/sdcard.c, src/images.c, src/image_order.c** - Display screens, SD card access, next-image selection and its order (pure logic), safe to modify
-- **src/jpeg_convert.c, src/exif.c, src/palette.c, src/cache_format.c** - JPEG decode, scale and dither, EXIF orientation, panel colours, cache file format (pure logic, also built on the Mac by `tools/jpeg_host/`); **src/cache.c** - cache files on the card
+- **src/jpeg_convert.c, src/exif.c, src/palette.c, src/cache_format.c** - JPEG decode, scale and dither, EXIF orientation and date, panel colours, cache file format (pure logic, also built on the Mac by `tools/jpeg_host/`); **src/cache.c** - cache files on the card
 - **src/settings.c** - `settings.ini` on the SD card (user settings, parsed with inih in `lib/inih/`)
 - **src/wake_log.c** - Wake log (`.photopainter/log.csv`, rotated to `log.old.csv`): steps timed with `wake_log_step()`, one line per event with `wake_log_write()`. Columns and codes are documented in **docs/wake-log.md**; a host test fails when its header differs from `WAKE_LOG_HEADER`, so update both together
 - **src/messages.c** - All user-visible texts per language (`msg(id)`, `language` setting). Every new

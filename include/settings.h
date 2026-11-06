@@ -3,6 +3,8 @@
 
 #include "messages.h" // Language
 
+#include <stdbool.h>
+
 typedef enum
 {
     BARS_WHITE,
@@ -29,6 +31,7 @@ typedef struct
     Language language; // on-screen messages
     BarsColour bars;
     Orientation orientation;
+    bool show_date; // date the photo was taken, at the bottom
 } Settings;
 
 extern Settings settings;

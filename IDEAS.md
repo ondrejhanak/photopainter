@@ -2,10 +2,6 @@
 
 In no particular order; not everything here will happen.
 
-## Features
-
-- **Photo date caption**: `show_date = no | yes`, default `no`. EXIF `DateTimeOriginal`, fallback `DateTime`, read from the JPEG when shown; plain string, no calendar math. Formatted per `language` (e.g. 24. 12. 1985), black on a small white box at the bottom of the screen, not in the cache. No EXIF date, no caption.
-
 ## Code and tooling
 
 - **Web flasher**: a page on GitHub Pages that updates the frame from Chrome/Edge: Web Serial 1200-baud touch reboots it into BOOTSEL, then the release `.uf2` is written to the `RPI-RP2` drive (File System Access API) or flashed over WebUSB (PICOBOOT). Card and settings untouched. After releases and CI exist.

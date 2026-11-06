@@ -134,7 +134,8 @@ int main(int argc, char **argv)
 
     JpegInfo info;
     JpegResult r = jpeg_probe(&input, &info, work, work_size);
-    printf("probe: %s, %ux%u, orientation %d\n", jpeg_result_str(r), info.width, info.height, info.orientation);
+    printf("probe: %s, %ux%u, orientation %d, date %04u-%02u-%02u\n", jpeg_result_str(r), info.width, info.height,
+           info.orientation, info.date.year, info.date.month, info.date.day);
     file_rewind(in);
     memset(work, 0xA5, work_size);
     read_calls = 0;

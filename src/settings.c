@@ -16,6 +16,7 @@
 #define DEFAULT_LANGUAGE LANG_EN
 #define DEFAULT_BARS BARS_WHITE
 #define DEFAULT_ORIENTATION ORIENTATION_LANDSCAPE
+#define DEFAULT_SHOW_DATE false
 
 Settings settings = {
     .interval_hours = DEFAULT_INTERVAL_HOURS,
@@ -23,6 +24,7 @@ Settings settings = {
     .language = DEFAULT_LANGUAGE,
     .bars = DEFAULT_BARS,
     .orientation = DEFAULT_ORIENTATION,
+    .show_date = DEFAULT_SHOW_DATE,
 };
 
 // Written when settings.ini is missing, so users can see what can be changed (comments in English)
@@ -39,6 +41,9 @@ static const char *default_settings =
     "\r\n"
     "; Frame position: landscape, or portrait (turned counter-clockwise)\r\n"
     "orientation = landscape\r\n"
+    "\r\n"
+    "; Date the photo was taken (from the camera), at the bottom: no or yes\r\n"
+    "show_date = no\r\n"
     "\r\n"
     "; Colour around photos that don't fill the screen: white or black\r\n"
     "bars = white\r\n"
@@ -96,6 +101,15 @@ static int handler(void *user, const char *section, const char *name, const char
             printf("settings: invalid orientation \"%s\", using %s\r\n", value,
                    settings.orientation == ORIENTATION_PORTRAIT ? "portrait" : "landscape");
     }
+    else if (strcasecmp(name, "show_date") == 0)
+    {
+        if (strcasecmp(value, "yes") == 0)
+            settings.show_date = true;
+        else if (strcasecmp(value, "no") == 0)
+            settings.show_date = false;
+        else
+            printf("settings: invalid show_date \"%s\", using %s\r\n", value, settings.show_date ? "yes" : "no");
+    }
     else if (strcasecmp(name, "language") == 0)
     {
         int i = 0;
@@ -149,6 +163,7 @@ void settings_load(void)
     settings.order = DEFAULT_ORDER;
     settings.bars = DEFAULT_BARS;
     settings.orientation = DEFAULT_ORIENTATION;
+    settings.show_date = DEFAULT_SHOW_DATE;
 
     sdcard_mount();
 
@@ -175,8 +190,8 @@ void settings_load(void)
     sdcard_unmount();
     saved_language_save(settings.language);
 
-    printf("settings: interval_hours = %d, order = %s, language = %s, bars = %s, orientation = %s\r\n",
+    printf("settings: interval_hours = %d, order = %s, language = %s, bars = %s, orientation = %s, show_date = %s\r\n",
            settings.interval_hours, settings.order == ORDER_RANDOM ? "random" : "alphabetical",
            language_codes[settings.language], settings.bars == BARS_BLACK ? "black" : "white",
-           settings.orientation == ORIENTATION_PORTRAIT ? "portrait" : "landscape");
+           settings.orientation == ORIENTATION_PORTRAIT ? "portrait" : "landscape", settings.show_date ? "yes" : "no");
 }

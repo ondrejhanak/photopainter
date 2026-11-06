@@ -1,6 +1,8 @@
 #ifndef MESSAGES_H
 #define MESSAGES_H
 
+#include <stddef.h>
+
 typedef enum
 {
     LANG_EN,
@@ -28,5 +30,7 @@ extern const char *const language_codes[LANG_COUNT];
 
 // Text in the language from settings.ini (UTF-8)
 const char *msg(MsgId id);
+// A date as the language writes it: "24. 12. 1985" (cs), "24 Dec 1985" (en); month is 1..12
+void msg_date(char *out, size_t len, int year, int month, int day);
 
 #endif

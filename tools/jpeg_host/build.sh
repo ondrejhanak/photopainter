@@ -15,4 +15,4 @@ build() {
 }
 FLAGS=$1
 build jpeg_host src/jpeg_convert.c tools/jpeg_host/main.c
-build unit_test tools/jpeg_host/unit_test.c
+build unit_test tools/jpeg_host/unit_test.c src/messages.c

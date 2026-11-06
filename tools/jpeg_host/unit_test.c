@@ -2,6 +2,7 @@
 // Includes jpeg_convert.c to reach its static functions.
 #include "../../src/jpeg_convert.c"
 #include "cache_format.h"
+#include "settings.h"
 #include "EPD_7in3f.h"
 
 #define SHORT 3 // TIFF field type
@@ -89,6 +90,116 @@ static void test_exif(void)
     memcpy(buf + 6, "MX", 2);
     expect("bad byte order mark", exif_orientation(buf, len), 1);
     expect("too short", exif_orientation(buf, 10), 1);
+}
+
+// APP1 with DateTime in IFD0 (if dt) and an Exif IFD holding DateTimeOriginal (if orig); the
+// 19-character strings are stored after the IFDs
+static size_t make_exif_dates(uint8_t *buf, int be, const char *orig, const char *dt)
+{
+    memcpy(buf, "Exif\0\0", 6);
+    uint8_t *t = buf + 6;
+    memcpy(t, be ? "MM\0\x2a" : "II\x2a\0", 4);
+    put32(t + 4, be, 8);
+    unsigned n0 = (dt != NULL) + (orig != NULL);
+    unsigned exif_ifd = 8 + 2 + 12 * n0 + 4, at = exif_ifd + (orig ? 2 + 12 + 4 : 0);
+    put16(t + 8, be, n0);
+    uint8_t *e = t + 10;
+    if (dt)
+    {
+        put16(e, be, 0x0132);
+        put16(e + 2, be, 2);
+        put32(e + 4, be, 20);
+        put32(e + 8, be, at);
+        memcpy(t + at, dt, 20);
+        at += 20;
+        e += 12;
+    }
+    if (orig)
+    {
+        put16(e, be, 0x8769);
+        put16(e + 2, be, 4);
+        put32(e + 4, be, 1);
+        put32(e + 8, be, exif_ifd);
+        e += 12;
+        uint8_t *x = t + exif_ifd;
+        put16(x, be, 1);
+        put16(x + 2, be, 0x9003);
+        put16(x + 4, be, 2);
+        put32(x + 6, be, 20);
+        put32(x + 10, be, at);
+        put32(x + 14, be, 0);
+        memcpy(t + at, orig, 20);
+        at += 20;
+    }
+    put32(e, be, 0); // no next IFD
+    return 6 + at;
+}
+
+// exif_date() as yyyymmdd, 0 if it found none
+static int date_of(const uint8_t *buf, size_t len)
+{
+    ExifDate d;
+    return exif_date(buf, len, &d) ? d.year * 10000 + d.month * 100 + d.day : 0;
+}
+
+static void test_exif_date(void)
+{
+    static const char orig[] = "1985:12:24 18:30:00", changed[] = "2020:01:02 10:00:00";
+    uint8_t buf[256];
+    char name[80];
+    for (int be = 0; be < 2; be++)
+    {
+        const char *order = be ? "big-endian" : "little-endian";
+        size_t len = make_exif_dates(buf, be, orig, changed);
+        snprintf(name, sizeof(name), "%s date: original before last change", order);
+        expect(name, date_of(buf, len), 19851224);
+        snprintf(name, sizeof(name), "%s date: original only", order);
+        expect(name, date_of(buf, make_exif_dates(buf, be, orig, NULL)), 19851224);
+        snprintf(name, sizeof(name), "%s date: last change only", order);
+        expect(name, date_of(buf, make_exif_dates(buf, be, NULL, changed)), 20200102);
+        snprintf(name, sizeof(name), "%s date: none", order);
+        expect(name, date_of(buf, make_exif_dates(buf, be, NULL, NULL)), 0);
+        snprintf(name, sizeof(name), "%s date: zeros fall back", order);
+        expect(name, date_of(buf, make_exif_dates(buf, be, "0000:00:00 00:00:00", changed)), 20200102);
+        snprintf(name, sizeof(name), "%s date: month 13", order);
+        expect(name, date_of(buf, make_exif_dates(buf, be, "1985:13:24 18:30:00", NULL)), 0);
+        snprintf(name, sizeof(name), "%s date: not digits", order);
+        expect(name, date_of(buf, make_exif_dates(buf, be, "198 :12:24 18:30:00", NULL)), 0); // 1964 unchecked
+        snprintf(name, sizeof(name), "%s date: year before 1800", order);
+        expect(name, date_of(buf, make_exif_dates(buf, be, "0001:12:24 18:30:00", NULL)), 0);
+
+        // The original's string lies past len (the probe window): the last change is used
+        len = make_exif_dates(buf, be, orig, changed);
+        snprintf(name, sizeof(name), "%s date: original beyond len", order);
+        expect(name, date_of(buf, len - 20 + 9), 20200102);
+        // The Exif IFD pointer points past the data
+        put32(buf + 6 + 10 + 12 + 8, be, 250);
+        snprintf(name, sizeof(name), "%s date: Exif IFD beyond len", order);
+        expect(name, date_of(buf, len), 20200102);
+    }
+    expect("date: not Exif", date_of((const uint8_t *)"JFIF\0\0", 6), 0);
+}
+
+Settings settings; // language for msg_date()
+
+static void expect_date(const char *name, Language language, int year, int month, int day, const char *want)
+{
+    char got[24];
+    settings.language = language;
+    msg_date(got, sizeof(got), year, month, day);
+    if (strcmp(got, want) != 0)
+    {
+        printf("FAIL %s: got \"%s\", want \"%s\"\n", name, got, want);
+        failures++;
+    }
+}
+
+static void test_msg_date(void)
+{
+    expect_date("en date", LANG_EN, 1985, 12, 24, "24 Dec 1985");
+    expect_date("en date, January", LANG_EN, 2000, 1, 1, "1 Jan 2000");
+    expect_date("cs date", LANG_CS, 1985, 12, 24, "24. 12. 1985");
+    expect_date("cs date, single digits", LANG_CS, 2000, 1, 5, "5. 1. 2000");
 }
 
 static int clip(double v)
@@ -202,6 +313,8 @@ static void test_cache_format(void)
 int main(void)
 {
     test_exif();
+    test_exif_date();
+    test_msg_date();
     test_enhance();
     test_cache_format();
     test_palette_replace();

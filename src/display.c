@@ -47,7 +47,7 @@
 #define MESSAGE_PORTRAIT_Y 300
 #define NOTE_X 10 // note strip at the bottom of a photo
 #define NOTE_PADDING 6
-#define BATTERY_MARGIN 10 // battery icon box in the top-right corner, 50 x 28 px
+#define CORNER_MARGIN 10 // battery icon (top right, 50 x 28 px) and date box (bottom right) from the edges
 #define MAX_TRIES 5 // photos tried per change: bounds the awake time, a broken big file decodes for long
 
 // Draw in viewed frame coordinates: the panel is mounted upside down, so landscape is turned 180
@@ -159,7 +159,7 @@ static char failed[MAX_TRIES * (FF_LFN_BUF + 2) + 1];
 
 // White strip at the bottom of the frame: the title, then the failed names. Only one line of names
 // fits above the edge, longer lists are cut at a word.
-static void draw_failed_note(void)
+static void draw_failed_note(const char *date)
 {
     printf("Display note: %s\r\n", failed);
     select_rotation();
@@ -168,6 +168,39 @@ static void draw_failed_note(void)
     UWORD y = Paint_DrawString(NOTE_X, top + NOTE_PADDING, msg(MSG_CANNOT_SHOW_TITLE), &Font22,
                                EPD_7IN3F_BLACK, EPD_7IN3F_WHITE);
     Paint_DrawString(NOTE_X, y, failed, &Font22, EPD_7IN3F_BLACK, EPD_7IN3F_WHITE);
+    if (date[0])
+    { // at the right end of the title line, where the date box would be
+        printf("Display date: %s\r\n", date);
+        Paint_DrawString(Paint.Width - NOTE_X - strlen(date) * Font22.Width, top + NOTE_PADDING, date, &Font22,
+                         EPD_7IN3F_BLACK, EPD_7IN3F_WHITE);
+    }
+}
+
+// White box with the date in the bottom-right corner (the date is ASCII: one character per cell)
+static void draw_date(const char *date)
+{
+    printf("Display date: %s\r\n", date);
+    select_rotation();
+    UWORD w = strlen(date) * Font22.Width + 2 * NOTE_PADDING, h = Font22.Height + 2 * NOTE_PADDING;
+    UWORD x = Paint.Width - CORNER_MARGIN - w, y = Paint.Height - CORNER_MARGIN - h;
+    Paint_ClearWindows(x, y, x + w, y + h, EPD_7IN3F_WHITE);
+    Paint_DrawString(x + NOTE_PADDING, y + NOTE_PADDING, date, &Font22, EPD_7IN3F_BLACK, EPD_7IN3F_WHITE);
+}
+
+// When the photo images_path was taken, written for the language; empty if its EXIF has no date.
+// Read from the JPEG's header each time, so the cache files carry no date. Uses the work memory.
+static void photo_date(char *out, size_t len)
+{
+    out[0] = '\0';
+    FIL fil;
+    if (f_open(&fil, images_path, FA_READ) != FR_OK)
+        return;
+    JpegInput in = {.read = fat_read, .rewind = fat_rewind, .ctx = &fil};
+    JpegInfo info;
+    jpeg_probe(&in, &info, work_memory, sizeof(work_memory)); // the date is kept when it stops later
+    f_close(&fil);
+    if (info.date.year)
+        msg_date(out, len, info.date.year, info.date.month, info.date.day);
 }
 
 // Small battery with a little red charge on a white box, so it shows on any photo
@@ -175,7 +208,7 @@ static void draw_battery_icon(void)
 {
     printf("Display battery icon\r\n");
     select_rotation();
-    const UWORD x = Paint.Width - BATTERY_MARGIN - 50, y = BATTERY_MARGIN;
+    const UWORD x = Paint.Width - CORNER_MARGIN - 50, y = CORNER_MARGIN;
     Paint_ClearWindows(x, y, x + 50, y + 28, EPD_7IN3F_WHITE);
     Paint_ClearWindows(x + 6, y + 6, x + 40, y + 22, EPD_7IN3F_BLACK); // body, 2 px outline
     Paint_ClearWindows(x + 8, y + 8, x + 38, y + 20, EPD_7IN3F_WHITE);
@@ -241,10 +274,15 @@ int display_image(bool battery_low)
         // The panel must never get the placeholder: an unused code leaves an afterimage
         palette_replace(image, image_size, palette_7color.bars,
                         settings.bars == BARS_BLACK ? EPD_7IN3F_BLACK : EPD_7IN3F_WHITE);
+        char date[24] = "";
+        if (settings.show_date)
+            photo_date(date, sizeof(date));
         if (battery_low)
             draw_battery_icon();
         if (failed[0])
-            draw_failed_note();
+            draw_failed_note(date);
+        else if (date[0])
+            draw_date(date);
         if (images_peek_next(prefetch_name))
             prefetch_image = image;
     }

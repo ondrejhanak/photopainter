@@ -4,7 +4,9 @@
 
 #include <string.h>
 
-#define EXIF_PROBE_BYTES 512 // start of APP1 searched for the orientation (IFD0 comes first)
+// Start of APP1 searched for the orientation and the date; phone photos keep DateTimeOriginal past the
+// first 512 bytes
+#define EXIF_PROBE_BYTES 4096
 #define IN_BUFFER_MAX (16 * 1024) // read-ahead, if the work memory has room
 
 // Scaling runs on a grid of cells per axis, n = min(decoded size d, placed output size s):
@@ -97,6 +99,7 @@ JpegResult jpeg_probe(const JpegInput *in, JpegInfo *info, void *work, size_t wo
     bool have_exif = false;
     info->width = info->height = 0;
     info->orientation = 1;
+    info->date = (ExifDate){0};
 
     if (!read_exact(in, b, 2))
         return JPEG_READ_ERROR;
@@ -158,6 +161,7 @@ JpegResult jpeg_probe(const JpegInput *in, JpegInfo *info, void *work, size_t wo
             if (n >= 6 && memcmp(work, "Exif\0\0", 6) == 0)
             {
                 info->orientation = exif_orientation(work, n);
+                exif_date(work, n, &info->date);
                 have_exif = true;
             }
             len -= n;

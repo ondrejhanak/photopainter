@@ -1,6 +1,7 @@
 #ifndef JPEG_CONVERT_H
 #define JPEG_CONVERT_H
 
+#include "exif.h"
 #include "palette.h"
 
 #include <stdbool.h>
@@ -32,6 +33,7 @@ typedef struct
 {
     uint16_t width, height; // as stored, before orientation
     int orientation; // EXIF: 1, 3, 6 or 8
+    ExifDate date; // when the photo was taken; year 0 if unknown
 } JpegInfo;
 
 typedef struct

@@ -95,6 +95,16 @@ def blurred(path):
     return Image.open(path).convert('RGB').filter(ImageFilter.BoxBlur(6))
 
 
+def exif_date(path):
+    """DateTimeOriginal, else DateTime, as the frame reads it; 0000-00-00 if neither is a real date."""
+    exif = Image.open(path).getexif()
+    for value in (exif.get_ifd(0x8769).get(0x9003), exif.get(0x0132)):
+        m = re.match(r'(\d{4}):(\d\d):(\d\d)', value or '')
+        if m and int(m[1]) >= 1800 and 1 <= int(m[2]) <= 12 and 1 <= int(m[3]) <= 31:
+            return f'{m[1]}-{m[2]}-{m[3]}'
+    return '0000-00-00'
+
+
 def mean_diff(a, b):
     pa, pb = a.tobytes(), b.tobytes()
     return sum(abs(x - y) for x, y in zip(pa, pb)) / len(pa)
@@ -241,12 +251,28 @@ def main():
         d = mean_diff(blurred(src + '.bmp'), ref.filter(ImageFilter.BoxBlur(6)))
         check(f'{f} looks like convert_reference.py output (diff {d:.1f})', d < LOOK_MAX_DIFF, f'{d:.1f}')
 
-    # Every photo in the folder, landscape and portrait frame
+    # An edited photo: DateTimeOriginal differs from DateTime and lies past 512 bytes of APP1, as in
+    # phone photos (Make, Model, Software strings first)
+    exif = Image.Exif()
+    exif[0x010F], exif[0x0110], exif[0x0131] = 'Maker ' * 40, 'Model ' * 40, 'Editor ' * 20
+    exif[0x0132] = '2024:05:06 07:08:09'
+    exif.get_ifd(0x8769)[0x9003] = '1985:12:24 18:30:00'
+    edited = save(small, s('edited.jpg'), exif=exif.tobytes())
+    app1 = open(edited, 'rb').read(8192)
+    at = app1.find(b'1985:12:24') - app1.find(b'Exif')
+    code, log = run(edited)
+    check(f'edited photo shows the date taken (at byte {at} of APP1)',
+          at > 512 and 'date 1985-12-24' in log, log)
+
+    # Every photo in the folder, landscape and portrait frame; the date found as Pillow reads it
     for f in sorted(os.listdir(photos)):
         if f.lower().endswith(('.jpg', '.jpeg')):
             for portrait in (False, True):
                 code, log = run(os.path.join(photos, f), portrait=portrait)
                 check(f'{f} ({"portrait" if portrait else "landscape"} frame)', code == 0, log)
+            want = exif_date(os.path.join(photos, f))
+            got = re.search(r'date (\d{4}-\d\d-\d\d)', log)
+            check(f'{f} date {want}', got and got.group(1) == want, log)
 
     print(f'\n{len(failures)} failed' if failures else '\nall passed')
     return 1 if failures else 0

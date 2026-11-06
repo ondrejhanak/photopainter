@@ -2,6 +2,7 @@
 #include "settings.h"
 
 #include <assert.h>
+#include <stdio.h>
 
 
 const char *const language_codes[] = {
@@ -43,4 +44,14 @@ const char *msg(MsgId id)
 {
     const char *text = messages[settings.language][id];
     return text ? text : messages[LANG_EN][id]; // a forgotten translation shows English, not a crash
+}
+
+void msg_date(char *out, size_t len, int year, int month, int day)
+{
+    static const char *const months[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                                         "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+    if (settings.language == LANG_CS)
+        snprintf(out, len, "%d. %d. %d", day, month, year);
+    else // the month as a word: no day/month order to guess
+        snprintf(out, len, "%d %s %d", day, months[(month - 1) % 12], year);
 }

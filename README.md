@@ -23,6 +23,8 @@ be easier to use and to develop.
 - **Landscape or portrait.** `orientation = portrait` for a frame turned counter-clockwise: photos,
   screens, the battery icon and the note follow it. Photos that fit the frame's shape fill it, the
   others fit whole with bars.
+- **Date the photo was taken.** `show_date = yes` puts it in the bottom-right corner (e.g. `24 Dec 1985`,
+  in Czech `24. 12. 1985`), read from the camera's EXIF data; photos without one show none.
 - **Sensible default interval:** 12 hours instead of 15 minutes, which drained the battery quickly.
 - **Low battery shown on the photo.** A small battery icon in the top-right corner when the battery
   runs low; when it is empty, a "Battery Empty" screen asks for charging and the frame stops changing
@@ -126,6 +128,9 @@ order = random
 ; Frame position: landscape, or portrait (turned counter-clockwise)
 orientation = landscape
 
+; Date the photo was taken (from the camera), at the bottom: no or yes
+show_date = no
+
 ; Colour around photos that don't fill the screen: white or black
 bars = white
 
@@ -225,7 +230,7 @@ src/
 ├── main.c                      Entry point, power management, main loop, configuration
 ├── display.c                   Image and message screens on the panel
 ├── jpeg_convert.c              JPEG decode (TJpgDec), scale, crop, dither (no hardware access)
-├── exif.c                      EXIF orientation (no hardware access)
+├── exif.c                      EXIF orientation and date taken (no hardware access)
 ├── palette.c                   Panel colors as dithering sees them
 ├── cache.c, cache_format.c     Converted photos on the card (format: no hardware access)
 ├── work_memory.c               48 KB shared by USB drive mode and JPEG conversion
