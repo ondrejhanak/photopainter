@@ -4,11 +4,11 @@ In no particular order; not everything here will happen.
 
 ## Features
 
-- **Photos that cannot be shown**: a JPEG that fails (progressive, CMYK, broken, too small) is skipped like a shown photo and the next one is tried, at most 5 per change; the photo shown instead gets a note at the bottom naming the failed ones. Nothing is remembered, so a broken photo is tried again (and named again) once per round. When all 5 fail, a screen lists their names. Never deleted or renamed; other file types stay ignored.
-- **Photo date caption**: `show_date = no | yes`, default `no`. EXIF `DateTimeOriginal`, fallback `DateTime`, read from the JPEG when shown; plain string, no calendar math. Formatted per `language` (e.g. 24. 12. 1985), black on a small white box in a corner, not in the cache. No EXIF date, no caption.
+- **Photo date caption**: `show_date = no | yes`, default `no`. EXIF `DateTimeOriginal`, fallback `DateTime`, read from the JPEG when shown; plain string, no calendar math. Formatted per `language` (e.g. 24. 12. 1985), black on a small white box at the bottom of the screen, not in the cache. No EXIF date, no caption.
 
 ## Code and tooling
 
+- **Web flasher**: a page on GitHub Pages that updates the frame from Chrome/Edge: Web Serial 1200-baud touch reboots it into BOOTSEL, then the release `.uf2` is written to the `RPI-RP2` drive (File System Access API) or flashed over WebUSB (PICOBOOT). Card and settings untouched. After releases and CI exist.
 - **Host tests + CI badge**: PlatformIO native + Unity for image order, random rounds and `settings.ini` parsing. GitHub Actions (`ubuntu-latest`, free for public repos) builds firmware and runs `pio test -e native` on every push; badge in README. The JPEG checks of `tools/jpeg_host/` could run there too.
 - **Fuzzing**: JPEG/EXIF parsing as a repeatable test (CI), to prove "bad files don't break the frame".
 - **Build hygiene**: warnings, static analysis, stack usage and firmware size checks in CI.
