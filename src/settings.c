@@ -15,12 +15,14 @@
 #define DEFAULT_ORDER ORDER_RANDOM
 #define DEFAULT_LANGUAGE LANG_EN
 #define DEFAULT_BARS BARS_WHITE
+#define DEFAULT_ORIENTATION ORIENTATION_LANDSCAPE
 
 Settings settings = {
     .interval_hours = DEFAULT_INTERVAL_HOURS,
     .order = DEFAULT_ORDER,
     .language = DEFAULT_LANGUAGE,
     .bars = DEFAULT_BARS,
+    .orientation = DEFAULT_ORIENTATION,
 };
 
 // Written when settings.ini is missing, so users can see what can be changed (comments in English)
@@ -34,6 +36,9 @@ static const char *default_settings =
     "\r\n"
     "; Image order: random or alphabetical (random shows every image once before reshuffling)\r\n"
     "order = random\r\n"
+    "\r\n"
+    "; Frame position: landscape, or portrait (turned counter-clockwise)\r\n"
+    "orientation = landscape\r\n"
     "\r\n"
     "; Colour around photos that don't fill the screen: white or black\r\n"
     "bars = white\r\n"
@@ -80,6 +85,16 @@ static int handler(void *user, const char *section, const char *name, const char
             settings.bars = BARS_BLACK;
         else
             printf("settings: invalid bars \"%s\", using %s\r\n", value, settings.bars == BARS_BLACK ? "black" : "white");
+    }
+    else if (strcasecmp(name, "orientation") == 0)
+    {
+        if (strcasecmp(value, "landscape") == 0)
+            settings.orientation = ORIENTATION_LANDSCAPE;
+        else if (strcasecmp(value, "portrait") == 0)
+            settings.orientation = ORIENTATION_PORTRAIT;
+        else
+            printf("settings: invalid orientation \"%s\", using %s\r\n", value,
+                   settings.orientation == ORIENTATION_PORTRAIT ? "portrait" : "landscape");
     }
     else if (strcasecmp(name, "language") == 0)
     {
@@ -133,6 +148,7 @@ void settings_load(void)
     settings.interval_hours = DEFAULT_INTERVAL_HOURS;
     settings.order = DEFAULT_ORDER;
     settings.bars = DEFAULT_BARS;
+    settings.orientation = DEFAULT_ORIENTATION;
 
     sdcard_mount();
 
@@ -159,7 +175,8 @@ void settings_load(void)
     sdcard_unmount();
     saved_language_save(settings.language);
 
-    printf("settings: interval_hours = %d, order = %s, language = %s, bars = %s\r\n", settings.interval_hours,
-           settings.order == ORDER_RANDOM ? "random" : "alphabetical", language_codes[settings.language],
-           settings.bars == BARS_BLACK ? "black" : "white");
+    printf("settings: interval_hours = %d, order = %s, language = %s, bars = %s, orientation = %s\r\n",
+           settings.interval_hours, settings.order == ORDER_RANDOM ? "random" : "alphabetical",
+           language_codes[settings.language], settings.bars == BARS_BLACK ? "black" : "white",
+           settings.orientation == ORIENTATION_PORTRAIT ? "portrait" : "landscape");
 }

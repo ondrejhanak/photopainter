@@ -40,21 +40,33 @@
 #include <stdlib.h> // malloc() free()
 #include <string.h>
 
-#define MESSAGE_X 125 // message screen text position
+#define MESSAGE_X 125 // message screen text position, landscape
 #define MESSAGE_Y 160
+#define MESSAGE_PORTRAIT_X 30
+#define MESSAGE_PORTRAIT_Y 300
 #define NOTE_X 10 // note strip at the bottom of a photo
 #define NOTE_PADDING 6
-#define BATTERY_X 740 // battery icon box in the top-right corner, 50 x 28 px
-#define BATTERY_Y 10
+#define BATTERY_MARGIN 10 // battery icon box in the top-right corner, 50 x 28 px
 #define MAX_TRIES 5 // photos tried per change: bounds the awake time, a broken big file decodes for long
+
+// Draw in viewed frame coordinates: the panel is mounted upside down, so landscape is turned 180
+// degrees and portrait (the frame turned counter-clockwise) 270. Paint.Width and Paint.Height are
+// then the viewed size.
+static void select_rotation(void)
+{
+    Paint_SetRotate(settings.orientation == ORIENTATION_PORTRAIT ? 270 : 180);
+}
 
 // Draw a message screen (title and a smaller hint below it) into the selected, cleared image
 static void draw_message(const char *title, const char *hint)
 {
     printf("Display message: %s\r\n", title);
-    Paint_SetRotate(180);
-    UWORD y = Paint_DrawString_EN(MESSAGE_X, MESSAGE_Y, title, &Font28, EPD_7IN3F_WHITE, EPD_7IN3F_BLACK);
-    Paint_DrawString_EN(MESSAGE_X, y + 14, hint, &Font22, EPD_7IN3F_WHITE, EPD_7IN3F_BLACK);
+    select_rotation();
+    bool portrait = Paint.Width < Paint.Height;
+    UWORD x = portrait ? MESSAGE_PORTRAIT_X : MESSAGE_X;
+    UWORD y = Paint_DrawString_EN(x, portrait ? MESSAGE_PORTRAIT_Y : MESSAGE_Y, title, &Font28, EPD_7IN3F_WHITE,
+                                  EPD_7IN3F_BLACK);
+    Paint_DrawString_EN(x, y + 14, hint, &Font22, EPD_7IN3F_WHITE, EPD_7IN3F_BLACK);
 }
 
 static size_t fat_read(void *ctx, uint8_t *buf, size_t n)
@@ -103,9 +115,9 @@ static bool draw_jpeg(const char *path, uint8_t *image)
         printf("f_open(%s) error: %s (%d)\r\n", path, FRESULT_str(fr), fr);
         return false;
     }
-    Paint_SetRotate(180); // the panel is mounted upside down
+    select_rotation();
     JpegInput in = {.read = fat_read, .rewind = fat_rewind, .ctx = &fil};
-    JpegOutput out = {.width = EPD_7IN3F_WIDTH, .height = EPD_7IN3F_HEIGHT, .palette = &palette_7color,
+    JpegOutput out = {.width = Paint.Width, .height = Paint.Height, .palette = &palette_7color,
                       .put_pixel = put_pixel, .progress = feed_watchdog};
     JpegResult r = jpeg_convert(&in, &out, work_memory, sizeof(work_memory));
     uint32_t ms = to_ms_since_boot(get_absolute_time()) - start;
@@ -145,10 +157,10 @@ static char failed[MAX_TRIES * (FF_LFN_BUF + 2) + 1];
 // fits above the edge, longer lists are cut at a word.
 static void draw_failed_note(void)
 {
-    UWORD top = EPD_7IN3F_HEIGHT - 2 * Font22.Height - 2 * NOTE_PADDING;
     printf("Display note: %s\r\n", failed);
-    Paint_SetRotate(180);
-    Paint_ClearWindows(0, top, EPD_7IN3F_WIDTH, EPD_7IN3F_HEIGHT, EPD_7IN3F_WHITE);
+    select_rotation();
+    UWORD top = Paint.Height - 2 * Font22.Height - 2 * NOTE_PADDING;
+    Paint_ClearWindows(0, top, Paint.Width, Paint.Height, EPD_7IN3F_WHITE);
     UWORD y = Paint_DrawString_EN(NOTE_X, top + NOTE_PADDING, msg(MSG_CANNOT_SHOW_TITLE), &Font22,
                                   EPD_7IN3F_WHITE, EPD_7IN3F_BLACK);
     Paint_DrawString_EN(NOTE_X, y, failed, &Font22, EPD_7IN3F_WHITE, EPD_7IN3F_BLACK);
@@ -157,9 +169,9 @@ static void draw_failed_note(void)
 // Small battery with a little red charge on a white box, so it shows on any photo
 static void draw_battery_icon(void)
 {
-    const UWORD x = BATTERY_X, y = BATTERY_Y;
     printf("Display battery icon\r\n");
-    Paint_SetRotate(180);
+    select_rotation();
+    const UWORD x = Paint.Width - BATTERY_MARGIN - 50, y = BATTERY_MARGIN;
     Paint_ClearWindows(x, y, x + 50, y + 28, EPD_7IN3F_WHITE);
     Paint_ClearWindows(x + 6, y + 6, x + 40, y + 22, EPD_7IN3F_BLACK); // body, 2 px outline
     Paint_ClearWindows(x + 8, y + 8, x + 38, y + 20, EPD_7IN3F_WHITE);

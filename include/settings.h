@@ -11,6 +11,12 @@ typedef enum
 
 typedef enum
 {
+    ORIENTATION_LANDSCAPE,
+    ORIENTATION_PORTRAIT, // the frame turned counter-clockwise from landscape
+} Orientation;
+
+typedef enum
+{
     ORDER_ALPHABETICAL, // natural name order
     ORDER_RANDOM, // shuffled; every image once per round, reshuffled after each round
 } ImageOrder;
@@ -22,6 +28,7 @@ typedef struct
     ImageOrder order;
     Language language; // on-screen messages
     BarsColour bars;
+    Orientation orientation;
 } Settings;
 
 extern Settings settings;

@@ -7,8 +7,9 @@
 #include <stddef.h>
 #include <stdint.h>
 
-// A converted photo as stored in the cache: an upright, top-down 4-bit BMP of the whole frame whose
-// palette indices are the panel codes, so it opens on a computer as the frame shows it
+// A converted photo as stored in the cache: a top-down 4-bit BMP of the whole panel whose palette
+// indices are the panel codes. It opens on a computer as a landscape frame shows it; a portrait frame's
+// photo lies on its side (same layout, so one reader and writer for both).
 #define CACHE_WIDTH 800
 #define CACHE_HEIGHT 480
 #define CACHE_ROW_BYTES (CACHE_WIDTH / 2)

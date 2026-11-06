@@ -142,6 +142,19 @@ def main():
     n = len(placeholders(s('landscape_o1.bmp')))
     check('landscape fills the frame (no placeholder pixels)', n == 0, f'{n}')
 
+    # Portrait frame (turned counter-clockwise): the cache file holds the panel's buffer, so the photo
+    # lies on its side and a counter-clockwise turn shows it upright; compared with Pillow's resize
+    tall = save(port.resize((960, 1600)), s('tall.jpg')) # the frame's 3:5, so it fills without a crop
+    code, log = run(tall, s('tall_portrait.bmp'), portrait=True)
+    check('portrait frame converts', code == 0, log)
+    if code == 0:
+        ref = Image.open(tall).convert('RGB').resize((480, 800)).filter(ImageFilter.BoxBlur(6))
+        out = blurred(s('tall_portrait.bmp'))
+        good = mean_diff(out.transpose(Image.Transpose.ROTATE_90), ref)
+        bad = mean_diff(out.transpose(Image.Transpose.ROTATE_270), ref)
+        check(f'portrait frame upright after a counter-clockwise turn (diff {good:.1f}, other way {bad:.1f})',
+              bad > 2 * good, f'{good:.1f} vs {bad:.1f}')
+
     # Formats TJpgDec handles, and some it rejects
     small = land.resize((800, 600))
     cases = {

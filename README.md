@@ -20,6 +20,9 @@ reworked to be easier to use and to develop.
   shifted whenever photos changed).
 - **Settings without rebuilding.** Interval and order live in `settings.ini` on the card, created with
   comments on first start; the original needed code changes and a rebuild.
+- **Landscape or portrait.** `orientation = portrait` for a frame turned counter-clockwise: photos,
+  screens, the battery icon and the note follow it. Photos that fit the frame's shape fill it, the
+  others fit whole with bars.
 - **Sensible default interval:** 12 hours instead of 15 minutes, which drained the battery quickly.
 - **Low battery shown on the photo.** A small battery icon in the top-right corner when the battery
   runs low; when it is empty, a "Battery Empty" screen asks for charging and the frame stops changing
@@ -111,6 +114,9 @@ interval_hours = 12
 
 ; Image order: random or alphabetical (random shows every image once before reshuffling)
 order = random
+
+; Frame position: landscape, or portrait (turned counter-clockwise)
+orientation = landscape
 
 ; Colour around photos that don't fill the screen: white or black
 bars = white

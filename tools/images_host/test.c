@@ -16,6 +16,7 @@
 
 #define SECTORS 8192 // 4 MB
 #define CACHE_DIR SDCARD_FRAME_DIR "/cache/landscape"
+#define PORTRAIT_DIR SDCARD_FRAME_DIR "/cache/portrait"
 #define PHOTOS_FILE SDCARD_FRAME_DIR "/photos.bin"
 #define NEW_FILE SDCARD_FRAME_DIR "/new.bin"
 #define MAX_KEYS (WORK_MEMORY_SIZE / sizeof(uint64_t))
@@ -420,30 +421,35 @@ static void test_photo_cap(void)
     expect_file(NEW_FILE, false);
 }
 
-static void put_cache_file(const char *photo, const char *ext)
+static void put_cache_file_in(const char *dir, const char *photo, const char *ext)
 {
     FILINFO fno;
     char key[CACHE_NAME_LEN + 1], path[64];
     sdcard_mount();
     f_stat(photo, &fno);
     cache_name(key, cache_key(fno.fname, (uint32_t)fno.fsize, fno.fdate, fno.ftime));
-    snprintf(path, sizeof(path), CACHE_DIR "/%s%s", key, ext);
+    snprintf(path, sizeof(path), "%s/%s%s", dir, key, ext);
     f_mkdir(SDCARD_FRAME_DIR);
     f_mkdir(SDCARD_FRAME_DIR "/cache");
-    f_mkdir(CACHE_DIR);
+    f_mkdir(dir);
     FIL fil;
     f_open(&fil, path, FA_CREATE_ALWAYS | FA_WRITE);
     f_close(&fil);
     sdcard_unmount();
 }
 
-static int count_cache_files(void)
+static void put_cache_file(const char *photo, const char *ext)
+{
+    put_cache_file_in(CACHE_DIR, photo, ext);
+}
+
+static int count_files_in(const char *dir_path)
 {
     int count = 0;
     DIR dir;
     FILINFO fno;
     sdcard_mount();
-    if (f_opendir(&dir, CACHE_DIR) == FR_OK)
+    if (f_opendir(&dir, dir_path) == FR_OK)
     {
         while (f_readdir(&dir, &fno) == FR_OK && fno.fname[0])
             count++;
@@ -451,6 +457,11 @@ static int count_cache_files(void)
     }
     sdcard_unmount();
     return count;
+}
+
+static int count_cache_files(void)
+{
+    return count_files_in(CACHE_DIR);
 }
 
 static int prune(void)
@@ -472,8 +483,10 @@ static void test_prune(void)
     put_cache_file("a3.jpg", ".tmp");
     put_cache_file("gone.jpg", ".bmp");
     put_cache_file("a1.jpg", ".txt");
+    put_cache_file_in(PORTRAIT_DIR, "a1.jpg", ".bmp");
+    put_cache_file_in(PORTRAIT_DIR, "gone.jpg", ".bmp");
     del("gone.jpg");
-    if (prune() != 2 || count_cache_files() != 3)
+    if (prune() != 3 || count_cache_files() != 3 || count_files_in(PORTRAIT_DIR) != 1)
         fail("%s%s", "wrong cache files removed", "");
 
     new_card("cache cleanup skipped above the cap", ORDER_ALPHABETICAL);
@@ -483,6 +496,27 @@ static void test_prune(void)
     del("gone.jpg");
     if (prune() != 0 || count_cache_files() != 1)
         fail("%s%s", "cleanup ran on an incomplete list", "");
+}
+
+static bool cached(const char *photo)
+{
+    sdcard_mount();
+    bool found = cache_exists(photo);
+    sdcard_unmount();
+    return found;
+}
+
+static void test_cache_folder(void)
+{
+    new_card("cache folder of the frame orientation", ORDER_ALPHABETICAL);
+    put("a1.jpg", 100);
+    put_cache_file_in(PORTRAIT_DIR, "a1.jpg", ".bmp");
+    if (cached("a1.jpg"))
+        fail("%s%s", "landscape found the portrait cache file", "");
+    settings.orientation = ORIENTATION_PORTRAIT;
+    if (!cached("a1.jpg"))
+        fail("%s%s", "portrait missed its cache file", "");
+    settings.orientation = ORIENTATION_LANDSCAPE;
 }
 
 int main(void)
@@ -500,6 +534,7 @@ int main(void)
     test_batch_random();
     test_photo_cap();
     test_prune();
+    test_cache_folder();
     fprintf(stderr, failures ? "%d failures\n" : "all passed\n", failures);
     return failures;
 }
