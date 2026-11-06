@@ -33,6 +33,7 @@
 #include "cache.h"
 #include "jpeg_convert.h"
 #include "palette.h"
+#include "wake_log.h"
 #include "work_memory.h"
 #include "f_util.h"
 
@@ -98,12 +99,15 @@ static void feed_watchdog(void *ctx)
     watchdog_update();
 }
 
+static bool drawn_from_cache; // set by draw_jpeg(): the last photo came from its cache file
+
 // A JPEG into the selected image (landscape frame): from its cache file, or decoded, scaled and
 // dithered and then cached
 static bool draw_jpeg(const char *path, uint8_t *image)
 {
     uint32_t start = to_ms_since_boot(get_absolute_time());
-    if (cache_load(path, image))
+    drawn_from_cache = cache_load(path, image);
+    if (drawn_from_cache)
     {
         printf("jpeg: from cache, %lu ms\r\n", (unsigned long)(to_ms_since_boot(get_absolute_time()) - start));
         return true;
@@ -186,11 +190,17 @@ static bool draw_photo(uint8_t *image)
 {
     char first_failed[FF_LFN_BUF + 1];
     failed[0] = '\0';
+    wake_log_step(STEP_LOAD);
     for (int tries = 1;; tries++)
     {
         Paint_Clear(EPD_7IN3F_WHITE);
         if (draw_jpeg(images_path, image))
+        {
+            strcpy(wake_log.photo, images_path);
+            wake_log.result = drawn_from_cache ? "cache" : "converted";
             return true;
+        }
+        wake_log.failed++;
         printf("cannot show %s\r\n", images_path);
         if (tries == 1)
             strcpy(first_failed, images_path);
@@ -242,14 +252,17 @@ int display_image(bool battery_low)
     { // every try failed, all of them already saved as shown
         Paint_Clear(EPD_7IN3F_WHITE);
         draw_message(msg(MSG_CANNOT_SHOW_TITLE), failed);
+        wake_log.result = "message";
     }
 
+    wake_log_step(STEP_REFRESH);
     printf("EPD_Display\r\n");
     uint32_t start = to_ms_since_boot(get_absolute_time());
     EPD_7IN3F_Display(image); // runs EPD_7IN3F_Refreshing()
     prefetch_image = NULL;
     printf("refresh: %lu ms\r\n", (unsigned long)(to_ms_since_boot(get_absolute_time()) - start));
 
+    wake_log_step(STEP_SAVE);
     sdcard_unmount();
     if (shown)
         images_save_shown();
@@ -281,7 +294,9 @@ int display_message(const char *title, const char *hint)
     Paint_SelectImage(image);
     Paint_Clear(EPD_7IN3F_WHITE);
     draw_message(title, hint);
+    wake_log.result = "message";
 
+    wake_log_step(STEP_REFRESH);
     printf("EPD_Display\r\n");
     EPD_7IN3F_Display(image);
 

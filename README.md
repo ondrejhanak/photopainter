@@ -105,6 +105,7 @@ restarts with the new firmware. Photos, settings and converted photos on the SD 
 | `*.jpg`, `*.jpeg` in the root | Photos (subfolders, dot-files and other files are ignored) |
 | `settings.ini` | Settings, created with comments on first start |
 | `.photopainter/` | The frame's own state and converted photos (hidden) |
+| `.photopainter/log.csv` | Wake log: one line per photo change, drive session or battery event ([docs/wake-log.md](docs/wake-log.md)) |
 
 Photos are shown in natural name order or randomly; photos copied over USB come first (see above),
 otherwise adding or removing photos never causes skips or repeats.
@@ -235,7 +236,8 @@ src/
 ├── settings.c                  settings.ini loading (via inih)
 ├── saved_language.cpp          Last language in CPU flash (for screens without a readable card)
 ├── usb_drive.cpp               SD card as a USB drive (mass storage next to USB serial)
-└── usb_serial.cpp              USB serial input for C code (test commands)
+├── usb_serial.cpp              USB serial input for C code (test commands)
+└── wake_log.c                  Wake log on the card (docs/wake-log.md)
 include/                        Headers for src/, one per module
 lib/
 ├── Config/DEV_Config.h         Pin definitions, SPI/I2C/GPIO init

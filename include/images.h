@@ -6,6 +6,8 @@
 
 // File name of the image to display, in the card root
 extern char images_path[FF_LFN_BUF + 1];
+// Images in the card root, counted by the last selection
+extern int images_count;
 
 // Pick the next image into images_path: the next of the photos added in the latest drive mode while
 // there are any, else the one after the last shown; false if the card root has no images
@@ -24,7 +26,7 @@ void images_save_shown(void);
 void images_remember_photos(void);
 // After drive mode: the photos added since images_remember_photos() are shown first, from the next
 // selection on. Without additions, new photos of an earlier drive mode not shown yet stay first.
-// Uses the work memory.
-void images_find_new(void);
+// Returns how many were added. Uses the work memory.
+int images_find_new(void);
 
 #endif

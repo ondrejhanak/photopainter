@@ -8,6 +8,9 @@
 #include "images.h"
 #include "sdcard.h"
 #include "settings.h"
+#include "wake_log.h"
+#include "hardware/watchdog.h"
+#include "pico/time.h"
 #include "work_memory.h"
 
 #include <stdio.h>
@@ -29,6 +32,21 @@ static int failures;
 
 alignas(8) uint8_t work_memory[WORK_MEMORY_SIZE];
 Settings settings;
+
+static watchdog_hw_t watchdog_regs;
+watchdog_hw_t *watchdog_hw = &watchdog_regs;
+static bool watchdog_timeout; // the boot was a watchdog reset
+static uint64_t now_ms;
+
+bool watchdog_enable_caused_reboot(void)
+{
+    return watchdog_timeout;
+}
+
+absolute_time_t get_absolute_time(void)
+{
+    return now_ms;
+}
 
 uint32_t get_rand_32(void)
 {
@@ -519,6 +537,134 @@ static void test_cache_folder(void)
     settings.orientation = ORIENTATION_LANDSCAPE;
 }
 
+// A file of the RAM disk into buf (NUL-terminated); its length, 0 if missing
+static size_t read_file(const char *path, char *buf, size_t len)
+{
+    UINT br = 0;
+    FIL fil;
+    sdcard_mount();
+    if (f_open(&fil, path, FA_READ) == FR_OK)
+    {
+        f_read(&fil, buf, (UINT)len - 1, &br);
+        f_close(&fil);
+    }
+    sdcard_unmount();
+    buf[br] = '\0';
+    return br;
+}
+
+static void expect_text(const char *got, const char *want)
+{
+    if (strcmp(got, want) != 0)
+        fail("got \"%s\", want \"%s\"", got, want);
+}
+
+static void test_log_format(void)
+{
+    test_name = "wake log line";
+    WakeLog w = {.reason = "rtc", .battery_v = 3.92f, .usb = true, .charging = true, .interval_h = 12, .photo = "IMG_1.jpg",
+                 .result = "cache", .photos = 21, .failed = 1};
+    w.ms[STEP_BOOT] = 1210;
+    w.ms[STEP_CARD] = 85;
+    w.ms[STEP_SELECT] = 40;
+    w.ms[STEP_LOAD] = 190;
+    w.ms[STEP_REFRESH] = 30820;
+    w.ms[STEP_DRIVE] = 99000;
+    char line[256];
+    wake_log_format(line, sizeof(line), "change", &w);
+    expect_text(line, "change,rtc,test,3.92,1,1,12,1210,85,40,190,30820,IMG_1.jpg,cache,21,1");
+    wake_log_format(line, sizeof(line), "drive_end", &w);
+    expect_text(line, "drive_end,rtc,test,3.92,1,1,12,1210,85,40,99000,30820,IMG_1.jpg,cache,21,1");
+
+    test_name = "wake log quoting";
+    strcpy(w.photo, "a, \"b\".jpg");
+    wake_log_format(line, sizeof(line), "change", &w);
+    expect_text(line, "change,rtc,test,3.92,1,1,12,1210,85,40,190,30820,\"a, \"\"b\"\".jpg\",cache,21,1");
+
+    test_name = "wake log line too long";
+    if (wake_log_format(line, 60, "change", &w) || wake_log_format(line, 73, "change", &w))
+        fail("%s%s", "a cut line was reported as written", "");
+}
+
+static void test_log_steps(void)
+{
+    new_card("wake log steps and watchdog step", ORDER_ALPHABETICAL);
+    now_ms = 1000;
+    wake_log_step(STEP_BOOT);
+    if (watchdog_hw->scratch[0] != STEP_BOOT)
+        fail("%s%s", "step not in watchdog scratch 0", "");
+    now_ms = 1100;
+    wake_log_step(STEP_CARD);
+    now_ms = 1150;
+    wake_log_step(STEP_SELECT);
+    now_ms = 1160;
+    if (wake_log.ms[STEP_BOOT] != 100 || wake_log.ms[STEP_CARD] != 50 || wake_log.ms[STEP_SELECT] != 0)
+        fail("%s%s", "wrong step times", "");
+    wake_log_write("change");
+    char buf[512];
+    read_file(SDCARD_FRAME_DIR "/log.csv", buf, sizeof(buf));
+    if (!strstr(buf, ",100,50,10,0,0,"))
+        fail("step times not in the line: %s%s", buf, "");
+    if (watchdog_hw->scratch[0] != STEP_IDLE || wake_log.ms[STEP_BOOT] != 0)
+        fail("%s%s", "not idle and cleared after the write", "");
+}
+
+static void test_boot_reason(void)
+{
+    test_name = "boot reason";
+    watchdog_timeout = false;
+    watchdog_hw->scratch[0] = STEP_LOAD;
+    expect_text(wake_log_boot_reason("key"), "key");
+    watchdog_timeout = true;
+    expect_text(wake_log_boot_reason("key"), "watchdog:load");
+    watchdog_hw->scratch[0] = 99;
+    expect_text(wake_log_boot_reason("key"), "watchdog:?");
+    watchdog_timeout = false;
+    watchdog_hw->scratch[0] = STEP_IDLE;
+}
+
+static void test_log_file(void)
+{
+    new_card("wake log file: header once, rotation", ORDER_ALPHABETICAL);
+    wake_log.reason = "rtc";
+    for (int i = 0; i < 20; i++)
+    {
+        snprintf(wake_log.photo, sizeof(wake_log.photo), "p%d.jpg", i);
+        wake_log_write("change");
+    }
+    char now[1024], old[1024];
+    size_t now_len = read_file(SDCARD_FRAME_DIR "/log.csv", now, sizeof(now));
+    size_t old_len = read_file(SDCARD_FRAME_DIR "/log.old.csv", old, sizeof(old));
+    const char *header = WAKE_LOG_HEADER "\n";
+    if (strncmp(now, header, strlen(header)) != 0 || strncmp(old, header, strlen(header)) != 0)
+        fail("%s%s", "a log file without its header", "");
+    if (strstr(now + 1, WAKE_LOG_HEADER) || strstr(old + 1, WAKE_LOG_HEADER))
+        fail("%s%s", "header written more than once", "");
+    if (!strstr(now, ",p19.jpg,") || now_len >= 300 + 100 || old_len < 300)
+        fail("%s%s", "the newest lines are not in log.csv", "");
+    // log.old.csv holds the lines right before log.csv's first one
+    int first_now = -1, last_old = -1;
+    sscanf(strstr(now, "\nchange") + 1, "change,rtc,test,%*[^,],%*[^,],%*[^,],%*[^,],%*[^,],%*[^,],%*[^,],%*[^,],%*[^,],p%d", &first_now);
+    for (const char *l = strstr(old, ",p"); l; l = strstr(l + 1, ",p"))
+        sscanf(l, ",p%d", &last_old);
+    if (first_now < 0 || last_old != first_now - 1)
+        fail("%s%s", "log.old.csv is not the part right before log.csv", "");
+}
+
+// docs/wake-log.md documents the columns: it must show the header the code writes
+static void test_log_doc(void)
+{
+    test_name = "wake log documentation";
+    char doc[16384];
+    FILE *f = fopen("docs/wake-log.md", "r");
+    size_t len = f ? fread(doc, 1, sizeof(doc) - 1, f) : 0;
+    if (f)
+        fclose(f);
+    doc[len] = '\0';
+    if (!strstr(doc, WAKE_LOG_HEADER "\n"))
+        fail("%s%s", "docs/wake-log.md does not show the header ", WAKE_LOG_HEADER);
+}
+
 int main(void)
 {
     test_no_list();
@@ -535,6 +681,11 @@ int main(void)
     test_photo_cap();
     test_prune();
     test_cache_folder();
+    test_log_format();
+    test_log_steps();
+    test_boot_reason();
+    test_log_file();
+    test_log_doc();
     fprintf(stderr, failures ? "%d failures\n" : "all passed\n", failures);
     return failures;
 }

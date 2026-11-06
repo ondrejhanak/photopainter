@@ -20,6 +20,7 @@
 #define MAX_KEYS (WORK_MEMORY_SIZE / sizeof(uint64_t))
 
 char images_path[FF_LFN_BUF + 1]; // file name of the image to display, in the card root
+int images_count;
 static char first[FF_LFN_BUF + 1], next[FF_LFN_BUF + 1]; // results of scan_images()
 
 // State file: the normal order continues after `last`; while new photos are shown first, `cursor` is
@@ -131,10 +132,12 @@ static void scan_images(const char *from, bool only_new)
         printf("f_opendir error: %s (%d)\r\n", FRESULT_str(fr), fr);
         return;
     }
+    images_count = 0;
     while (f_readdir(&dir, &fno) == FR_OK && fno.fname[0])
     {
         if (!images_is_image(&fno))
             continue;
+        images_count++;
         if (only_new)
         {
             uint64_t key = entry_key(&fno);
@@ -294,7 +297,7 @@ void images_remember_photos(void)
     sdcard_unmount();
 }
 
-void images_find_new(void)
+int images_find_new(void)
 {
     sdcard_mount();
     // The list of photos before drive mode (sorted), in the work memory; deleted once read, so a later
@@ -304,7 +307,7 @@ void images_find_new(void)
     if (f_open(&fil, PHOTOS_FILE, FA_READ) != FR_OK)
     {
         sdcard_unmount();
-        return;
+        return 0;
     }
     UINT br;
     bool ok = f_read(&fil, before, MAX_KEYS * sizeof(uint64_t), &br) == FR_OK;
@@ -350,4 +353,5 @@ void images_find_new(void)
     }
     printf("new photos: %d%s\r\n", added, ok ? "" : " (list not saved)");
     sdcard_unmount();
+    return ok ? added : 0;
 }

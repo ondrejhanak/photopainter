@@ -21,16 +21,7 @@ In no particular order; not everything here will happen.
 
 ## Logging
 
-- **Wake log**: one CSV line (~100 B) per wake in `.photopainter/`. Rotation `log.txt`, `log1.txt` … `logN.txt` (e.g. N = 4, 256 KB each): when full, delete the oldest, rename the rest up by one, oldest first (FatFs `f_rename` refuses an existing target). Fields:
-  - wake reason: RTC alarm, KEY, USB plugged in, power-on, watchdog reset
-  - battery voltage (same point every wake), USB present, charging
-  - time per phase: boot, SD mount, image scan, image load/decode, panel refresh
-  - photos that could not be shown
-  - image shown, result (ok / error code), image count on card
-  - later: JPEG cache hit/miss, decode time per megapixel
-- **Events**: firmware version at boot, drive-mode sessions (duration, photos added), SD/FatFs errors.
-- **Reset diagnostics**: after a watchdog reset, reason and phase, kept across the reset in watchdog scratch registers.
-- **Uses**: discharge curve and wakes per charge (low-battery thresholds), energy baseline, remote diagnosis of a gifted frame, checking known issues below.
+- **More in the wake log**: SD/FatFs errors as events; decode time per megapixel on `converted` lines.
 
 ## Known issues
 
