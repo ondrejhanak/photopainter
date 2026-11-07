@@ -563,7 +563,7 @@ static void test_log_format(void)
 {
     test_name = "wake log line";
     WakeLog w = {.reason = "rtc", .battery_v = 3.92f, .usb = true, .charging = true, .interval_h = 12, .photo = "IMG_1.jpg",
-                 .result = "cache", .photos = 21, .failed = 1};
+                 .result = "cache", .photos = 21, .failed = 1, .convert_ms = 22800, .convert_px = 24000000};
     w.ms[STEP_BOOT] = 1210;
     w.ms[STEP_CARD] = 85;
     w.ms[STEP_SELECT] = 40;
@@ -572,17 +572,17 @@ static void test_log_format(void)
     w.ms[STEP_DRIVE] = 99000;
     char line[256];
     wake_log_format(line, sizeof(line), "change", &w);
-    expect_text(line, "change,rtc,test,3.92,1,1,12,1210,85,40,190,30820,IMG_1.jpg,cache,21,1");
+    expect_text(line, "change,rtc,test,3.92,1,1,12,1210,85,40,190,30820,IMG_1.jpg,cache,21,1,22800,24.0");
     wake_log_format(line, sizeof(line), "drive_end", &w);
-    expect_text(line, "drive_end,rtc,test,3.92,1,1,12,1210,85,40,99000,30820,IMG_1.jpg,cache,21,1");
+    expect_text(line, "drive_end,rtc,test,3.92,1,1,12,1210,85,40,99000,30820,IMG_1.jpg,cache,21,1,22800,24.0");
 
     test_name = "wake log quoting";
     strcpy(w.photo, "a, \"b\".jpg");
     wake_log_format(line, sizeof(line), "change", &w);
-    expect_text(line, "change,rtc,test,3.92,1,1,12,1210,85,40,190,30820,\"a, \"\"b\"\".jpg\",cache,21,1");
+    expect_text(line, "change,rtc,test,3.92,1,1,12,1210,85,40,190,30820,\"a, \"\"b\"\".jpg\",cache,21,1,22800,24.0");
 
     test_name = "wake log line too long";
-    if (wake_log_format(line, 60, "change", &w) || wake_log_format(line, 73, "change", &w))
+    if (wake_log_format(line, 60, "change", &w) || wake_log_format(line, 85, "change", &w))
         fail("%s%s", "a cut line was reported as written", "");
 }
 
@@ -627,11 +627,15 @@ static void test_log_file(void)
 {
     new_card("wake log file: header once, rotation", ORDER_ALPHABETICAL);
     wake_log.reason = "rtc";
+    wake_log.convert_ms = 22800;
+    wake_log.convert_px = 24000000;
     for (int i = 0; i < 20; i++)
     {
         snprintf(wake_log.photo, sizeof(wake_log.photo), "p%d.jpg", i);
         wake_log_write("change");
     }
+    if (wake_log.convert_ms || wake_log.convert_px)
+        fail("%s%s", "conversion totals kept after the line was written", "");
     char now[1024], old[1024];
     size_t now_len = read_file(SDCARD_FRAME_DIR "/log.csv", now, sizeof(now));
     size_t old_len = read_file(SDCARD_FRAME_DIR "/log.old.csv", old, sizeof(old));

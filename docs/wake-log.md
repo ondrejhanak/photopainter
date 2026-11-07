@@ -11,7 +11,7 @@ the timeline; on battery, consecutive `change` lines with reason `rtc` are `inte
 ## Columns
 
 ```
-event,reason,version,battery_v,usb,charging,interval_h,boot_ms,card_ms,select_ms,load_ms,refresh_ms,photo,result,photos,failed
+event,reason,version,battery_v,usb,charging,interval_h,boot_ms,card_ms,select_ms,load_ms,refresh_ms,photo,result,photos,failed,convert_ms,convert_mp
 ```
 
 | Column | Meaning |
@@ -32,6 +32,8 @@ event,reason,version,battery_v,usb,charging,interval_h,boot_ms,card_ms,select_ms
 | `result` | `cache` (from its cache file), `converted` (decoded now), `message` (a screen instead of a photo) |
 | `photos` | JPEGs in the card root; on `drive_end` lines the number of photos added |
 | `failed` | Photos skipped because they could not be shown |
+| `convert_ms` | Converting JPEGs in this change (decode, scale, dither; not reading the cache or saving it), see below |
+| `convert_mp` | Megapixels of the photos converted in this change, at their full size |
 
 Times are milliseconds; a step that did not run is 0.
 
@@ -62,6 +64,12 @@ Times are milliseconds; a step that did not run is 0.
 The reason stays for the rest of the wake: the `change` after a `drive_end` line, or the `usb_unplugged`
 line, has the reason of the last action.
 
+`convert_ms` and `convert_mp` count the conversion work done in this change, not the photo on the
+line. While the panel refreshes, the frame converts the photo due next, which usually comes from its
+cache on the next line; the shown photo counts only when it was converted before its own refresh
+(`result` `converted`, e.g. the first photo after an eject), so a change can hold two conversions.
+Failed conversions are not counted.
+
 ## Reading it
 
 - **Discharge curve:** filter `usb = 0`, chart `battery_v` against the line number, or against the
@@ -71,4 +79,6 @@ line, has the reason of the last action.
   battery line shows how far it charged.
 - **Energy per wake:** the sum of the `*_ms` columns is the awake time; `converted` lines cost the
   conversion on top.
+- **Conversion speed:** `convert_ms / convert_mp` is milliseconds per megapixel; sum both columns
+  over many lines for a steady rate.
 - **Hangs:** `watchdog:` reasons name the step that never finished.

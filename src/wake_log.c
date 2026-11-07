@@ -71,7 +71,8 @@ bool wake_log_format(char *out, size_t len, const char *event, const WakeLog *w)
     char *p = out + n, *end = out + len - 1;
     if (!put_field(&p, end, w->photo))
         return false;
-    n = snprintf(p, (size_t)(end - p) + 1, ",%s,%d,%d", w->result ? w->result : "", w->photos, w->failed);
+    n = snprintf(p, (size_t)(end - p) + 1, ",%s,%d,%d,%lu,%.1f", w->result ? w->result : "", w->photos, w->failed,
+                 (unsigned long)w->convert_ms, (double)w->convert_px / 1e6);
     return n >= 0 && n <= end - p;
 }
 
@@ -89,7 +90,7 @@ void wake_log_write(const char *event)
 {
     if (current_step != STEP_IDLE)
         wake_log_step(STEP_IDLE);
-    char line[FF_LFN_BUF + 160];
+    char line[FF_LFN_BUF + 192]; // the photo name, plus every other column at its widest
     if (wake_log_format(line, sizeof(line), event, &wake_log))
     {
         sdcard_mount();
@@ -111,4 +112,5 @@ void wake_log_write(const char *event)
     wake_log.photo[0] = '\0';
     wake_log.result = NULL;
     wake_log.photos = wake_log.failed = 0;
+    wake_log.convert_ms = wake_log.convert_px = 0;
 }

@@ -410,16 +410,15 @@ static size_t err_bytes(const Conv *c)
     return (size_t)(c->ax.vis1 - c->ax.vis0 + 2) * 3 * sizeof(int16_t);
 }
 
-JpegResult jpeg_convert(const JpegInput *in, const JpegOutput *out, void *work, size_t work_size)
+JpegResult jpeg_convert(const JpegInput *in, const JpegOutput *out, void *work, size_t work_size, JpegInfo *info)
 {
-    JpegInfo info;
-    JpegResult r = jpeg_probe(in, &info, work, work_size);
+    JpegResult r = jpeg_probe(in, info, work, work_size);
     if (r != JPEG_OK)
         return r;
     if (!in->rewind(in->ctx))
         return JPEG_READ_ERROR;
 
-    Conv c = {.in = in, .out = out, .orientation = info.orientation};
+    Conv c = {.in = in, .out = out, .orientation = info->orientation};
     JRESULT jr = jd_prepare(&c.jd, jd_input, work, work_size, &c);
     if (jr != JDR_OK)
         return from_jresult(jr);

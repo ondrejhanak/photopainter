@@ -8,8 +8,10 @@
 
 // One CSV line per event in /.photopainter/log.csv, rotated to log.old.csv; columns and values are
 // described in docs/wake-log.md (a host test checks that the header there matches)
-#define WAKE_LOG_HEADER "event,reason,version,battery_v,usb,charging,interval_h,boot_ms,card_ms,select_ms,load_ms,refresh_ms," \
-                        "photo,result,photos,failed"
+#define WAKE_LOG_HEADER \
+    "event,reason,version,battery_v,usb,charging,interval_h," \
+    "boot_ms,card_ms,select_ms,load_ms,refresh_ms," \
+    "photo,result,photos,failed,convert_ms,convert_mp"
 
 // Steps of a wake or photo change; the current one is kept in watchdog scratch 0, so a watchdog
 // reset can name it on the next boot. Numbers are in docs/wake-log.md.
@@ -37,6 +39,9 @@ typedef struct
     char photo[FF_LFN_BUF + 1];
     const char *result; // cache, converted, message
     int photos, failed;
+    // Every successful conversion of this change, whichever photo: the shown one or the next one
+    // during the refresh
+    uint32_t convert_ms, convert_px;
 } WakeLog;
 
 extern WakeLog wake_log;

@@ -139,7 +139,7 @@ int main(int argc, char **argv)
     file_rewind(in);
     memset(work, 0xA5, work_size);
     read_calls = 0;
-    r = jpeg_convert(&input, &output, work, work_size);
+    r = jpeg_convert(&input, &output, work, work_size, &info);
     size_t used = work_size;
     while (used > 0 && work[used - 1] == 0xA5)
         used--;

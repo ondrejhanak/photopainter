@@ -12,12 +12,8 @@ In no particular order; not everything here will happen.
 ## Battery
 
 - **Measure first**: time per wake phase (boot, SD read, ~30 s panel refresh) from the log, as baseline.
-- **Savings**: drop the unexplained 1 s boot delay; sleep instead of busy-waiting during refresh; lower CPU clock when nothing heavy runs.
+- **Savings**: find out why the 1 s boot delay is there, then drop or shorten it; sleep instead of busy-waiting during refresh; lower CPU clock when nothing heavy runs.
 - **Write-up**: before/after numbers in README.
-
-## Logging
-
-- **More in the wake log**: SD/FatFs errors as events; decode time per megapixel on `converted` lines.
 
 ## Known issues
 
@@ -33,3 +29,4 @@ In no particular order; not everything here will happen.
 - User BMP images (made with a conversion script): JPEGs are converted on the frame; BMPs needed a computer.
 - Only one new photo after eject as confirmation: in random order (the default) the other new photos could wait months for their slot.
 - Convert all new photos right after eject on USB power: users unplug after ejecting, and converting during the refresh costs almost nothing.
+- Card errors in the wake log: the ones that matter show indirectly (a repeated photo, `converted` again and again, `failed`), and the main one, an unreadable card, cannot be written to the card.

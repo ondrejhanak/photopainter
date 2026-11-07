@@ -123,8 +123,15 @@ static bool draw_jpeg(const char *path, uint8_t *image)
     JpegInput in = {.read = fat_read, .rewind = fat_rewind, .ctx = &fil};
     JpegOutput out = {.width = Paint.Width, .height = Paint.Height, .palette = &palette_7color,
                       .put_pixel = put_pixel, .progress = feed_watchdog};
-    JpegResult r = jpeg_convert(&in, &out, work_memory, sizeof(work_memory));
-    uint32_t ms = to_ms_since_boot(get_absolute_time()) - start;
+    uint32_t convert_start = to_ms_since_boot(get_absolute_time());
+    JpegInfo info;
+    JpegResult r = jpeg_convert(&in, &out, work_memory, sizeof(work_memory), &info);
+    uint32_t now = to_ms_since_boot(get_absolute_time()), ms = now - start;
+    if (r == JPEG_OK)
+    {
+        wake_log.convert_ms += now - convert_start;
+        wake_log.convert_px += (uint32_t)info.width * info.height;
+    }
     printf("jpeg: %s, %lu ms, read %lu of %lu bytes\r\n", jpeg_result_str(r), (unsigned long)ms,
            (unsigned long)f_tell(&fil), (unsigned long)f_size(&fil));
     f_close(&fil);
