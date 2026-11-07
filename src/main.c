@@ -262,7 +262,13 @@ void setup(void)
             show_next();
         printf("power off ...\r\n");
         powerOff();
-        return;
+        if (!DEV_Digital_Read(VBUS))
+            return;
+        // USB plugged in during this wake keeps the board running: stay awake as on USB
+        DEV_Digital_Write(BAT_OFF, 1);
+        wake_log.reason = "usb_plugged";
+        wake_log.usb = true;
+        wake_log.charging = !DEV_Digital_Read(CHARGE_STATE);
     }
 
     // on USB power: stay awake, loop() handles KEY presses until USB is unplugged

@@ -56,7 +56,7 @@ Times are milliseconds; a step that did not run is 0.
 | `key` | Short KEY press |
 | `key_long` | Drive mode ended by holding KEY |
 | `serial` | Serial test command `n` |
-| `usb_plugged` | Powered on with USB: plugged in, or restarted after flashing |
+| `usb_plugged` | Powered on with USB: plugged in (also during a change on battery), or restarted after flashing |
 | `eject` | Drive mode ended by ejecting the drive |
 | `drive_timeout` | Drive mode ended by itself (the computer never read the drive, or left it idle 30 minutes) |
 | `watchdog:<step>` | The frame hung and the watchdog restarted it in `<step>`: `boot`, `card`, `select`, `load`, `refresh`, `save`, `drive` (`idle` between changes) |

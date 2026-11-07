@@ -77,6 +77,9 @@ be easier to use and to develop.
 - **Garbled accented file names.** An image named e.g. `Dovolená.jpg` that could not be shown drew
   garbage instead of its name (bytes from past the font table); accented letters now draw as their
   base letter.
+- **Restart after plugging in during a change.** USB connected while the frame was changing the photo
+  on battery kept it running after it switched itself off, until the watchdog restarted it 8 s later;
+  now it carries on as on USB.
 - **Buffer overflows** when reading file names (up to 999 bytes read into smaller buffers).
 - **RTC alarm flag never reported.** `PCF85063_get_alarm_flag()` tested `reg & 0x40 == 0x40`, which C
   reads as `reg & 1`, so a fired alarm looked like a KEY press. Needed to tell the two apart.
