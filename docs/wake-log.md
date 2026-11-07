@@ -23,7 +23,7 @@ event,reason,version,battery_v,usb,charging,interval_h,boot_ms,card_ms,select_ms
 | `usb` | 1 on USB power, 0 on battery |
 | `charging` | 1 while the battery charges |
 | `interval_h` | `interval_hours` from `settings.ini` (the default 12 when the card cannot be read; 0 on `bat_off` lines, written before the card is read) |
-| `boot_ms` | Boot until the card is read; includes a fixed wait of 0.5 s in the RTC init |
+| `boot_ms` | Boot until the card is read |
 | `card_ms` | Detecting the card (a fresh card init) and reading `settings.ini` (created with comments if missing) |
 | `select_ms` | Choosing the photo (scanning the card root) |
 | `load_ms` | Loading the photo from its cache file or converting it; on `drive_end` lines the length of the drive-mode session |

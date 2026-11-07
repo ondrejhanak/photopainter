@@ -26,7 +26,6 @@ void PCF85063_init()
 {
 	int inspect = 0;
 	PCF85063_Write_Byte(CONTROL_1_REG,0x58);
-	DEV_Delay_ms(500);
 	PCF85063_Write_Byte(SECONDS_REG,PCF85063_Read_Byte(SECONDS_REG)|0x80);
 	PCF85063_Write_Byte(CONTROL_2_REG,0x80);
 	while(1)
