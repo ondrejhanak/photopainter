@@ -223,7 +223,6 @@ void setup(void)
                                                   : "key";
 
     watchdog_enable(8 * 1000, 1);
-    DEV_Delay_ms(1000);
     PCF85063_init();
     arm_alarm(); // default interval until settings.ini is read, in case anything below fails
     gpio_set_irq_enabled_with_callback(CHARGE_STATE, GPIO_IRQ_EDGE_RISE | GPIO_IRQ_EDGE_FALL, true, charge_state_callback);

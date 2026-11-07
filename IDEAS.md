@@ -12,7 +12,7 @@ In no particular order; not everything here will happen.
 ## Battery
 
 - **Measure first**: time per wake phase (boot, SD read, ~30 s panel refresh) from the log, as baseline.
-- **Savings**: find out why the 1 s boot delay is there, then drop or shorten it; sleep instead of busy-waiting during refresh; lower CPU clock when nothing heavy runs.
+- **Savings**: sleep instead of busy-waiting during refresh; lower CPU clock when nothing heavy runs.
 - **Write-up**: before/after numbers in README.
 
 ## Known issues
