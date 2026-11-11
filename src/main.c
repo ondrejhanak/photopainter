@@ -1,5 +1,5 @@
 #include "display.h"
-#include "EPD_7in3f.h" // EPD_7IN3F_BusyWait()
+#include "panel.h"
 #include "cache.h"
 #include "images.h"
 #include "messages.h"
@@ -137,7 +137,7 @@ static void next_image(const char *reason, const char *code)
 }
 
 // Insert the card into the USB drive, then show the drive-mode screen; the computer is served during
-// the refresh (EPD_7IN3F_BusyWait())
+// the refresh (panel_busy_wait())
 static void enter_drive_mode(const char *reason)
 {
     printf("%s: drive mode\r\n", reason);
@@ -197,7 +197,7 @@ static void leave_drive_mode(const char *reason, const char *code)
 }
 
 // Runs while the panel refreshes: in drive mode the computer keeps being served
-void EPD_7IN3F_BusyWait(UDOUBLE ms)
+void panel_busy_wait(UDOUBLE ms)
 {
     if (drive_mode)
         usb_drive_serve(ms);

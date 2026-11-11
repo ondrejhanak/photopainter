@@ -1,7 +1,7 @@
 /*****************************************************************************
 * | File      	:   display.c
 * | Author      :   Waveshare team
-* | Function    :   Image and message screens on the 7.3" e-Paper (F) panel
+* | Function    :   Image and message screens on the frame's e-Paper panel (panel.h)
 * -----------------------------------------------------------------------------
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -28,7 +28,7 @@
 #include "messages.h"
 #include "sdcard.h"
 #include "settings.h"
-#include "EPD_7in3f.h"
+#include "panel.h"
 #include "GUI_Paint.h"
 #include "cache.h"
 #include "jpeg_convert.h"
@@ -65,9 +65,9 @@ static void draw_message(const char *title, const char *hint)
     select_rotation();
     bool portrait = Paint.Width < Paint.Height;
     UWORD x = portrait ? MESSAGE_PORTRAIT_X : MESSAGE_X;
-    UWORD y = Paint_DrawString(x, portrait ? MESSAGE_PORTRAIT_Y : MESSAGE_Y, title, &Font28, EPD_7IN3F_BLACK,
-                               EPD_7IN3F_WHITE);
-    Paint_DrawString(x, y + 14, hint, &Font22, EPD_7IN3F_BLACK, EPD_7IN3F_WHITE);
+    UWORD y = Paint_DrawString(x, portrait ? MESSAGE_PORTRAIT_Y : MESSAGE_Y, title, &Font28, PANEL_BLACK,
+                               PANEL_WHITE);
+    Paint_DrawString(x, y + 14, hint, &Font22, PANEL_BLACK, PANEL_WHITE);
 }
 
 static size_t fat_read(void *ctx, uint8_t *buf, size_t n)
@@ -121,7 +121,7 @@ static bool draw_jpeg(const char *path, uint8_t *image)
     }
     select_rotation();
     JpegInput in = {.read = fat_read, .rewind = fat_rewind, .ctx = &fil};
-    JpegOutput out = {.width = Paint.Width, .height = Paint.Height, .palette = &palette_7color,
+    JpegOutput out = {.width = Paint.Width, .height = Paint.Height, .palette = &PANEL_PALETTE,
                       .put_pixel = put_pixel, .progress = feed_watchdog};
     uint32_t convert_start = to_ms_since_boot(get_absolute_time());
     JpegInfo info;
@@ -143,13 +143,13 @@ static bool draw_jpeg(const char *path, uint8_t *image)
     return true;
 }
 
-// Set by display_image() for EPD_7IN3F_Refreshing(): the next image to convert and the frame buffer
+// Set by display_image() for panel_refreshing(): the next image to convert and the frame buffer
 static char prefetch_name[FF_LFN_BUF + 1];
 static uint8_t *prefetch_image;
 
 // While the panel refreshes an image, convert the image due next if it has no cache file yet, in
 // the frame buffer the panel no longer needs
-void EPD_7IN3F_Refreshing(void)
+void panel_refreshing(void)
 {
     if (!prefetch_image)
         return;
@@ -171,15 +171,15 @@ static void draw_failed_note(const char *date)
     printf("Display note: %s\r\n", failed);
     select_rotation();
     UWORD top = Paint.Height - 2 * Font22.Height - 2 * NOTE_PADDING;
-    Paint_ClearWindows(0, top, Paint.Width, Paint.Height, EPD_7IN3F_WHITE);
+    Paint_ClearWindows(0, top, Paint.Width, Paint.Height, PANEL_WHITE);
     UWORD y = Paint_DrawString(NOTE_X, top + NOTE_PADDING, msg(MSG_CANNOT_SHOW_TITLE), &Font22,
-                               EPD_7IN3F_BLACK, EPD_7IN3F_WHITE);
-    Paint_DrawString(NOTE_X, y, failed, &Font22, EPD_7IN3F_BLACK, EPD_7IN3F_WHITE);
+                               PANEL_BLACK, PANEL_WHITE);
+    Paint_DrawString(NOTE_X, y, failed, &Font22, PANEL_BLACK, PANEL_WHITE);
     if (date[0])
     { // at the right end of the title line, where the date box would be
         printf("Display date: %s\r\n", date);
         Paint_DrawString(Paint.Width - NOTE_X - strlen(date) * Font22.Width, top + NOTE_PADDING, date, &Font22,
-                         EPD_7IN3F_BLACK, EPD_7IN3F_WHITE);
+                         PANEL_BLACK, PANEL_WHITE);
     }
 }
 
@@ -190,8 +190,8 @@ static void draw_date(const char *date)
     select_rotation();
     UWORD w = strlen(date) * Font22.Width + 2 * NOTE_PADDING, h = Font22.Height + 2 * NOTE_PADDING;
     UWORD x = Paint.Width - CORNER_MARGIN - w, y = Paint.Height - CORNER_MARGIN - h;
-    Paint_ClearWindows(x, y, x + w, y + h, EPD_7IN3F_WHITE);
-    Paint_DrawString(x + NOTE_PADDING, y + NOTE_PADDING, date, &Font22, EPD_7IN3F_BLACK, EPD_7IN3F_WHITE);
+    Paint_ClearWindows(x, y, x + w, y + h, PANEL_WHITE);
+    Paint_DrawString(x + NOTE_PADDING, y + NOTE_PADDING, date, &Font22, PANEL_BLACK, PANEL_WHITE);
 }
 
 // When the photo images_path was taken, written for the language; empty if its EXIF has no date.
@@ -216,11 +216,11 @@ static void draw_battery_icon(void)
     printf("Display battery icon\r\n");
     select_rotation();
     const UWORD x = Paint.Width - CORNER_MARGIN - 50, y = CORNER_MARGIN;
-    Paint_ClearWindows(x, y, x + 50, y + 28, EPD_7IN3F_WHITE);
-    Paint_ClearWindows(x + 6, y + 6, x + 40, y + 22, EPD_7IN3F_BLACK); // body, 2 px outline
-    Paint_ClearWindows(x + 8, y + 8, x + 38, y + 20, EPD_7IN3F_WHITE);
-    Paint_ClearWindows(x + 40, y + 10, x + 44, y + 18, EPD_7IN3F_BLACK); // terminal
-    Paint_ClearWindows(x + 9, y + 9, x + 19, y + 19, EPD_7IN3F_RED);
+    Paint_ClearWindows(x, y, x + 50, y + 28, PANEL_WHITE);
+    Paint_ClearWindows(x + 6, y + 6, x + 40, y + 22, PANEL_BLACK); // body, 2 px outline
+    Paint_ClearWindows(x + 8, y + 8, x + 38, y + 20, PANEL_WHITE);
+    Paint_ClearWindows(x + 40, y + 10, x + 44, y + 18, PANEL_BLACK); // terminal
+    Paint_ClearWindows(x + 9, y + 9, x + 19, y + 19, PANEL_RED);
 }
 
 // Draw images_path into the image; a photo that fails is saved as shown, so the order moves past
@@ -233,7 +233,7 @@ static bool draw_photo(uint8_t *image)
     wake_log_step(STEP_LOAD);
     for (int tries = 1;; tries++)
     {
-        Paint_Clear(EPD_7IN3F_WHITE);
+        Paint_Clear(PANEL_WHITE);
         if (draw_jpeg(images_path, image))
         {
             strcpy(wake_log.photo, images_path);
@@ -259,17 +259,17 @@ static bool draw_photo(uint8_t *image)
 int display_image(bool battery_low)
 {
     printf("e-Paper Init and Clear...\r\n");
-    EPD_7IN3F_Init();
+    panel_init();
 
     UBYTE *image;
-    UDOUBLE image_size = ((EPD_7IN3F_WIDTH % 2 == 0) ? (EPD_7IN3F_WIDTH / 2) : (EPD_7IN3F_WIDTH / 2 + 1)) * EPD_7IN3F_HEIGHT;
+    UDOUBLE image_size = ((PANEL_WIDTH % 2 == 0) ? (PANEL_WIDTH / 2) : (PANEL_WIDTH / 2 + 1)) * PANEL_HEIGHT;
     if ((image = (UBYTE *)malloc(image_size)) == NULL)
     {
         printf("Failed to apply for black memory...\r\n");
         return -1;
     }
     printf("Paint_NewImage\r\n");
-    Paint_NewImage(image, EPD_7IN3F_WIDTH, EPD_7IN3F_HEIGHT, 0, EPD_7IN3F_WHITE);
+    Paint_NewImage(image, PANEL_WIDTH, PANEL_HEIGHT, 0, PANEL_WHITE);
     Paint_SetScale(7);
 
     sdcard_mount();
@@ -279,8 +279,8 @@ int display_image(bool battery_low)
     if (shown)
     {
         // The panel must never get the placeholder: an unused code leaves an afterimage
-        palette_replace(image, image_size, palette_7color.bars,
-                        settings.bars == BARS_BLACK ? EPD_7IN3F_BLACK : EPD_7IN3F_WHITE);
+        palette_replace(image, image_size, PANEL_PALETTE.bars,
+                        settings.bars == BARS_BLACK ? PANEL_BLACK : PANEL_WHITE);
         char date[24] = "";
         if (settings.show_date)
             photo_date(date, sizeof(date));
@@ -295,7 +295,7 @@ int display_image(bool battery_low)
     }
     else
     { // every try failed, all of them already saved as shown
-        Paint_Clear(EPD_7IN3F_WHITE);
+        Paint_Clear(PANEL_WHITE);
         draw_message(msg(MSG_CANNOT_SHOW_TITLE), failed);
         wake_log.result = "message";
     }
@@ -303,7 +303,7 @@ int display_image(bool battery_low)
     wake_log_step(STEP_REFRESH);
     printf("EPD_Display\r\n");
     uint32_t start = to_ms_since_boot(get_absolute_time());
-    EPD_7IN3F_Display(image); // runs EPD_7IN3F_Refreshing()
+    panel_display(image); // runs panel_refreshing()
     prefetch_image = NULL;
     printf("refresh: %lu ms\r\n", (unsigned long)(to_ms_since_boot(get_absolute_time()) - start));
 
@@ -313,7 +313,7 @@ int display_image(bool battery_low)
         images_save_shown();
 
     printf("Goto Sleep...\r\n\r\n");
-    EPD_7IN3F_Sleep();
+    panel_sleep();
     free(image);
     image = NULL;
 
@@ -323,30 +323,30 @@ int display_image(bool battery_low)
 int display_message(const char *title, const char *hint)
 {
     printf("e-Paper Init and Clear...\r\n");
-    EPD_7IN3F_Init();
+    panel_init();
 
     UBYTE *image;
-    UDOUBLE image_size = ((EPD_7IN3F_WIDTH % 2 == 0) ? (EPD_7IN3F_WIDTH / 2) : (EPD_7IN3F_WIDTH / 2 + 1)) * EPD_7IN3F_HEIGHT;
+    UDOUBLE image_size = ((PANEL_WIDTH % 2 == 0) ? (PANEL_WIDTH / 2) : (PANEL_WIDTH / 2 + 1)) * PANEL_HEIGHT;
     if ((image = (UBYTE *)malloc(image_size)) == NULL)
     {
         printf("Failed to apply for black memory...\r\n");
         return -1;
     }
     printf("Paint_NewImage\r\n");
-    Paint_NewImage(image, EPD_7IN3F_WIDTH, EPD_7IN3F_HEIGHT, 0, EPD_7IN3F_WHITE);
+    Paint_NewImage(image, PANEL_WIDTH, PANEL_HEIGHT, 0, PANEL_WHITE);
     Paint_SetScale(7);
 
     Paint_SelectImage(image);
-    Paint_Clear(EPD_7IN3F_WHITE);
+    Paint_Clear(PANEL_WHITE);
     draw_message(title, hint);
     wake_log.result = "message";
 
     wake_log_step(STEP_REFRESH);
     printf("EPD_Display\r\n");
-    EPD_7IN3F_Display(image);
+    panel_display(image);
 
     printf("Goto Sleep...\r\n\r\n");
-    EPD_7IN3F_Sleep();
+    panel_sleep();
     free(image);
     image = NULL;
 
