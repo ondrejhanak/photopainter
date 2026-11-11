@@ -54,11 +54,6 @@ uint32_t get_rand_32(void)
     return rand_state;
 }
 
-DWORD get_fattime(void)
-{
-    return (DWORD)(45 << 25 | 1 << 21 | 1 << 16); // 2025-01-01
-}
-
 DSTATUS disk_initialize(BYTE pdrv)
 {
     return 0;
