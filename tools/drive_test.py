@@ -85,8 +85,8 @@ def main():
             continue
 
         line = 'cycle %d: mounted after %.0f s' % (i, time.time() - start)
-        time.sleep(3) # macOS refuses writes for a moment after mounting
         if pending:
+            wait_until(lambda: os.path.exists(test_file), 15) # the directory also shows up late
             ok = filecmp.cmp(test_file, data.name, shallow=False)
             verified += ok
             line += ', verified' if ok else ', VERIFY FAILED'
@@ -94,12 +94,15 @@ def main():
             pending = False
         if data and i < args.n:
             t = time.time()
-            subprocess.run(['cp', data.name, test_file], check=True)
+            # macOS refuses writes for a few seconds after mounting (longer with FSKit): retry
+            if not wait_until(lambda: subprocess.run(['cp', data.name, test_file]).returncode == 0, 15):
+                sys.exit('cycle %d: cannot write to the drive' % i)
             subprocess.run(['sync'], check=True)
             t = time.time() - t
             line += ', wrote %d MB in %.1f s (%.0f KB/s)' % (args.w, t, args.w * 1024 / t)
             pending = True
         if args.x:
+            wait_until(lambda: os.path.exists(os.path.join(volume, '.photopainter')), 15) # shows up late
             subprocess.run(args.x, shell=True, env=dict(os.environ, V=volume))
         wait_until(lambda: refreshes() > n, 70) # drive screen done
         n = refreshes()
