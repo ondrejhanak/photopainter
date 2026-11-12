@@ -97,5 +97,4 @@ What this firmware does differently from the [official Waveshare firmware](https
 - **Misaligned key lists.** The shared work memory, which also holds 64-bit photo keys, was only aligned
   for 32-bit values: undefined in C (found by the host tests' sanitizer), harmless on the RP2040, which
   moves 64-bit values as two 32-bit ones; now aligned for 64-bit values.
-- **`u_int8_t` typo** in the SD driver, which broke builds on toolchains without BSD types (also sent
-  [upstream](https://github.com/waveshareteam/PhotoPainter/pull/7)).
+- **`u_int8_t` typo** in the SD driver, which broke builds on toolchains without BSD types.
