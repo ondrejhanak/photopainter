@@ -211,6 +211,8 @@ void panel_busy_wait(UDOUBLE ms)
 // Arduino-Pico entry points: the core's main() starts USB serial, then calls setup() and loop()
 void setup(void)
 {
+    static char stdout_buffer[256];
+    setvbuf(stdout, stdout_buffer, _IOLBF, sizeof(stdout_buffer)); // else newlib takes 1 KB of heap
     printf("PhotoPainter %s\r\n", FIRMWARE_VERSION);
     printf("Init...\r\n");
     const char *watchdog = wake_log_boot_reason(NULL); // before the first step overwrites it
