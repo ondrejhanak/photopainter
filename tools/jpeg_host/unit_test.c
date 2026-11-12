@@ -271,11 +271,12 @@ static void test_cache_format(void)
 
     uint8_t header[CACHE_HEADER_SIZE];
     cache_header(header, &palette_7color);
-    expect("cache header accepted", cache_header_ok(header), 1);
+    expect("cache header accepted", cache_header_ok(header, &palette_7color), 1);
+    expect("other panel's header refused", cache_header_ok(header, &palette_6color), 0);
     expect("white palette entry", header[54 + 4 * EPD_7IN3F_WHITE + 2], 245);
     expect("bar placeholder grey", header[54 + 4 * palette_7color.bars + 2], 128);
     header[22] ^= 1; // other height
-    expect("other header refused", cache_header_ok(header), 0);
+    expect("other header refused", cache_header_ok(header, &palette_7color), 0);
 
     uint64_t k = cache_key("IMG_0001.jpg", 1000, 0x5964, 0x8000);
     expect("cache key stable", k == cache_key("IMG_0001.jpg", 1000, 0x5964, 0x8000), 1);

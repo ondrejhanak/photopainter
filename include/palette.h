@@ -19,6 +19,9 @@ typedef struct
     // Placeholder for the bars around a photo that doesn't fill the frame: a code no photo uses,
     // painted in the bar colour when shown (palette_replace()), so the cache serves every bar colour
     uint8_t bars;
+    // Brightness the panel shows for its black and white ink (luma 0..255): photo brightness is mapped
+    // into this range before dithering, so highlights keep their detail. 0 and 0 = not mapped.
+    uint8_t black_luma, white_luma;
 } Palette;
 
 // The 7-colour 7.3" e-Paper (F) panel

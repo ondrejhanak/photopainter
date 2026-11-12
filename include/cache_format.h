@@ -29,8 +29,9 @@ void cache_name(char out[CACHE_NAME_LEN + 1], uint64_t key);
 bool cache_parse_name(const char *file_name, uint64_t *key, bool *tmp);
 
 void cache_header(uint8_t out[CACHE_HEADER_SIZE], const Palette *palette);
-// Whether a header describes a cache file (size, depth, top-down); the palette is not checked
-bool cache_header_ok(const uint8_t header[CACHE_HEADER_SIZE]);
+// Whether a header describes a cache file made with this palette: a file from another panel, or from
+// before the palette changed, is converted again
+bool cache_header_ok(const uint8_t header[CACHE_HEADER_SIZE], const Palette *palette);
 
 // Row y of the file from the panel frame buffer, which holds the frame turned 180 degrees (the panel
 // is mounted upside down), and back

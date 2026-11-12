@@ -532,6 +532,26 @@ static void test_cache_folder(void)
     settings.orientation = ORIENTATION_LANDSCAPE;
 }
 
+// A cache file is loaded only with the palette it was saved with: a card moved to a frame with another
+// panel, or a changed palette, converts the photo again
+static void test_cache_palette(void)
+{
+    new_card("cache file loaded only with its palette", ORDER_ALPHABETICAL);
+    put("a1.jpg", 100);
+    static uint8_t frame[CACHE_ROW_BYTES * CACHE_HEIGHT], back[sizeof(frame)];
+    for (size_t i = 0; i < sizeof(frame); i++)
+        frame[i] = (uint8_t)(i * 7);
+    sdcard_mount();
+    bool saved = cache_save("a1.jpg", frame, &palette_6color);
+    bool same = cache_load("a1.jpg", back, &palette_6color) && memcmp(frame, back, sizeof(frame)) == 0;
+    bool other = cache_load("a1.jpg", back, &palette_7color);
+    sdcard_unmount();
+    if (!saved || !same)
+        fail("%s%s", "a cache file did not load with its own palette", "");
+    if (other)
+        fail("%s%s", "a cache file loaded with another panel's palette", "");
+}
+
 // A file of the RAM disk into buf (NUL-terminated); its length, 0 if missing
 static size_t read_file(const char *path, char *buf, size_t len)
 {
@@ -680,6 +700,7 @@ int main(void)
     test_photo_cap();
     test_prune();
     test_cache_folder();
+    test_cache_palette();
     test_log_format();
     test_log_steps();
     test_boot_reason();

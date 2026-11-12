@@ -57,13 +57,13 @@ static void frame_put(void *ctx, int x, int y, uint8_t code)
 }
 
 // The frame as the device's cache file (a portrait frame lies on its side, as in the panel's buffer)
-static int write_cache(const char *path, const Frame *f)
+static int write_cache(const char *path, const Frame *f, const Palette *palette)
 {
     FILE *out = fopen(path, "wb");
     if (!out)
         return -1;
     uint8_t header[CACHE_HEADER_SIZE], row[CACHE_ROW_BYTES];
-    cache_header(header, &palette_7color);
+    cache_header(header, palette);
     fwrite(header, 1, sizeof(header), out);
     for (int y = 0; y < CACHE_HEIGHT; y++)
     {
@@ -92,6 +92,7 @@ int main(int argc, char **argv)
 {
     int width = 800, height = 480;
     bool grey = false;
+    const Palette *panel = &palette_7color;
     size_t work_size = JPEG_WORK_SIZE;
     int arg = 1;
     for (; arg < argc && argv[arg][0] == '-'; arg++)
@@ -100,6 +101,8 @@ int main(int argc, char **argv)
             width = 480, height = 800;
         else if (strcmp(argv[arg], "-g") == 0)
             grey = true;
+        else if (strcmp(argv[arg], "-6") == 0)
+            panel = &palette_6color;
         else if (strcmp(argv[arg], "-w") == 0 && arg + 1 < argc)
             work_size = strtoul(argv[++arg], NULL, 0);
         else
@@ -107,8 +110,9 @@ int main(int argc, char **argv)
     }
     if (argc - arg < 1 || argc - arg > 2)
     {
-        fprintf(stderr, "usage: %s [-p] [-g] [-w work_bytes] in.jpg [out.bmp]\n"
+        fprintf(stderr, "usage: %s [-p] [-6] [-g] [-w work_bytes] in.jpg [out.bmp]\n"
                         "  -p  portrait frame (480x800)\n"
+                        "  -6  6-colour panel (PhotoPainter (B)) instead of 7 colours\n"
                         "  -g  256-grey palette, no dither noise; writes a PGM\n", argv[0]);
         return 2;
     }
@@ -129,7 +133,7 @@ int main(int argc, char **argv)
                     .writes = calloc((size_t)width * (size_t)height, 1)};
     for (int i = 0; i < 256; i++)
         grey_colors[i] = (PaletteColor){(uint8_t)i, (uint8_t)i, (uint8_t)i, (uint8_t)i};
-    JpegOutput output = {.width = width, .height = height, .palette = grey ? &grey_palette : &palette_7color,
+    JpegOutput output = {.width = width, .height = height, .palette = grey ? &grey_palette : panel,
                          .put_pixel = frame_put, .ctx = &frame};
 
     JpegInfo info;
@@ -162,7 +166,7 @@ int main(int argc, char **argv)
             printf("frame: %zu pixels not set, %zu set more than once\n", missing, twice);
             status = 3;
         }
-        if (argc - arg == 2 && (grey ? write_pgm(argv[arg + 1], &frame) : write_cache(argv[arg + 1], &frame)) != 0)
+        if (argc - arg == 2 && (grey ? write_pgm(argv[arg + 1], &frame) : write_cache(argv[arg + 1], &frame, panel)) != 0)
         {
             perror(argv[arg + 1]);
             status = 2;

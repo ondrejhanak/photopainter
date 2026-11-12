@@ -26,8 +26,8 @@ SOFT = {(0, 0, 0): (5, 5, 5), (255, 255, 255): (245, 245, 245), (0, 255, 0): (65
 failures = []
 
 
-def run(path, out=None, portrait=False, work=None, grey=False):
-    args = [HARNESS] + (['-p'] if portrait else []) + (['-g'] if grey else []) + \
+def run(path, out=None, portrait=False, work=None, grey=False, six=False):
+    args = [HARNESS] + (['-p'] if portrait else []) + (['-g'] if grey else []) + (['-6'] if six else []) + \
            (['-w', str(work)] if work else []) + [path]
     if out:
         args.append(out)
@@ -203,6 +203,16 @@ def main():
 
     code, log = run(s('odd.jpg'), work=2048)
     check('2 KB work memory is refused', code == 1, log)
+
+    # 6-colour panel: its white ink is a light grey, so brightness is mapped into its black..white
+    # range. Paper white stays clean white ink; a light grey becomes white with some darker dots
+    # instead of snapping to white.
+    for level, lo, hi in ((255, 1.0, 1.0), (200, 0.6, 0.95)):
+        flat = save(Image.new('RGB', (800, 480), (level, level, level)), s(f'flat{level}.jpg'))
+        code, log = run(flat, s(f'flat{level}_6.bmp'), six=True)
+        img = Image.open(s(f'flat{level}_6.bmp'))
+        white = sum(1 for v in img.getdata() if v == 1) / (800 * 480) # palette index = panel code
+        check(f'6 colours: grey {level} is {white:.0%} white ink', code == 0 and lo <= white <= hi, log)
 
     # Scaling, with 256 greys so the output is the scaled photo itself (no dither noise): the
     # streamed result equals the same arithmetic done on the whole image, and at full decode size

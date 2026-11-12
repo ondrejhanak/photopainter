@@ -91,12 +91,11 @@ void cache_header(uint8_t out[CACHE_HEADER_SIZE], const Palette *palette)
     memset(out + 54 + 4 * palette->bars, BARS_SHOWN_AS, 3);
 }
 
-bool cache_header_ok(const uint8_t header[CACHE_HEADER_SIZE])
+bool cache_header_ok(const uint8_t header[CACHE_HEADER_SIZE], const Palette *palette)
 {
     uint8_t want[CACHE_HEADER_SIZE];
-    static const Palette none = {0};
-    cache_header(want, &none);
-    return memcmp(header, want, 54) == 0; // both headers, without the palette
+    cache_header(want, palette);
+    return memcmp(header, want, CACHE_HEADER_SIZE) == 0;
 }
 
 static uint8_t swap_nibbles(uint8_t b)

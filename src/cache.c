@@ -50,7 +50,7 @@ bool cache_exists(const char *name)
     return f_stat(path, &fno) == FR_OK;
 }
 
-bool cache_load(const char *name, uint8_t *frame)
+bool cache_load(const char *name, uint8_t *frame, const Palette *palette)
 {
     char path[PATH_LEN];
     if (!cache_path(path, name))
@@ -61,7 +61,7 @@ bool cache_load(const char *name, uint8_t *frame)
         return false; // not converted yet
     UINT br;
     bool ok = f_size(&fil) == CACHE_FILE_SIZE && f_read(&fil, work_memory, CACHE_HEADER_SIZE, &br) == FR_OK &&
-              br == CACHE_HEADER_SIZE && cache_header_ok(work_memory);
+              br == CACHE_HEADER_SIZE && cache_header_ok(work_memory, palette);
     for (int y = 0; ok && y < CACHE_HEIGHT; y += CHUNK_ROWS)
     {
         int rows = CACHE_HEIGHT - y < CHUNK_ROWS ? CACHE_HEIGHT - y : CHUNK_ROWS;
@@ -73,7 +73,7 @@ bool cache_load(const char *name, uint8_t *frame)
     }
     f_close(&fil);
     if (!ok)
-        printf("cache file %s unreadable, converting again\r\n", path);
+        printf("cache file %s unreadable or from another palette, converting again\r\n", path);
     return ok;
 }
 
@@ -144,7 +144,7 @@ int cache_prune(void)
     return removed;
 }
 
-bool cache_save(const char *name, const uint8_t *frame)
+bool cache_save(const char *name, const uint8_t *frame, const Palette *palette)
 {
     char tmp[PATH_LEN], path[PATH_LEN];
     if (!cache_path(path, name))
@@ -164,7 +164,7 @@ bool cache_save(const char *name, const uint8_t *frame)
         return false;
     }
     UINT bw;
-    cache_header(work_memory, &palette_7color);
+    cache_header(work_memory, palette);
     bool ok = f_write(&fil, work_memory, CACHE_HEADER_SIZE, &bw) == FR_OK && bw == CACHE_HEADER_SIZE;
     for (int y = 0; ok && y < CACHE_HEIGHT; y += CHUNK_ROWS)
     {

@@ -182,6 +182,20 @@ static void enhance(const uint8_t rgb[3], int v[3])
         v[ch] = clamp255(luma + ((v[ch] - luma) * 307 >> 8));
 }
 
+// Map the pixel's brightness into the panel's black..white range, scaling R, G and B alike so the
+// colour keeps its saturation
+static void fit_range(const Palette *palette, int v[3])
+{
+    if (!palette->white_luma)
+        return;
+    int luma = (v[0] * 77 + v[1] * 150 + v[2] * 29) >> 8;
+    if (!luma)
+        return;
+    int fitted = palette->black_luma + luma * (palette->white_luma - palette->black_luma) / 255;
+    for (int ch = 0; ch < 3; ch++)
+        v[ch] = clamp255(v[ch] * fitted / luma);
+}
+
 // Viewed frame position of output pixel (p, q), given in stored orientation
 static void to_frame(const Conv *c, int p, int q, int *x, int *y)
 {
@@ -235,6 +249,7 @@ static void emit_cell_row(Conv *c, int cy)
 
             int v[3];
             enhance(cell, v);
+            fit_range(c->out->palette, v);
             for (int ch = 0; ch < 3; ch++)
                 v[ch] = clamp255(v[ch] + e[3 + ch] + right[ch]);
 

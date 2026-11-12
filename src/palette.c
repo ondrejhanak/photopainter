@@ -19,20 +19,22 @@ const Palette palette_7color = {
     .bars = EPD_7IN3F_CLEAN, // leaves an afterimage, so never a photo colour
 };
 
-// Provisional: the 7-colour inks without orange, until the 6-colour panel's inks are measured
+// The inks as measured with a colorimeter on a Spectra 6 panel (esp32-photoframe, docs/MEASURED_PALETTE.md)
 static const PaletteColor colors_6color[] = {
-    {EPD_7IN3E_BLACK, 5, 5, 5},
-    {EPD_7IN3E_WHITE, 245, 245, 245},
-    {EPD_7IN3E_GREEN, 65, 140, 30},
-    {EPD_7IN3E_BLUE, 30, 65, 240},
-    {EPD_7IN3E_RED, 190, 0, 0},
-    {EPD_7IN3E_YELLOW, 255, 245, 55},
+    {EPD_7IN3E_BLACK, 2, 2, 2},
+    {EPD_7IN3E_WHITE, 179, 182, 171},
+    {EPD_7IN3E_GREEN, 33, 69, 40},
+    {EPD_7IN3E_BLUE, 0, 47, 107},
+    {EPD_7IN3E_RED, 117, 10, 0},
+    {EPD_7IN3E_YELLOW, 201, 184, 0},
 };
 
 const Palette palette_6color = {
     .colors = colors_6color,
     .count = sizeof(colors_6color) / sizeof(colors_6color[0]),
     .bars = EPD_7IN3E_UNUSED,
+    .black_luma = 2,
+    .white_luma = 180,
 };
 
 void palette_replace(uint8_t *buf, size_t len, uint8_t from, uint8_t to)

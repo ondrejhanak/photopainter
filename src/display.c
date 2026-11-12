@@ -106,7 +106,7 @@ static bool drawn_from_cache; // set by draw_jpeg(): the last photo came from it
 static bool draw_jpeg(const char *path, uint8_t *image)
 {
     uint32_t start = to_ms_since_boot(get_absolute_time());
-    drawn_from_cache = cache_load(path, image);
+    drawn_from_cache = cache_load(path, image, &PANEL_PALETTE);
     if (drawn_from_cache)
     {
         printf("jpeg: from cache, %lu ms\r\n", (unsigned long)(to_ms_since_boot(get_absolute_time()) - start));
@@ -138,7 +138,7 @@ static bool draw_jpeg(const char *path, uint8_t *image)
     if (r != JPEG_OK)
         return false;
     start = to_ms_since_boot(get_absolute_time());
-    if (cache_save(path, image))
+    if (cache_save(path, image, &PANEL_PALETTE))
         printf("jpeg: cached, %lu ms\r\n", (unsigned long)(to_ms_since_boot(get_absolute_time()) - start));
     return true;
 }
