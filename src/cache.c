@@ -117,7 +117,8 @@ static int prune_dir(const char *dir_path, const uint64_t *keys, size_t count)
         if (!tmp && bsearch(&key, keys, count, sizeof(keys[0]), cache_compare_keys))
             continue;
         char path[PATH_LEN];
-        snprintf(path, sizeof(path), "%s/%s", dir_path, fno.fname);
+        // cache_parse_name() accepted it: 16 hex digits and an extension, so it fits
+        snprintf(path, sizeof(path), "%s/%.*s", dir_path, CACHE_NAME_LEN + 4, fno.fname);
         if (f_unlink(path) == FR_OK)
             removed++;
         watchdog_update();

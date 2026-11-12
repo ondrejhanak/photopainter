@@ -378,7 +378,7 @@ static uint32_t state_seed(void)
 static void test_batch_random(void)
 {
     new_card("new photos first, then where it was (random)", ORDER_RANDOM);
-    char name[16];
+    char name[24];
     for (int i = 1; i <= 12; i++)
     {
         snprintf(name, sizeof(name), "p%d.jpg", i);
@@ -412,7 +412,7 @@ static void test_batch_random(void)
 
 static void put_many(int count)
 {
-    char name[16];
+    char name[24];
     for (int i = 0; i < count; i++)
     {
         snprintf(name, sizeof(name), "c%03d.jpg", i);
