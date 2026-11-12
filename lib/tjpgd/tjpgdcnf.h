@@ -2,6 +2,9 @@
 /* TJpgDec System Configurations R0.03          */
 /*----------------------------------------------*/
 
+/* library.json builds TJpgDec with -fwrapv: its IDCT overflows int32 on damaged data, which is
+/  undefined behaviour without it */
+
 #define	JD_SZBUF		512
 /* Specifies size of stream input buffer */
 

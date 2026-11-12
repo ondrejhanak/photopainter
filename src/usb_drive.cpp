@@ -1,7 +1,8 @@
 // The SD card as a USB drive next to the serial port: always attached, empty like a card reader until
 // drive mode inserts the card. Don't re-enumerate the device instead: TinyUSB then panics now and then.
 // In drive mode tud_task() runs only from the firmware, not the core's USB interrupt, as the SD driver
-// waits for DMA interrupts; outside it the callbacks run in that interrupt and must not touch the card
+// waits for DMA interrupts; outside it the callbacks run in that interrupt and must not touch the card.
+// The callbacks run with USB.mutex held, so a printf() in them is dropped: note it and print afterwards
 #include "usb_drive.h"
 #include "work_memory.h"
 #include <Arduino.h>

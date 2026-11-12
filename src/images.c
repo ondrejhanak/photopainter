@@ -14,7 +14,9 @@
 #include <strings.h> // strcasecmp()
 
 #define STATE_FILE SDCARD_FRAME_DIR "/state.txt"
-#define PHOTOS_FILE SDCARD_FRAME_DIR "/photos.bin" // cache keys of the photos when drive mode started
+// Cache keys of the photos when drive mode started; new photos are the keys missing from it. Don't tell
+// new photos by file date (copies keep it) or by a missing cache file (photos not shown yet have none)
+#define PHOTOS_FILE SDCARD_FRAME_DIR "/photos.bin"
 #define NEW_FILE SDCARD_FRAME_DIR "/new.bin" // cache keys of the photos added in the latest drive mode
 #define NEW_TMP SDCARD_FRAME_DIR "/new.tmp"
 #define MAX_KEYS (WORK_MEMORY_SIZE / sizeof(uint64_t))
