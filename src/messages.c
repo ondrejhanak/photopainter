@@ -25,6 +25,7 @@ static const char *const messages[][MSG_COUNT] = {
         [MSG_BATTERY_EMPTY_HINT] = "Charge the frame with a USB cable.",
         [MSG_DRIVE_TITLE] = "USB Drive",
         [MSG_DRIVE_HINT] = "Copy JPEG photos to the drive, then eject it.",
+        [MSG_FIRMWARE] = "Firmware",
     },
     [LANG_CS] = {
         [MSG_NO_CARD_TITLE] = "SD karta nenalezena nebo nečitelná",
@@ -36,6 +37,7 @@ static const char *const messages[][MSG_COUNT] = {
         [MSG_BATTERY_EMPTY_HINT] = "Nabijte rámeček USB kabelem.",
         [MSG_DRIVE_TITLE] = "USB disk",
         [MSG_DRIVE_HINT] = "Nakopírujte fotky JPEG na disk a pak ho vysuňte.",
+        [MSG_FIRMWARE] = "Firmware",
     },
 };
 static_assert(sizeof(messages) / sizeof(messages[0]) == LANG_COUNT, "language without messages");

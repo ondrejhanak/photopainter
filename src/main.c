@@ -169,7 +169,9 @@ static void enter_drive_mode(const char *reason)
         drive_mode = true;
         drive_mode_ms = to_ms_since_boot(get_absolute_time());
         set_led(false);
-        display_message(msg(MSG_DRIVE_TITLE), msg(MSG_DRIVE_HINT));
+        char hint[160]; // the screen shown with a computer connected, where the version is wanted
+        snprintf(hint, sizeof(hint), "%s\n\n%s %s", msg(MSG_DRIVE_HINT), msg(MSG_FIRMWARE), FIRMWARE_VERSION);
+        display_message(msg(MSG_DRIVE_TITLE), hint);
         wake_log_step(STEP_DRIVE);
     }
     usb_serial_discard(); // commands sent during the refresh

@@ -22,6 +22,7 @@ typedef enum
     MSG_BATTERY_EMPTY_HINT,
     MSG_DRIVE_TITLE,
     MSG_DRIVE_HINT,
+    MSG_FIRMWARE, // followed by the version on the USB Drive screen
     MSG_COUNT
 } MsgId;
 

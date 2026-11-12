@@ -45,6 +45,8 @@ What this firmware does differently from the [official Waveshare firmware](https
   to the range the panel can show, so highlights and shadows keep their detail.
 - **One firmware for both models:** the same features on the PhotoPainter and the PhotoPainter (B),
   each with its own firmware file.
+- **Firmware version on the frame:** the "USB Drive" screen shows it, so it can be checked before
+  and after an update.
 
 ## Developing
 

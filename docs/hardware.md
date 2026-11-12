@@ -30,7 +30,7 @@ one (F).
 - **USB drive mode:** on USB the frame is always a USB drive next to the serial port, empty like a
   card reader without a card (Windows may show an empty drive letter). A long press with a computer
   connected puts the SD card in: the computer mounts it within a second, while a "USB Drive" screen
-  refreshes (flashing and the log keep working). The frame leaves the card alone until the drive is
+  with the firmware version refreshes (flashing and the log keep working). The frame leaves the card alone until the drive is
   ejected or KEY is held again, or until the computer unmounts it without ejecting (e.g. ForkLift):
   a computer marks the card's file system "in use" while mounted (FAT32 clean-shutdown bit, exFAT
   VolumeDirty) and "clean" on unmount, and the frame leaves 3 s after a "clean" with no command
