@@ -5,13 +5,8 @@ In no particular order; not everything here will happen.
 ## Code and tooling
 
 - **Web flasher**: a page on GitHub Pages that updates the frame from Chrome/Edge: Web Serial 1200-baud touch reboots it into BOOTSEL, then the release `.uf2` for the frame's model is written to its BOOTSEL drive (File System Access API) or flashed over WebUSB (PICOBOOT). Card and settings untouched.
-- **settings.ini tests**: parsing (BOM, CRLF, bad values) has no host test yet.
 - **Fuzzing**: JPEG/EXIF parsing as a repeatable test (CI), to prove "bad files don't break the frame".
-- **Build hygiene**: static analysis, stack usage and firmware size checks in CI.
-
-## Known issues
-
-- Serial log lines sometimes lose their first character after idle gaps.
+- **Build hygiene**: static analysis and a stack usage check in CI.
 
 ## Considered, dropped
 

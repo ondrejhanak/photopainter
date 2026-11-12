@@ -28,6 +28,7 @@ def main():
         log.write('%s %s\n' % (time.strftime('%H:%M:%S'), text))
 
     port = None
+    pending = b''  # a line's start until its end arrives (USB sends 64-byte packets)
     while True:
         if port is None:
             names = glob.glob(args.port)
@@ -48,11 +49,15 @@ def main():
                 if command:
                     port.write(command.encode())
                     stamp('[sent %r]' % command)
-            data = port.read(4096)
-            for line in data.decode(errors='replace').splitlines():
-                if line.strip():
-                    stamp(line)
+            *lines, pending = (pending + port.read(4096)).split(b'\n')
+            for line in lines:
+                text = line.decode(errors='replace').strip('\r')
+                if text.strip():
+                    stamp(text)
         except (serial.SerialException, OSError) as e:
+            if pending.strip():
+                stamp(pending.decode(errors='replace'))
+            pending = b''
             stamp('[closed: %s]' % e)
             port = None
             time.sleep(0.5)
