@@ -1,6 +1,7 @@
 # PhotoPainter
 
 [![CI](https://github.com/ondrejhanak/photopainter/actions/workflows/ci.yml/badge.svg)](https://github.com/ondrejhanak/photopainter/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/ondrejhanak/photopainter)](https://github.com/ondrejhanak/photopainter/releases/latest)
 
 Firmware for the Waveshare PhotoPainter, a battery-powered 7.3" e-paper photo frame, in both models:
 the original with a 7-color panel and an RP2040, and the PhotoPainter (B) with a 6-color panel and an
