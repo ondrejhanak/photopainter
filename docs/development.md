@@ -22,7 +22,7 @@ Each model has its own env in `platformio.ini` (`pico`, `pico2`), which picks th
 (`include/panel.h`); `-e pico2` works with every command above. If the board has no working USB serial
 (first flash, crashed firmware), enter BOOTSEL by hand (hold
 **BOOT**, press and release **RUN**, release **BOOT**), then run the upload again or drag the `.uf2`
-onto the `RPI-RP2` (or `RP2350`) drive. Extra library debug output: add `-D DEBUG=1` to `build_flags`.
+onto the `RPI-RP2` (or `RP2350`) drive. The PhotoPainter (B)'s factory firmware ignores the reboot over USB; without the buttons, `picotool reboot -u -f` puts it into BOOTSEL (the drive appears after about 15 s). Extra library debug output: add `-D DEBUG=1` to `build_flags`.
 
 The firmware prints its version at boot: the nearest `v*` tag (`git describe`), e.g. `v1.0.0`, or
 `v1.0.0-3-g725e442` between tags and `-dirty` with uncommitted changes (`tools/version.py`).

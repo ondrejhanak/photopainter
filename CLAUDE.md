@@ -38,7 +38,7 @@ The frame is usually connected over USB, so flashing and logs need no button pre
 - **Serial log without the user:** run `~/.platformio/penv/bin/python tools/serial_log.py` in the
   background (from a scratch directory; writes `serial.log`, sends what is written to `cmd.txt`),
   then grep the log. It reopens the port after flashing or re-enumeration; stop it before flashing
-  (picotool needs the port). The first character of a line is sometimes lost after idle gaps.
+  (picotool needs the port).
 - **Image change without the user:** `printf n > cmd.txt` instead of a KEY press; input sent during a
   refresh is discarded, so wait for `Goto Sleep...` before the next `n`. The KEY/RTC path itself
   still needs the real button.
@@ -58,8 +58,10 @@ The frame is usually connected over USB, so flashing and logs need no button pre
   --upload-port`). `pio`'s upload fails ("requires a single RP2040 device") once the other frame is
   also visible to picotool; then flash with `picotool load -x --ser <serial> firmware.uf2` (serials
   from `pio device list`).
-- **Test timer behavior fast:** temporarily set the alarm to seconds (e.g. `alarmTime.seconds += 40`
-  in `armAlarm()`), flash, record, then restore and reflash. Never commit the temporary change.
+- **Test timer behavior fast:** temporarily set the alarm to seconds (e.g. `alarm_time.seconds += 40`
+  in `arm_alarm()`), flash, record, then restore and reflash. Never commit the temporary change.
+- **Saved language** (last flash sector): in BOOTSEL, `picotool save -r 0x101ff000 0x101ff010 out.bin`
+  on the PhotoPainter, `0x10fff000 0x10fff010` on the PhotoPainter (B).
 - **Logic without hardware:** compile `src/` files on the computer against small stub headers (FatFs,
   hw_config, pico) to test parsing, ordering and edge cases before flashing.
 - KEY presses are only seen between refreshes; the RTC alarm also arrives on the KEY line (`BAT_STATE`).
