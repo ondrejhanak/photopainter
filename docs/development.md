@@ -35,6 +35,16 @@ it guards is broken on purpose (a dropped call, a loosened check) and the test m
 mutation fails is dropped. Code that only runs on the frame (screens, the skip loop) is checked the
 same way by flashing a deliberately broken build and reading the serial log.
 
+```bash
+sh tools/images_host/build.sh                                      # photo selection, cache, wake log
+sh tools/jpeg_host/build.sh && python3 tools/jpeg_host/check.py [PHOTO_DIR] SCRATCH_DIR  # needs Pillow
+```
+
+Without `PHOTO_DIR`, `check.py` replaces the photos with a generated picture and skips the look and
+per-photo checks. GitHub Actions ([ci.yml](../.github/workflows/ci.yml)) builds both firmwares and runs
+both suites that way on every push; a `v*` tag builds both `.uf2` files into a draft release
+([release.yml](../.github/workflows/release.yml)).
+
 ## Architecture
 
 ```

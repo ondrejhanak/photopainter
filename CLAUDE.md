@@ -85,7 +85,7 @@ which may be reused or referenced elsewhere.
 - **lib/** - Generic reusable libraries (display driver, drawing, FatFs, RTC, TJpgDec in `lib/tjpgd/`), modify with caution
 - **tools/gen_font.py** - Generates the font tables in `lib/Fonts/` from Terminus BDF files (don't edit them by hand)
 - **tools/serial_log.py, tools/drive_test.py** - Host-side device test tools (serial log + commands, drive mode cycles)
-- **tools/jpeg_host/** - The JPEG pipeline on the Mac: `build.sh`, then `check.py PHOTO_DIR SCRATCH_DIR` (edge cases, unit tests, look vs `convert_reference.py`); its output is byte-identical to the device's cache files
+- **tools/jpeg_host/** - The JPEG pipeline on the Mac: `build.sh`, then `check.py [PHOTO_DIR] SCRATCH_DIR` (edge cases, unit tests, look vs `convert_reference.py`; without PHOTO_DIR as in CI: generated picture, no look or per-photo checks); its output is byte-identical to the device's cache files
 - **tools/images_host/** - Photo selection tests on the Mac: `build.sh` builds and runs `images.c` and `cache.c` on the real FatFs over a RAM disk (order, new photos first, cache cleanup); the firmware log goes to `build/images_test.log`
 - **tools/version.py** - Pre-build script: `FIRMWARE_VERSION` from `git describe` of the nearest `v*` tag (releases are tagged `vX.Y.Z`)
 - **platformio.ini** - Build flags, include paths, ignored framework libraries

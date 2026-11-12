@@ -1,7 +1,8 @@
 """Checks the host JPEG harness (build.sh first) on generated edge cases and on a folder of photos.
 
-usage: python3 tools/jpeg_host/check.py PHOTO_DIR SCRATCH_DIR
-Needs Pillow. Writes test JPEGs and output BMPs to SCRATCH_DIR; exits 1 if any check fails.
+usage: python3 tools/jpeg_host/check.py [PHOTO_DIR] SCRATCH_DIR
+Without PHOTO_DIR (CI) a generated picture replaces the photos and the look and per-photo checks are
+skipped. Needs Pillow. Writes test JPEGs and output BMPs to SCRATCH_DIR; exits 1 if any check fails.
 """
 import os
 import random
@@ -10,7 +11,7 @@ import shutil
 import subprocess
 import sys
 
-from PIL import Image, ImageFilter
+from PIL import Image, ImageDraw, ImageFilter
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 HARNESS = os.path.join(ROOT, 'build', 'jpeg_host')
@@ -110,13 +111,31 @@ def mean_diff(a, b):
     return sum(abs(x - y) for x, y in zip(pa, pb)) / len(pa)
 
 
+def generated_picture():
+    """Stands in for a photo: colour gradients and a shape in two corners, so a wrong turn shows,
+    with fixed noise so it compresses like a photo (the read checks need a photo-sized file)."""
+    grad = Image.linear_gradient('L')
+    img = Image.merge('RGB', (grad.rotate(90).resize((1600, 1200)), grad.resize((1600, 1200)),
+                              grad.rotate(45).resize((1600, 1200))))
+    draw = ImageDraw.Draw(img)
+    draw.rectangle((100, 100, 600, 400), fill=(220, 30, 30))
+    draw.ellipse((1100, 700, 1500, 1100), fill=(30, 60, 200))
+    noise = Image.frombytes('L', img.size, random.Random(1).randbytes(img.width * img.height))
+    return Image.blend(img, Image.merge('RGB', (noise, noise, noise)), 0.25)
+
+
 def main():
-    photos, scratch = sys.argv[1], sys.argv[2]
+    if len(sys.argv) not in (2, 3):
+        sys.exit(__doc__)
+    photos, scratch = (sys.argv[1], sys.argv[2]) if len(sys.argv) == 3 else (None, sys.argv[1])
     os.makedirs(scratch, exist_ok=True)
     s = lambda name: os.path.join(scratch, name)
 
     # A landscape and a portrait source cut from a photo (asymmetric, so a wrong turn shows)
-    base = Image.open(os.path.join(photos, sorted(f for f in os.listdir(photos) if f.lower().endswith(('.jpg', '.jpeg')))[0]))
+    if photos:
+        base = Image.open(os.path.join(photos, sorted(f for f in os.listdir(photos) if f.lower().endswith(('.jpg', '.jpeg')))[0]))
+    else:
+        base = generated_picture()
     land = base.convert('RGB').resize((1600, 1200))
     port = land.transpose(Image.Transpose.ROTATE_90).crop((0, 0, 1200, 1600))
 
@@ -246,7 +265,7 @@ def main():
 
     # Same look as convert_reference.py: blurred, both dithers average to the same colours
     convert = os.path.join(ROOT, 'tools', 'jpeg_host', 'convert_reference.py')
-    for f in LOOK_PHOTOS:
+    for f in LOOK_PHOTOS if photos else []:
         src = os.path.join(scratch, 'look_' + f)
         shutil.copyfile(os.path.join(photos, f), src)
         subprocess.run([sys.executable, convert, '--dir', 'landscape', src], capture_output=True, check=True)
@@ -275,7 +294,7 @@ def main():
           at > 512 and 'date 1985-12-24' in log, log)
 
     # Every photo in the folder, landscape and portrait frame; the date found as Pillow reads it
-    for f in sorted(os.listdir(photos)):
+    for f in sorted(os.listdir(photos)) if photos else []:
         if f.lower().endswith(('.jpg', '.jpeg')):
             for portrait in (False, True):
                 code, log = run(os.path.join(photos, f), portrait=portrait)

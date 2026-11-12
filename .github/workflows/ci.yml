@@ -1,0 +1,36 @@
+# Builds the firmware for both frames and runs the host tests on every push and pull request
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+jobs:
+  firmware:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # tools/version.py names the nearest v* tag
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - uses: actions/cache@v6
+        with:
+          path: ~/.platformio
+          key: platformio-${{ hashFiles('platformio.ini') }}
+      - run: pip install platformio==6.2.0
+      - run: pio run -e pico -e pico2
+
+  host-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - run: pip install pillow==13.0.0
+      - run: sh tools/images_host/build.sh
+      - run: sh tools/jpeg_host/build.sh
+      - run: python3 tools/jpeg_host/check.py build/check # no photos in CI: generated cases only

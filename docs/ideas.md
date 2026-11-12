@@ -4,8 +4,8 @@ In no particular order; not everything here will happen.
 
 ## Code and tooling
 
-- **Web flasher**: a page on GitHub Pages that updates the frame from Chrome/Edge: Web Serial 1200-baud touch reboots it into BOOTSEL, then the release `.uf2` is written to the `RPI-RP2` drive (File System Access API) or flashed over WebUSB (PICOBOOT). Card and settings untouched. After releases and CI exist.
-- **CI + badge**: GitHub Actions (`ubuntu-latest`, free for public repos) builds the firmware and runs the host tests (`tools/jpeg_host/`, `tools/images_host/`) on every push; badge in README. `settings.ini` parsing has no host test yet.
+- **Web flasher**: a page on GitHub Pages that updates the frame from Chrome/Edge: Web Serial 1200-baud touch reboots it into BOOTSEL, then the release `.uf2` for the frame's model is written to its BOOTSEL drive (File System Access API) or flashed over WebUSB (PICOBOOT). Card and settings untouched.
+- **settings.ini tests**: parsing (BOM, CRLF, bad values) has no host test yet.
 - **Fuzzing**: JPEG/EXIF parsing as a repeatable test (CI), to prove "bad files don't break the frame".
 - **Build hygiene**: warnings, static analysis, stack usage and firmware size checks in CI.
 
