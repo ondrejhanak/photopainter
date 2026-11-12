@@ -55,6 +55,8 @@ void sd_activity(bool active)
 #define BATTERY_LOW_V 3.5f // battery icon on the photo
 #define BATTERY_EMPTY_V 3.3f // "Battery Empty" screen, then no changes until charged
 #define BATTERY_FLOOR_V 3.1f // no refresh at all: a brown-out mid-refresh leaves the panel black
+// After power-up the battery reading of the PhotoPainter (B) climbs for ~50 ms before it is right
+#define BATTERY_SETTLE_MS 100
 static float battery_voltage;
 
 static float measure_battery_voltage(void)
@@ -227,6 +229,7 @@ void setup(void)
     arm_alarm(); // default interval until settings.ini is read, in case anything below fails
     gpio_set_irq_enabled_with_callback(CHARGE_STATE, GPIO_IRQ_EDGE_RISE | GPIO_IRQ_EDGE_FALL, true, charge_state_callback);
 
+    DEV_Delay_ms(BATTERY_SETTLE_MS);
     battery_voltage = measure_battery_voltage();
     wake_log.battery_v = battery_voltage;
     wake_log.usb = DEV_Digital_Read(VBUS);
