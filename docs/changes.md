@@ -77,6 +77,9 @@ What this firmware does differently from the [official Waveshare firmware](https
 - **Restart after plugging in during a change.** USB connected while the frame was changing the photo
   on battery kept it running after it switched itself off, until the watchdog restarted it 8 s later;
   now it carries on as on USB.
+- **Restart when plugged in with a flat battery.** Below 3.1 V the frame switched itself off even on
+  USB, which cannot cut its power, so it hung until the watchdog restarted it 8 s later; now it stays
+  on and charges.
 - **Buffer overflows** when reading file names (up to 999 bytes read into smaller buffers).
 - **RTC alarm flag never reported.** `PCF85063_get_alarm_flag()` tested `reg & 0x40 == 0x40`, which C
   reads as `reg & 1`, so a fired alarm looked like a KEY press. Needed to tell the two apart.

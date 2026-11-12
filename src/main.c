@@ -234,8 +234,8 @@ void setup(void)
     wake_log.battery_v = battery_voltage;
     wake_log.usb = DEV_Digital_Read(VBUS);
     wake_log.charging = wake_log.usb && !DEV_Digital_Read(CHARGE_STATE);
-    if (battery_voltage < BATTERY_FLOOR_V)
-    { // battery power is low
+    if (!wake_log.usb && battery_voltage < BATTERY_FLOOR_V)
+    { // battery power is low; on USB the frame carries on and charges
         printf("low power ...\r\n");
         PCF85063_alarm_Time_Disable();
         ledLowPower();
