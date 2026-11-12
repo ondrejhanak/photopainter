@@ -1,11 +1,13 @@
 # PhotoPainter
 
-Firmware for the Waveshare PhotoPainter: a battery-powered 7.3" 7-color e-paper photo frame with an
-RP2040 microcontroller. Copy photos onto its SD card and it shows a new one every few hours, switching
-itself off in between.
+Firmware for the Waveshare PhotoPainter and PhotoPainter (B), battery-powered 7.3" e-paper photo
+frames: the PhotoPainter has a 7-color panel and an RP2040 microcontroller, the PhotoPainter (B) a
+6-color panel and an RP2350. Copy photos onto the SD card and the frame shows a new one every few
+hours, switching itself off in between.
 
-Based on the [official Waveshare firmware](https://github.com/waveshareteam/PhotoPainter), reworked to
-be easier to use and to develop.
+Based on the official Waveshare firmware ([PhotoPainter](https://github.com/waveshareteam/PhotoPainter),
+[PhotoPainter (B)](https://github.com/waveshareteam/PhotoPainter_B)), reworked to be easier to use and
+to develop.
 
 ## What's improved over the original firmware
 
@@ -48,6 +50,10 @@ be easier to use and to develop.
 - **Czech or English on-screen messages** (`language` in `settings.ini`), with accents, in larger
   fonts. The frame remembers the language, so even the "no card" message uses it.
 - **Colors modelled on the panel's real inks**, so photos are dithered against what the panel can show.
+  On the 6-color panel the inks are colorimeter measurements, and each photo's brightness is fitted
+  to the range the panel can show, so highlights and shadows keep their detail.
+- **One firmware for both models:** the same features on the PhotoPainter and the PhotoPainter (B),
+  each with its own firmware file.
 
 ### Developing
 
@@ -98,10 +104,12 @@ Ideas being considered [IDEAS.md](IDEAS.md).
 
 ## Installing
 
-Download `photopainter-7color-<version>.uf2` from [Releases](https://github.com/ondrejhanak/photopainter/releases).
-Hold **BOOT** while connecting the frame to a computer over USB (or hold **BOOT**, press and release
-**RUN**, release **BOOT**): it appears as a drive named `RPI-RP2`. Copy the `.uf2` onto it; the frame
-restarts with the new firmware. Photos, settings and converted photos on the SD card stay as they are.
+Download the file for your frame from [Releases](https://github.com/ondrejhanak/photopainter/releases):
+`photopainter-7color-<version>.uf2` for the PhotoPainter, `photopainter-6color-<version>.uf2` for the
+PhotoPainter (B). Hold **BOOT** while connecting the frame to a computer over USB (or hold **BOOT**,
+press and release **RUN**, release **BOOT**): it appears as a drive named `RPI-RP2` (PhotoPainter) or
+`RP2350` (PhotoPainter (B)). Copy the `.uf2` onto it; the frame restarts with the new firmware. A file
+for the other model is refused. Photos, settings and converted photos on the SD card stay as they are.
 
 ## Photos & SD card
 
@@ -152,12 +160,15 @@ Photos app exports JPEG).
 
 ## Hardware
 
-Product details and schematic: [PhotoPainter wiki](https://www.waveshare.com/wiki/PhotoPainter).
+Product details and schematics: [PhotoPainter wiki](https://www.waveshare.com/wiki/PhotoPainter),
+[PhotoPainter (B) wiki](https://www.waveshare.com/wiki/PhotoPainter_(B)). Both models use the same pins;
+the (B) has an RP2350 with 16 MB flash and a 6-color panel (7.3" e-Paper (E)) instead of the 7-color
+one (F).
 
 | Component | Interface | Pins |
 |-----------|-----------|------|
-| E-ink display (800x480, 7-color) | SPI1 @ 8MHz | CLK=10, MOSI=11, CS=9, DC=8, RST=12, BUSY=13, PWR=16 |
-| SD card (FAT32/exFAT) | SPI0 @ 12.5MHz | CLK=2, MOSI=3, MISO=4, CS=5 (no card-detect pin) |
+| E-ink display (800x480, 7 or 6 colors) | SPI1 @ 8MHz | CLK=10, MOSI=11, CS=9, DC=8, RST=12, BUSY=13, PWR=16 |
+| SD card (FAT32/exFAT) | SPI0 @ 24MHz (18.75MHz on the (B)) | CLK=2, MOSI=3, MISO=4, CS=5 (no card-detect pin) |
 | RTC (PCF85063) | I2C1 @ 100kHz | SDA=14, SCL=15, INT=6 (unused), addr=0x51 |
 | Power / battery | GPIO, ADC | VBAT=29 (ADC), BAT_OFF=18, BAT_STATE=19 (KEY / RTC wake sense), CHARGE=17, VBUS=24 |
 | LEDs | GPIO | ACT=25 (red), PWR=26 (green) |
@@ -190,6 +201,8 @@ Product details and schematic: [PhotoPainter wiki](https://www.waveshare.com/wik
   driver reports activity, the firmware owns the LED), lights once a long KEY press is reached and
   stays on in USB drive mode.
 - **SD card:** with no card-detect pin, the firmware forces card re-initialization on every check.
+- **Refresh:** about 31 s on the PhotoPainter, about 20 s on the PhotoPainter (B); colder panels take
+  longer.
 
 ## Development
 
@@ -204,15 +217,18 @@ python3 get-platformio.py   # installs ~/.platformio/penv/bin/pio
 ```
 
 ```bash
-pio run                      # build (.pio/build/pico/firmware.uf2)
+pio run                      # build for the PhotoPainter (.pio/build/pico/firmware.uf2)
+pio run -e pico2             # build for the PhotoPainter (B) (.pio/build/pico2/firmware.uf2)
 pio run -t upload            # flash: reboots into BOOTSEL over USB, flashes, verifies, starts
 pio run -t upload -t monitor # flash, then show the serial log
 pio device monitor           # serial log (printf output)
 ```
 
-If the board has no working USB serial (first flash, crashed firmware), enter BOOTSEL by hand (hold
+Each model has its own env in `platformio.ini` (`pico`, `pico2`), which picks the board and the panel
+(`include/panel.h`); `-e pico2` works with every command above. If the board has no working USB serial
+(first flash, crashed firmware), enter BOOTSEL by hand (hold
 **BOOT**, press and release **RUN**, release **BOOT**), then run the upload again or drag the `.uf2`
-onto the `RPI-RP2` drive. Extra library debug output: add `-D DEBUG=1` to `build_flags`.
+onto the `RPI-RP2` (or `RP2350`) drive. Extra library debug output: add `-D DEBUG=1` to `build_flags`.
 
 The firmware prints its version at boot: the nearest `v*` tag (`git describe`), e.g. `v1.0.0`, or
 `v1.0.0-3-g725e442` between tags and `-dirty` with uncommitted changes (`tools/version.py`).
@@ -247,9 +263,11 @@ src/
 ├── usb_serial.cpp              USB serial input for C code (test commands)
 └── wake_log.c                  Wake log on the card (docs/wake-log.md)
 include/                        Headers for src/, one per module
+include/panel.h                 The build's panel (7- or 6-color), chosen by the env in platformio.ini
 lib/
 ├── Config/DEV_Config.h         Pin definitions, SPI/I2C/GPIO init
-├── e-Paper/EPD_7in3f.c         Display driver (init, display, sleep, clear)
+├── e-Paper/EPD_7in3f.c         7-color display driver (init, display, sleep, clear)
+├── e-Paper/EPD_7in3e.c         6-color display driver (PhotoPainter (B))
 ├── GUI/GUI_Paint.c             Drawing primitives, text rendering
 ├── tjpgd/                      TJpgDec R0.03 JPEG decoder (ChaN)
 ├── RTC/waveshare_PCF85063.c    RTC driver, alarm scheduling
