@@ -43,6 +43,8 @@ sh tools/jpeg_host/build.sh && python3 tools/jpeg_host/check.py [PHOTO_DIR] SCRA
 Warnings are errors: in the host tests, and in the firmware for our own code in `src/`
 (`build_src_flags`; warnings from the framework and `lib/` don't count).
 
+The firmware build also fails when less than 4 KB of RAM is left for the heap ([ram_check.py](../tools/ram_check.py)). Static data takes nearly all of the PhotoPainter's RAM (the frame buffer alone 188 KB), and running short shows only on the frame: FatFs or a conversion fails and nothing is drawn. Measured on the PhotoPainter by recording every heap call: the peak is 1.3 KB (boot, photo changes, drive mode, broken and large JPEGs), and a build with only the 4 KB reserve free passed the same run.
+
 Without `PHOTO_DIR`, `check.py` replaces the photos with a generated picture and skips the look and
 per-photo checks. GitHub Actions ([ci.yml](../.github/workflows/ci.yml)) builds both firmwares and runs
 both suites that way on every push; a `v*` tag builds both `.uf2` files into a draft release
