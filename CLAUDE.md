@@ -54,6 +54,10 @@ The frame is usually connected over USB, so flashing and logs need no button pre
   survive the reset; the SDK uses 4-7, `watchdog_enable()` overwrites 4) and print them at boot. A
   temporary HardFault handler storing the stacked PC, or `-Wl,--wrap=panic` storing the message
   pointer, names the crash site via `arm-none-eabi-addr2line` on the saved `firmware.elf`.
+- **Both frames connected:** give every tool its port (`serial_log.py --port`, `pio run -t upload
+  --upload-port`). `pio`'s upload fails ("requires a single RP2040 device") once the other frame is
+  also visible to picotool; then flash with `picotool load -x --ser <serial> firmware.uf2` (serials
+  from `pio device list`).
 - **Test timer behavior fast:** temporarily set the alarm to seconds (e.g. `alarmTime.seconds += 40`
   in `armAlarm()`), flash, record, then restore and reflash. Never commit the temporary change.
 - **Logic without hardware:** compile `src/` files on the computer against small stub headers (FatFs,
