@@ -66,6 +66,9 @@ What this firmware does differently from the [official Waveshare firmware](https
 
 ## Bugs fixed
 
+- **Nothing drawn when memory ran short.** The frame buffer was allocated for every change with a few
+  hundred bytes to spare on the PhotoPainter, so a small change elsewhere could leave the screen
+  unchanged; it is now reserved when the firmware is built.
 - **Frozen on a bad file.** A broken or unsupported image made the frame freeze and reboot on the same
   file over and over; now it is skipped and named at the bottom of the next photo.
 - **Swapped card ignored.** On USB the card was checked only at boot and a swapped card was never

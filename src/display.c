@@ -38,7 +38,6 @@
 #include "f_util.h"
 
 #include <stdbool.h>
-#include <stdlib.h> // malloc() free()
 #include <string.h>
 
 #define MESSAGE_X 125 // message screen text position, landscape
@@ -142,6 +141,10 @@ static bool draw_jpeg(const char *path, uint8_t *image)
         printf("jpeg: cached, %lu ms\r\n", (unsigned long)(to_ms_since_boot(get_absolute_time()) - start));
     return true;
 }
+
+// The panel's frame buffer, two pixels per byte. Static, so a build without the RAM for it fails to
+// link instead of failing to draw: next to it the RP2040 keeps only a few KB of heap.
+static UBYTE frame[(PANEL_WIDTH + 1) / 2 * PANEL_HEIGHT];
 
 // Set by display_image() for panel_refreshing(): the next image to convert and the frame buffer
 static char prefetch_name[FF_LFN_BUF + 1];
@@ -256,18 +259,12 @@ static bool draw_photo(uint8_t *image)
     }
 }
 
-int display_image(bool battery_low)
+void display_image(bool battery_low)
 {
     printf("e-Paper Init and Clear...\r\n");
     panel_init();
 
-    UBYTE *image;
-    UDOUBLE image_size = ((PANEL_WIDTH % 2 == 0) ? (PANEL_WIDTH / 2) : (PANEL_WIDTH / 2 + 1)) * PANEL_HEIGHT;
-    if ((image = (UBYTE *)malloc(image_size)) == NULL)
-    {
-        printf("Failed to apply for black memory...\r\n");
-        return -1;
-    }
+    UBYTE *image = frame;
     printf("Paint_NewImage\r\n");
     Paint_NewImage(image, PANEL_WIDTH, PANEL_HEIGHT, 0, PANEL_WHITE);
     Paint_SetScale(7);
@@ -279,7 +276,7 @@ int display_image(bool battery_low)
     if (shown)
     {
         // The panel must never get the placeholder: an unused code leaves an afterimage
-        palette_replace(image, image_size, PANEL_PALETTE.bars,
+        palette_replace(image, sizeof(frame), PANEL_PALETTE.bars,
                         settings.bars == BARS_BLACK ? PANEL_BLACK : PANEL_WHITE);
         char date[24] = "";
         if (settings.show_date)
@@ -314,24 +311,14 @@ int display_image(bool battery_low)
 
     printf("Goto Sleep...\r\n\r\n");
     panel_sleep();
-    free(image);
-    image = NULL;
-
-    return 0;
 }
 
-int display_message(const char *title, const char *hint)
+void display_message(const char *title, const char *hint)
 {
     printf("e-Paper Init and Clear...\r\n");
     panel_init();
 
-    UBYTE *image;
-    UDOUBLE image_size = ((PANEL_WIDTH % 2 == 0) ? (PANEL_WIDTH / 2) : (PANEL_WIDTH / 2 + 1)) * PANEL_HEIGHT;
-    if ((image = (UBYTE *)malloc(image_size)) == NULL)
-    {
-        printf("Failed to apply for black memory...\r\n");
-        return -1;
-    }
+    UBYTE *image = frame;
     printf("Paint_NewImage\r\n");
     Paint_NewImage(image, PANEL_WIDTH, PANEL_HEIGHT, 0, PANEL_WHITE);
     Paint_SetScale(7);
@@ -347,8 +334,4 @@ int display_message(const char *title, const char *hint)
 
     printf("Goto Sleep...\r\n\r\n");
     panel_sleep();
-    free(image);
-    image = NULL;
-
-    return 0;
 }
