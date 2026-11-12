@@ -7,6 +7,7 @@
 #include "image_order.h"
 #include "images.h"
 #include "sdcard.h"
+#include "saved_language.h"
 #include "settings.h"
 #include "wake_log.h"
 #include "hardware/watchdog.h"
@@ -31,7 +32,17 @@ static const char *test_name;
 static int failures;
 
 alignas(8) uint8_t work_memory[WORK_MEMORY_SIZE];
-Settings settings;
+static int saved_language = -1; // stands in for the language kept in the CPU flash
+
+int saved_language_load(void)
+{
+    return saved_language;
+}
+
+void saved_language_save(int language)
+{
+    saved_language = language;
+}
 
 static watchdog_hw_t watchdog_regs;
 watchdog_hw_t *watchdog_hw = &watchdog_regs;
@@ -574,6 +585,71 @@ static void expect_text(const char *got, const char *want)
         fail("got \"%s\", want \"%s\"", got, want);
 }
 
+// settings.ini with these bytes, then read as at boot
+static void load_settings(const char *text)
+{
+    sdcard_mount();
+    FIL fil;
+    UINT bw;
+    f_open(&fil, "settings.ini", FA_CREATE_ALWAYS | FA_WRITE);
+    f_write(&fil, text, (UINT)strlen(text), &bw);
+    f_close(&fil);
+    sdcard_unmount();
+    settings_load();
+}
+
+static void expect_settings(int interval, ImageOrder order, BarsColour bars, Orientation orientation,
+                            bool show_date, Language language)
+{
+    if (settings.interval_hours != interval || settings.order != order || settings.bars != bars ||
+        settings.orientation != orientation || settings.show_date != show_date || settings.language != language)
+        fail("%s%s", "settings differ from the expected values", "");
+    if (saved_language != (int)language)
+        fail("%s%s", "the language was not saved for screens without a card", "");
+}
+
+// settings.ini as editors write it: Windows Notepad adds a BOM and CRLF, users mix case and spacing
+static void test_settings(void)
+{
+    new_card("settings.ini missing: created, defaults", ORDER_ALPHABETICAL);
+    settings.language = LANG_CS;
+    settings_load();
+    expect_settings(12, ORDER_RANDOM, BARS_WHITE, ORIENTATION_LANDSCAPE, false, LANG_EN);
+    char text[2048];
+    read_file("settings.ini", text, sizeof(text));
+    if (!strstr(text, "\r\ninterval_hours = 12\r\n") || !strstr(text, "\r\nlanguage = en\r\n"))
+        fail("%s%s", "the created settings.ini lacks its default lines", "");
+
+    test_name = "settings.ini with a BOM and CRLF";
+    load_settings("\xEF\xBB\xBFinterval_hours = 5\r\norder = alphabetical\r\norientation = portrait\r\n"
+                  "show_date = yes\r\nbars = black\r\nlanguage = cs\r\n");
+    expect_settings(5, ORDER_ALPHABETICAL, BARS_BLACK, ORIENTATION_PORTRAIT, true, LANG_CS);
+
+    test_name = "settings.ini case, spacing and comments";
+    load_settings("; comment\n[frame]\nInterval_Hours=7 ; seven\n  ORDER   =   Alphabetical\nBars = BLACK\nLanguage=CS\n");
+    expect_settings(7, ORDER_ALPHABETICAL, BARS_BLACK, ORIENTATION_LANDSCAPE, false, LANG_CS);
+
+    test_name = "settings.ini invalid values fall back to the defaults";
+    load_settings("interval_hours = 5\nlanguage = cs\n");
+    const char *const bad_intervals[] = {"0", "48", "2.5", "abc", "", "5x"};
+    for (size_t i = 0; i < sizeof(bad_intervals) / sizeof(bad_intervals[0]); i++)
+    {
+        char line[128];
+        snprintf(line, sizeof(line), "interval_hours = %s\norder = sideways\nshow_date = maybe\nlanguage = de\n",
+                 bad_intervals[i]);
+        load_settings(line);
+        expect_settings(12, ORDER_RANDOM, BARS_WHITE, ORIENTATION_LANDSCAPE, false, LANG_EN);
+    }
+    load_settings("interval_hours = 1\n");
+    expect_settings(1, ORDER_RANDOM, BARS_WHITE, ORIENTATION_LANDSCAPE, false, LANG_EN);
+    load_settings("interval_hours = 47\n");
+    expect_settings(47, ORDER_RANDOM, BARS_WHITE, ORIENTATION_LANDSCAPE, false, LANG_EN);
+
+    test_name = "settings.ini unknown keys, broken lines and repeats";
+    load_settings("colour = red\nnot a setting\ninterval_hours = 3\ninterval_hours = x\n");
+    expect_settings(3, ORDER_RANDOM, BARS_WHITE, ORIENTATION_LANDSCAPE, false, LANG_EN);
+}
+
 static void test_log_format(void)
 {
     test_name = "wake log line";
@@ -706,6 +782,7 @@ int main(void)
     test_boot_reason();
     test_log_file();
     test_log_doc();
+    test_settings();
     fprintf(stderr, failures ? "%d failures\n" : "all passed\n", failures);
     return failures;
 }

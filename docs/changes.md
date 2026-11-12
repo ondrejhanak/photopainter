@@ -58,8 +58,9 @@ What this firmware does differently from the [official Waveshare firmware](https
   pressing the button.
 - **JPEG pipeline on the computer:** `tools/jpeg_host/` builds the frame's conversion on a computer (macOS, Linux)
   and checks it on real photos and edge cases in seconds; its output is identical to the frame's.
-- **Photo order tests on the computer:** `tools/images_host/build.sh` runs the photo selection (order,
-  new photos first, cache cleanup) on the real FatFs over a RAM disk.
+- **Photo order and settings tests on the computer:** `tools/images_host/build.sh` runs the photo
+  selection (order, new photos first, cache cleanup) and the `settings.ini` parsing on the real FatFs
+  over a RAM disk.
 - **Documented hardware behavior**, e.g. the RTC alarm arriving on the KEY line and the missing SD
   card-detect pin (see [How it behaves](hardware.md#how-it-behaves)).
 

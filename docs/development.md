@@ -36,7 +36,7 @@ mutation fails is dropped. Code that only runs on the frame (screens, the skip l
 same way by flashing a deliberately broken build and reading the serial log.
 
 ```bash
-sh tools/images_host/build.sh                                      # photo selection, cache, wake log
+sh tools/images_host/build.sh                                      # photo selection, cache, wake log, settings
 sh tools/jpeg_host/build.sh && python3 tools/jpeg_host/check.py [PHOTO_DIR] SCRATCH_DIR  # needs Pillow
 ```
 
