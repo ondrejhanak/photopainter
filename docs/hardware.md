@@ -31,7 +31,10 @@ one (F).
   card reader without a card (Windows may show an empty drive letter). A long press with a computer
   connected puts the SD card in: the computer mounts it within a second, while a "USB Drive" screen
   refreshes (flashing and the log keep working). The frame leaves the card alone until the drive is
-  ejected or KEY is held again, then re-reads the card and `settings.ini` and shows the first new
+  ejected or KEY is held again, or until the computer unmounts it without ejecting (e.g. ForkLift):
+  a computer marks the card's file system "in use" while mounted (FAT32 clean-shutdown bit, exFAT
+  VolumeDirty) and "clean" on unmount, and the frame leaves 3 s after a "clean" with no command
+  following. Then it re-reads the card and `settings.ini` and shows the first new
   photo (or the next image). It also ends by itself when the computer does not read the drive
   within a minute (mount failed) or leaves it untouched for 30 minutes (forgotten eject,
   computer asleep), so the photos never stop for good. On a plain charger a long press is ignored

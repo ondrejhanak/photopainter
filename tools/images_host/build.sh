@@ -11,7 +11,7 @@ cc -std=c2x -g -O1 -fsanitize=address,undefined -fno-sanitize-recover=undefined 
     -I tools/images_host/stub -I tools/jpeg_host/stub -I include -I lib/e-Paper \
     -I $FATFS/ff14a/source -I $FATFS/include -I lib/inih -D INI_ALLOW_MULTILINE=0 \
     tools/images_host/test.c src/images.c src/image_order.c src/cache.c src/cache_format.c src/palette.c \
-    src/wake_log.c -D WAKE_LOG_MAX_BYTES=300 src/settings.c src/messages.c lib/inih/ini.c \
+    src/wake_log.c -D WAKE_LOG_MAX_BYTES=300 src/settings.c src/messages.c lib/inih/ini.c src/volume_flag.c \
     $FATFS/src/ff.c $FATFS/src/ffsystem.c $FATFS/src/ffunicode.c $FATFS/src/f_util.c \
     -o build/images_test
 build/images_test > build/images_test.log

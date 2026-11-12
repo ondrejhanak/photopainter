@@ -14,7 +14,6 @@ In no particular order; not everything here will happen.
 - Serial log lines sometimes lose their first character after idle gaps.
 - KEY presses during a panel refresh are probably lost (unconfirmed).
 - On battery, a very short tap on the button sometimes doesn't start the frame: it switches its power on only once its firmware runs.
-- Unmounting the drive without ejecting it (e.g. ForkLift's "Eject") leaves the frame in USB drive mode until a long press, unplugging, or 30 minutes without the computer touching the drive.
 
 ## Considered, dropped
 

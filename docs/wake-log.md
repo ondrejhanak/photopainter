@@ -42,7 +42,7 @@ Times are milliseconds; a step that did not run is 0.
 | `event` | When |
 |---|---|
 | `change` | A photo or a message screen was shown |
-| `drive_end` | Drive mode ended (eject, long press, or timeout). `refresh_ms` and `result` (`message`) are the "USB Drive" screen's; `card_ms` is the card scan after the session, so the `change` line after it has 0 there |
+| `drive_end` | Drive mode ended (eject, unmount, long press, or timeout). `refresh_ms` and `result` (`message`) are the "USB Drive" screen's; `card_ms` is the card scan after the session, so the `change` line after it has 0 there |
 | `usb_plugged` | The frame was plugged into USB (it stays awake; changes follow as `change` lines) |
 | `usb_unplugged` | USB was removed and the frame switched off (not logged when it happens in drive mode) |
 | `bat_empty` | Battery below 3.3 V: the "Battery Empty" screen, no more changes until charged |
@@ -58,6 +58,7 @@ Times are milliseconds; a step that did not run is 0.
 | `serial` | Serial test command `n` |
 | `usb_plugged` | Powered on with USB: plugged in (also during a change on battery), or restarted after flashing |
 | `eject` | Drive mode ended by ejecting the drive |
+| `unmount` | Drive mode ended by unmounting the drive without ejecting it (e.g. ForkLift) |
 | `drive_timeout` | Drive mode ended by itself (the computer never read the drive, or left it idle 30 minutes) |
 | `watchdog:<step>` | The frame hung and the watchdog restarted it in `<step>`: `boot`, `card`, `select`, `load`, `refresh`, `save`, `drive` (`idle` between changes) |
 

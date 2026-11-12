@@ -29,6 +29,7 @@ static bool charging_mode = false; // powered over USB at boot; loop() only acts
 // or left it idle for long (forgotten eject, computer asleep), so the photos don't stop for good
 #define DRIVE_UNUSED_MS (60 * 1000UL)
 #define DRIVE_IDLE_MS (30 * 60 * 1000UL)
+#define DRIVE_UNMOUNTED_MS 3000 // after the clean flag; an eject comes within a second
 static bool key_down = false;
 static uint32_t key_down_ms; // when KEY went down
 static bool long_press_done = false; // long press already handled, wait for release
@@ -353,6 +354,8 @@ void loop(void)
         usb_drive_serve(LOOP_MS); // answers the computer instead of the delay below
         if (usb_drive_ejected())
             leave_drive_mode("ejected", "eject");
+        else if (usb_drive_unmounted() && usb_drive_idle_ms() > DRIVE_UNMOUNTED_MS)
+            leave_drive_mode("unmounted without eject", "unmount");
         else if (!usb_drive_used() && to_ms_since_boot(get_absolute_time()) - drive_mode_ms > DRIVE_UNUSED_MS)
             leave_drive_mode("drive not used by the computer", "drive_timeout");
         else if (usb_drive_idle_ms() > DRIVE_IDLE_MS)

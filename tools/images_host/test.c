@@ -9,6 +9,7 @@
 #include "sdcard.h"
 #include "saved_language.h"
 #include "settings.h"
+#include "volume_flag.h"
 #include "wake_log.h"
 #include "hardware/watchdog.h"
 #include "pico/time.h"
@@ -19,13 +20,15 @@
 #include <string.h>
 
 #define SECTORS 8192 // 4 MB
+#define BIG_SECTORS 70000 // 34 MB: FAT32 needs 65526 clusters
 #define CACHE_DIR SDCARD_FRAME_DIR "/cache/landscape"
 #define PORTRAIT_DIR SDCARD_FRAME_DIR "/cache/portrait"
 #define PHOTOS_FILE SDCARD_FRAME_DIR "/photos.bin"
 #define NEW_FILE SDCARD_FRAME_DIR "/new.bin"
 #define MAX_KEYS (WORK_MEMORY_SIZE / sizeof(uint64_t))
 
-static uint8_t disk[SECTORS * 512];
+static uint8_t disk[BIG_SECTORS * 512];
+static uint32_t disk_sectors = SECTORS;
 static FATFS fs;
 static uint32_t rand_state;
 static const char *test_name;
@@ -94,7 +97,7 @@ DRESULT disk_ioctl(BYTE pdrv, BYTE cmd, void *buff)
     case CTRL_SYNC:
         return RES_OK;
     case GET_SECTOR_COUNT:
-        *(LBA_t *)buff = SECTORS;
+        *(LBA_t *)buff = disk_sectors;
         return RES_OK;
     case GET_BLOCK_SIZE:
         *(DWORD *)buff = 1;
@@ -135,7 +138,8 @@ static void new_card(const char *name, ImageOrder order)
     static uint8_t work[FF_MAX_SS * 4];
     MKFS_PARM opt = {FM_FAT, 0, 0, 0, 0};
     test_name = name;
-    memset(disk, 0, sizeof(disk));
+    disk_sectors = SECTORS;
+    memset(disk, 0, SECTORS * 512);
     if (f_mkfs("", &opt, work, sizeof(work)) != FR_OK)
         fail("%s%s", "f_mkfs failed", "");
     settings.order = order;
@@ -650,6 +654,68 @@ static void test_settings(void)
     expect_settings(3, ORDER_RANDOM, BARS_WHITE, ORIENTATION_LANDSCAPE, false, LANG_EN);
 }
 
+// The volume flag of FAT32 and exFAT cards, with and without a partition table, where FatFs itself
+// puts the first FAT and the boot sector; then macOS's writes of it, in use and clean
+static void test_volume_flag(void)
+{
+    static const struct
+    {
+        const char *name;
+        BYTE fmt;
+    } cases[] = {{"FAT32 partitioned", FM_FAT32}, {"FAT32 without partition", FM_FAT32 | FM_SFD},
+                 {"exFAT partitioned", FM_EXFAT}, {"exFAT without partition", FM_EXFAT | FM_SFD}};
+    static uint8_t work[FF_MAX_SS * 4];
+    for (size_t i = 0; i < sizeof(cases) / sizeof(cases[0]); i++)
+    {
+        test_name = cases[i].name;
+        printf("--- volume flag: %s\n", test_name);
+        disk_sectors = BIG_SECTORS;
+        memset(disk, 0, sizeof(disk));
+        MKFS_PARM opt = {cases[i].fmt, 0, 0, 0, 512};
+        if (f_mkfs("", &opt, work, sizeof(work)) != FR_OK || f_mount(&fs, "", 1) != FR_OK)
+        {
+            fail("%s%s", "cannot format", "");
+            continue;
+        }
+        bool exfat = fs.fs_type == FS_EXFAT;
+        if (exfat != ((cases[i].fmt & FM_EXFAT) != 0) || (!exfat && fs.fs_type != FS_FAT32))
+            fail("%s%s", "formatted as another file system", "");
+        uint32_t want = exfat ? (uint32_t)fs.volbase : (uint32_t)fs.fatbase;
+        f_unmount("");
+        uint32_t boot_lba;
+        VolumeFlag flag;
+        if (!volume_boot_lba(disk, &boot_lba) || !volume_flag_locate(disk + boot_lba * 512, boot_lba, &flag))
+        {
+            fail("%s%s", "no volume flag found", "");
+            continue;
+        }
+        if (flag.lba != want)
+            fail("%s%s", "the flag is not in the first FAT (FAT32) or the boot sector (exFAT)", "");
+        // The flag as macOS writes it, in its sector as it is on the card: FAT32's entry 1 (bytes 4-7)
+        // 07ffffff in use, 0fffffff clean; exFAT's VolumeFlags (bytes 106-107) 0002 in use, 0000 clean
+        uint8_t sector[512];
+        memcpy(sector, disk + want * 512, 512);
+        uint32_t at = exfat ? 106 : 4, chunk = at / 64 * 64; // TinyUSB hands writes over in 64-byte pieces
+        const uint8_t in_use[2][4] = {{0xff, 0xff, 0xff, 0x07}, {0x02, 0x00}}, clean[2][4] = {{0xff, 0xff, 0xff, 0x0f}, {0}};
+        memcpy(sector + at, in_use[exfat], exfat ? 2 : 4);
+        if (volume_flag_clean(&flag, want, chunk, sector + chunk, 64) != 0)
+            fail("%s%s", "an in-use flag read as clean", "");
+        memcpy(sector + at, clean[exfat], exfat ? 2 : 4);
+        if (volume_flag_clean(&flag, want, chunk, sector + chunk, 64) != 1)
+            fail("%s%s", "a clean flag not recognised", "");
+        if (volume_flag_clean(&flag, want, chunk + 64, sector + chunk, 64) != -1 ||
+            volume_flag_clean(&flag, want + 1, chunk, sector + chunk, 64) != -1)
+            fail("%s%s", "a write without the flag counted", "");
+    }
+    test_name = "no FAT32 or exFAT volume";
+    disk_sectors = SECTORS;
+    memset(disk, 0, sizeof(disk));
+    uint32_t boot_lba;
+    VolumeFlag flag;
+    if (volume_boot_lba(disk, &boot_lba) && volume_flag_locate(disk + boot_lba * 512, boot_lba, &flag))
+        fail("%s%s", "a flag found on an empty card", "");
+}
+
 static void test_log_format(void)
 {
     test_name = "wake log line";
@@ -783,6 +849,7 @@ int main(void)
     test_log_file();
     test_log_doc();
     test_settings();
+    test_volume_flag();
     fprintf(stderr, failures ? "%d failures\n" : "all passed\n", failures);
     return failures;
 }

@@ -13,6 +13,7 @@ extern "C" {
 #include "hw_config.h"
 #include "diskio.h" // STA_NOINIT
 #include "sd_card.h"
+#include "volume_flag.h"
 }
 
 #define SECTOR_SIZE 512
@@ -29,6 +30,9 @@ static uint8_t descriptor[TUD_MSC_DESC_LEN];
 static uint32_t sector_count;
 static volatile uint32_t last_command_ms; // millis() of the computer's last drive command
 static volatile bool used = false; // the computer read the drive (mounting always does)
+static VolumeFlag volume_flag;
+static bool volume_flag_known = false; // a FAT32 or exFAT card, whose flag tells an unmount
+static volatile bool unmounted = false; // the computer's last write of the flag marked the card clean
 
 // In work_memory, which JPEG conversion overwrites outside drive mode
 static uint8_t *const read_buffer = work_memory;
@@ -83,6 +87,12 @@ bool usb_drive_start(void)
     sector_count = sd_sectors(sd);
     if (sector_count == 0)
         return false;
+    uint32_t boot_lba;
+    volume_flag_known = sd_read_blocks(sd, read_buffer, 0, 1) == SD_BLOCK_DEVICE_ERROR_NONE &&
+                        volume_boot_lba(read_buffer, &boot_lba) &&
+                        sd_read_blocks(sd, read_buffer, boot_lba, 1) == SD_BLOCK_DEVICE_ERROR_NONE &&
+                        volume_flag_locate(read_buffer, boot_lba, &volume_flag);
+    unmounted = false;
     read_sectors = 0;
     write_sectors = 0;
     card_failed = false;
@@ -121,6 +131,11 @@ bool usb_drive_ejected(void)
 bool usb_drive_used(void)
 {
     return used;
+}
+
+bool usb_drive_unmounted(void)
+{
+    return unmounted;
 }
 
 uint32_t usb_drive_idle_ms(void)
@@ -198,6 +213,9 @@ extern "C" int32_t tud_msc_write10_cb(uint8_t lun, uint32_t lba, uint32_t offset
     if (write_sectors == 0)
         write_lba = lba;
     memcpy(write_buffer + write_sectors * SECTOR_SIZE + offset, buffer, bufsize);
+    int clean = volume_flag_known ? volume_flag_clean(&volume_flag, lba, offset, buffer, bufsize) : -1;
+    if (clean >= 0)
+        unmounted = clean;
     if (offset + bufsize == SECTOR_SIZE)
         write_sectors++;
     return bufsize;

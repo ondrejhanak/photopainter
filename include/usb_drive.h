@@ -20,6 +20,9 @@ void usb_drive_serve(uint32_t ms);
 bool usb_drive_ejected(void);
 // Whether the computer has read the drive since usb_drive_start() (mounting it always does)
 bool usb_drive_used(void);
+// Whether the computer marked the card's file system clean, as it does when it unmounts it; an eject
+// follows within a second, an unmount without eject (e.g. ForkLift) sends nothing more
+bool usb_drive_unmounted(void);
 // Milliseconds since the computer's last drive command (macOS sends none while a mounted drive is idle)
 uint32_t usb_drive_idle_ms(void);
 
