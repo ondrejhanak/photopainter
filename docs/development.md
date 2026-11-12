@@ -40,6 +40,9 @@ sh tools/images_host/build.sh                                      # photo selec
 sh tools/jpeg_host/build.sh && python3 tools/jpeg_host/check.py [PHOTO_DIR] SCRATCH_DIR  # needs Pillow
 ```
 
+Warnings are errors: in the host tests, and in the firmware for our own code in `src/`
+(`build_src_flags`; warnings from the framework and `lib/` don't count).
+
 Without `PHOTO_DIR`, `check.py` replaces the photos with a generated picture and skips the look and
 per-photo checks. GitHub Actions ([ci.yml](../.github/workflows/ci.yml)) builds both firmwares and runs
 both suites that way on every push; a `v*` tag builds both `.uf2` files into a draft release

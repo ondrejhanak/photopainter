@@ -9,7 +9,7 @@ build() {
     out=$1
     shift
     cc -std=c2x -g ${FLAGS:--O1 -fsanitize=address,undefined -fno-sanitize-recover=undefined} \
-        -Wall -Wextra -Wno-unused-parameter -fwrapv \
+        -Wall -Wextra -Wno-unused-parameter -Werror -fwrapv \
         -I include -I lib/tjpgd -I lib/e-Paper -I tools/jpeg_host/stub \
         "$@" src/exif.c src/palette.c src/cache_format.c lib/tjpgd/tjpgd.c -o "build/$out"
 }
