@@ -70,6 +70,13 @@ The frame is usually connected over USB, so flashing and logs need no button pre
 See docs/development.md for the architecture and program flow, docs/hardware.md for hardware behavior
 (power, wake-up, RTC, USB mode), docs/changes.md for what differs from the original firmware.
 
+## Conventions
+
+- **Own code** (`src/`, `include/`): snake_case functions and variables; public functions prefixed by their module (`display_*`, `images_*`, `sdcard_*`, `settings_*`), static helpers without prefix; types PascalCase; macros and enum values UPPER_SNAKE; one module is `name.c` + `name.h`.
+- **Upstream libraries** (ChaN's FatFs core, inih, carlk3's FatFs_SPI, TJpgDec) stay as released apart from their configuration headers; only whole unused files are removed.
+- **Waveshare board code** (`lib/GUI`, `e-Paper`, `Config`, `RTC`, `led`, `Fonts`) is maintained as our own but keeps its upstream style and generic API (e.g. `EPD_7IN3F_Clear`, `DEV_SPI_Write_nByte`, `PCF85063_get_alarm_flag`).
+- **Dead code** shows with `-Wl,--print-gc-sections`; remove it in its own commit, with a smoke test on a frame.
+
 ## Optimization Focus
 
 Focus optimizations on **firmware-specific code** (`src/`, `include/`) rather than library code (`lib/`)
