@@ -7,12 +7,14 @@ In no particular order; not everything here will happen.
 - **Web flasher**: a page on GitHub Pages that updates the frame from Chrome/Edge: Web Serial 1200-baud touch reboots it into BOOTSEL, then the release `.uf2` for the frame's model is written to its BOOTSEL drive (File System Access API) or flashed over WebUSB (PICOBOOT). Card and settings untouched.
 - **settings.ini tests**: parsing (BOM, CRLF, bad values) has no host test yet.
 - **Fuzzing**: JPEG/EXIF parsing as a repeatable test (CI), to prove "bad files don't break the frame".
-- **Build hygiene**: warnings, static analysis, stack usage and firmware size checks in CI.
+- **Build hygiene**: static analysis, stack usage and firmware size checks in CI.
 
 ## Known issues
 
 - Serial log lines sometimes lose their first character after idle gaps.
 - KEY presses during a panel refresh are probably lost (unconfirmed).
+- On battery, a very short tap on the button sometimes doesn't start the frame: it switches its power on only once its firmware runs.
+- Unmounting the drive without ejecting it (e.g. ForkLift's "Eject") leaves the frame in USB drive mode until a long press, unplugging, or 30 minutes without the computer touching the drive.
 
 ## Considered, dropped
 
