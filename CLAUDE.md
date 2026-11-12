@@ -63,7 +63,8 @@ The frame is usually connected over USB, so flashing and logs need no button pre
 
 ## Project Architecture
 
-See README.md for architecture overview and hardware behavior (power, wake-up, RTC, USB mode).
+See docs/development.md for the architecture and program flow, docs/hardware.md for hardware behavior
+(power, wake-up, RTC, USB mode), docs/changes.md for what differs from the original firmware.
 
 ## Optimization Focus
 
