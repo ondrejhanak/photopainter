@@ -77,6 +77,8 @@ What this firmware does differently from the [official Waveshare firmware](https
 - **Restart after plugging in during a change.** USB connected while the frame was changing the photo
   on battery kept it running after it switched itself off, until the watchdog restarted it 8 s later;
   now it carries on as on USB.
+- **Indented settings ignored.** A line in `settings.ini` that started with spaces was read as part of
+  the line above, so that setting was silently lost; now every line is read on its own.
 - **Restart when plugged in with a flat battery.** Below 3.1 V the frame switched itself off even on
   USB, which cannot cut its power, so it hung until the watchdog restarted it 8 s later; now it stays
   on and charges.
