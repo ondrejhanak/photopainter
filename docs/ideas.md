@@ -12,8 +12,6 @@ In no particular order; not everything here will happen.
 ## Known issues
 
 - Serial log lines sometimes lose their first character after idle gaps.
-- KEY presses during a panel refresh are probably lost (unconfirmed).
-- On battery, a very short tap on the button sometimes doesn't start the frame: it switches its power on only once its firmware runs.
 
 ## Considered, dropped
 
