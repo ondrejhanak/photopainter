@@ -2,10 +2,6 @@
 
 In no particular order; not everything here will happen.
 
-## Code and tooling
-
-- **Web flasher**: a page on GitHub Pages that updates the frame from Chrome/Edge: Web Serial 1200-baud touch reboots it into BOOTSEL, then the release `.uf2` for the frame's model is written to its BOOTSEL drive (File System Access API) or flashed over WebUSB (PICOBOOT). Card and settings untouched.
-
 ## Considered, dropped
 
 - Night pause: fixed change times would replace it; both need a real clock.
@@ -17,3 +13,4 @@ In no particular order; not everything here will happen.
 - Convert all new photos right after eject on USB power: users unplug after ejecting, and converting during the refresh costs almost nothing.
 - Card errors in the wake log: the ones that matter show indirectly (a repeated photo, `converted` again and again, `failed`), and the main one, an unreadable card, cannot be written to the card.
 - Battery measurements and savings (baseline, sleeping during the refresh, lower CPU clock, write-up): no baseline while the frame is plugged in and out during development; the wake log keeps recording for later.
+- Web flasher (GitHub Pages, Chrome/Edge): Chromium only; writing to the BOOTSEL drive still needs a folder pick and, from factory firmware, the buttons; flashing without the drive (WebUSB PICOBOOT) needs Zadig for the PhotoPainter on Windows and udev rules on Linux; release downloads send no CORS headers, so Pages would have to host the files. Too little gain over copying the `.uf2` by hand.
