@@ -33,4 +33,5 @@ jobs:
       - run: pip install pillow==13.0.0
       - run: sh tools/images_host/build.sh
       - run: sh tools/jpeg_host/build.sh
+      - run: sh tools/jpeg_host/fuzz.sh replay
       - run: python3 tools/jpeg_host/check.py build/check # no photos in CI: generated cases only

@@ -38,7 +38,11 @@ same way by flashing a deliberately broken build and reading the serial log.
 ```bash
 sh tools/images_host/build.sh                                      # photo selection, cache, wake log, settings
 sh tools/jpeg_host/build.sh && python3 tools/jpeg_host/check.py [PHOTO_DIR] SCRATCH_DIR  # needs Pillow
+sh tools/jpeg_host/fuzz.sh replay                                  # saved fuzzing inputs, once
+sh tools/jpeg_host/fuzz.sh [SECONDS]                               # fuzzing, default 15 min; brew install llvm
 ```
+
+**Fuzzing** (`tools/jpeg_host/fuzz.c`) runs damaged JPEGs through the frame's photo path (EXIF, decoder, scaling, dithering) on both panels and orientations, under ASan and UBSan; a pixel outside the frame, an incomplete frame or an impossible EXIF value stops it too. CI only replays the saved inputs: the seeds (`make_fuzz_seeds.py`), the corpus that reaches every code path found so far (`fuzz_corpus/`, refreshed with `fuzz.sh merge` after a run) and every fixed finding (`fuzz_findings/`). Fuzz after changing `exif.c`, `jpeg_convert.c` or TJpgDec; the reached paths level off after about 15 minutes. Known limit: a read past the end of data held inside the larger work memory goes unseen unless the target copies that data out (as it does for the EXIF segment), and narrow boundaries are luck, so they get unit tests.
 
 Warnings are errors: in the host tests, and in the firmware for our own code in `src/`
 (`build_src_flags`; warnings from the framework and `lib/` don't count).
@@ -84,7 +88,7 @@ lib/
 ├── Fonts/                      Fonts from Terminus Font (22 and 28 px, U+0020-U+017F, SIL OFL 1.1)
 ├── led/led.c                   LED indicators, power control
 └── inih/                       INI parser (r62, BSD) for settings.ini
-tools/jpeg_host/                JPEG pipeline on the computer: harness, checks, reference converter
+tools/jpeg_host/                JPEG pipeline on the computer: harness, checks, reference converter, fuzzing
 tools/images_host/              Photo selection tests on the computer (FatFs on a RAM disk)
 tools/gen_font.py               Generates lib/Fonts/fontNN.c from a BDF bitmap font
 tools/serial_log.py             Serial log with timestamps, sends test commands (device tests)
