@@ -1,9 +1,12 @@
 """Checks the host JPEG harness (build.sh first) on generated edge cases and on a folder of photos.
 
-usage: python3 tools/jpeg_host/check.py [PHOTO_DIR] SCRATCH_DIR
+usage: python3 tools/jpeg_host/check.py [--update-hashes] [PHOTO_DIR] SCRATCH_DIR
 Without PHOTO_DIR (CI) a generated picture replaces the photos and the look and per-photo checks are
-skipped. Needs Pillow. Writes test JPEGs and output BMPs to SCRATCH_DIR; exits 1 if any check fails.
+skipped. The committed photos (photos/, from make_test_photos.py) are always converted and compared
+with photos/hashes.txt; --update-hashes rewrites it after an intended change. Needs Pillow. Writes
+test JPEGs and output BMPs to SCRATCH_DIR; exits 1 if any check fails.
 """
+import hashlib
 import os
 import random
 import re
@@ -15,6 +18,9 @@ from PIL import Image, ImageDraw, ImageFilter
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 HARNESS = os.path.join(ROOT, 'build', 'jpeg_host')
+TEST_PHOTOS = os.path.join(ROOT, 'tools', 'jpeg_host', 'photos')
+HASHES = os.path.join(TEST_PHOTOS, 'hashes.txt')
+CACHE_HEADER_SIZE = 118 # cache_format.h: the BMP header, which holds the panel's palette
 LOOK_PHOTOS = ['IMG_7365.jpeg', 'olomouc.jpeg', 'IMG_9077.jpeg'] # landscape photos compared with convert_reference.py
 LOOK_MAX_DIFF = 6
 BARS = 7 # palette.c: placeholder for the bars (EPD_7IN3F_CLEAN)
@@ -124,12 +130,79 @@ def generated_picture():
     return Image.blend(img, Image.merge('RGB', (noise, noise, noise)), 0.25)
 
 
+def cache_version():
+    return int(re.search(r'#define CACHE_VERSION (\d+)', open(os.path.join(ROOT, 'src', 'cache_format.c')).read()).group(1))
+
+
+def committed_photos(scratch, update):
+    """Each committed photo converted for both frames and panels, compared with hashes.txt: the
+    conversion is integer-only, so any change in output is a change in the code. Frames keep
+    converted photos by cache key, so changed output needs a CACHE_VERSION bump (a palette change
+    renews the cache itself, as its header holds the palette)."""
+    results, headers = {}, {}
+    for f in sorted(os.listdir(TEST_PHOTOS)):
+        if not f.endswith('.jpg'):
+            continue
+        for frame, portrait in (('landscape', False), ('portrait', True)):
+            for panel, six in (('7color', False), ('6color', True)):
+                out = os.path.join(scratch, f'hash_{f}_{frame}_{panel}.bmp')
+                code, log = run(os.path.join(TEST_PHOTOS, f), out, portrait=portrait, six=six)
+                if code == 0:
+                    data = open(out, 'rb').read()
+                    headers[panel] = hashlib.sha256(data[:CACHE_HEADER_SIZE]).hexdigest()[:16]
+                    results[(f, frame, panel)] = hashlib.sha256(data).hexdigest()[:16]
+                else:
+                    results[(f, frame, panel)] = 'unsupported' if 'convert: unsupported' in log else 'failed'
+    version = cache_version()
+    if update:
+        with open(HASHES, 'w') as out:
+            out.write(f'# check.py --update-hashes: frame output of photos/ (sha256, first 16 hex digits)\n')
+            out.write(f'cache_version {version}\n')
+            for panel in sorted(headers):
+                out.write(f'header {panel} {headers[panel]}\n')
+            for (f, frame, panel), h in sorted(results.items()):
+                out.write(f'{f} {frame} {panel} {h}\n')
+        print(f'wrote {len(results)} hashes to {os.path.relpath(HASHES, ROOT)}')
+        return
+    want, want_headers, want_version = {}, {}, None
+    for line in open(HASHES):
+        parts = line.split()
+        if not parts or parts[0].startswith('#'):
+            continue
+        if parts[0] == 'cache_version':
+            want_version = int(parts[1])
+        elif parts[0] == 'header':
+            want_headers[parts[1]] = parts[2]
+        else:
+            want[tuple(parts[:3])] = parts[3]
+    check(f'committed photos: {len(want)} outputs listed', set(want) == set(results),
+          'photos/ and hashes.txt differ: run check.py --update-hashes')
+    for key in sorted(results):
+        got, expected = results[key], want.get(key)
+        if got == expected:
+            check(f'{key[0]} {key[1]} {key[2]}: {got}', True)
+            continue
+        if headers.get(key[2]) != want_headers.get(key[2]):
+            why = 'palette changed (caches renew themselves): run check.py --update-hashes'
+        elif version == want_version:
+            why = ('output changed: bump CACHE_VERSION in src/cache_format.c, or frames keep showing their old '
+                   'conversions; then run check.py --update-hashes')
+        else:
+            why = 'CACHE_VERSION bumped: run check.py --update-hashes'
+        check(f'{key[0]} {key[1]} {key[2]}: {got}, want {expected}', False, why)
+
+
 def main():
-    if len(sys.argv) not in (2, 3):
+    update = '--update-hashes' in sys.argv
+    args = [a for a in sys.argv[1:] if a != '--update-hashes']
+    if len(args) not in (1, 2):
         sys.exit(__doc__)
-    photos, scratch = (sys.argv[1], sys.argv[2]) if len(sys.argv) == 3 else (None, sys.argv[1])
+    photos, scratch = (args[0], args[1]) if len(args) == 2 else (None, args[0])
     os.makedirs(scratch, exist_ok=True)
     s = lambda name: os.path.join(scratch, name)
+    committed_photos(scratch, update)
+    if update:
+        return 0
 
     # A landscape and a portrait source cut from a photo (asymmetric, so a wrong turn shows)
     if photos:
@@ -230,7 +303,7 @@ def main():
         flat = save(Image.new('RGB', (800, 480), (level, level, level)), s(f'flat{level}.jpg'))
         code, log = run(flat, s(f'flat{level}_6.bmp'), six=True)
         img = Image.open(s(f'flat{level}_6.bmp'))
-        white = sum(1 for v in img.getdata() if v == 1) / (800 * 480) # palette index = panel code
+        white = sum(1 for v in img.get_flattened_data() if v == 1) / (800 * 480) # palette index = panel code
         check(f'6 colours: grey {level} is {white:.0%} white ink', code == 0 and lo <= white <= hi, log)
 
     # Scaling, with 256 greys so the output is the scaled photo itself (no dither noise): the

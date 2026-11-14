@@ -50,7 +50,9 @@ Warnings are errors: in the host tests, and in the firmware for our own code in 
 The firmware build also fails when less than 4 KB of RAM is left for the heap ([ram_check.py](../tools/ram_check.py)). Static data takes nearly all of the PhotoPainter's RAM (the frame buffer alone 188 KB), and running short shows only on the frame: FatFs or a conversion fails and nothing is drawn. Measured on the PhotoPainter by recording every heap call: the peak is 1.3 KB (boot, photo changes, drive mode, broken and large JPEGs), and a build with only the 4 KB reserve free passed the same run.
 
 Without `PHOTO_DIR`, `check.py` replaces the photos with a generated picture and skips the look and
-per-photo checks. GitHub Actions ([ci.yml](../.github/workflows/ci.yml)) builds both firmwares and runs
+per-photo checks.
+
+**Committed test photos** (`tools/jpeg_host/photos/`, 3.4 MB): real camera and phone files (Nikon, Canon, Olympus, iPhone 3GS, 7 and 16 Pro with Apple's HEIC export, one without EXIF, two rotated to 4:4:0 that the frame rejects), made by `make_test_photos.py` from originals kept outside the repo. It crops them losslessly with jpegtran, keeping each encoder's tables, sampling and restart interval, sets the orientation tag for the upright camera cases and zeroes GPS, MakerNote and serial numbers, then checks all of that. `check.py` converts each for both frames and panels and compares the output with `photos/hashes.txt`: the conversion is integer-only, so a different hash is a code change. Frames keep converted photos by cache key, so changed output needs a `CACHE_VERSION` bump in `src/cache_format.c` (a palette change renews caches by itself); after an intended change, `check.py --update-hashes` rewrites the file. GitHub Actions ([ci.yml](../.github/workflows/ci.yml)) builds both firmwares and runs
 both suites that way on every push; a `v*` tag builds both `.uf2` files into a draft release
 ([release.yml](../.github/workflows/release.yml)).
 
