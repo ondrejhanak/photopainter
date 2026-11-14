@@ -90,6 +90,13 @@ static void test_exif(void)
     memcpy(buf + 6, "MX", 2);
     expect("bad byte order mark", exif_orientation(buf, len), 1);
     expect("too short", exif_orientation(buf, 10), 1);
+    // TIFF data shorter than one IFD entry, with an entry count: in a buffer of exactly its size, so
+    // ASan stops a read past its end (the frame reads such a segment inside the larger work memory)
+    static const uint8_t short_tiff[] = {'E', 'x', 'i', 'f', 0, 0, 'I', 'I', 0x2a, 0, 8, 0, 0, 0, 1, 0};
+    uint8_t *exact = malloc(sizeof(short_tiff));
+    memcpy(exact, short_tiff, sizeof(short_tiff));
+    expect("IFD entry past short data", exif_orientation(exact, sizeof(short_tiff)), 1);
+    free(exact);
 }
 
 // APP1 with DateTime in IFD0 (if dt) and an Exif IFD holding DateTimeOriginal (if orig); the

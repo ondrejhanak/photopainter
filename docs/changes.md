@@ -99,4 +99,7 @@ What this firmware does differently from the [official Waveshare firmware](https
 - **Misaligned key lists.** The shared work memory, which also holds 64-bit photo keys, was only aligned
   for 32-bit values: undefined in C (found by the host tests' sanitizer), harmless on the RP2040, which
   moves 64-bit values as two 32-bit ones; now aligned for 64-bit values.
+- **EXIF read past its end.** A damaged photo whose EXIF data was shorter than one entry made the
+  bounds check wrap around, so up to 12 bytes past the data were read (on the frame inside its work
+  memory, so at worst a wrong rotation); found by fuzzing.
 - **`u_int8_t` typo** in the SD driver, which broke builds on toolchains without BSD types.

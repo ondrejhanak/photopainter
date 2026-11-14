@@ -53,7 +53,7 @@ static const uint8_t *find_tag(const Tiff *t, uint32_t ifd, uint32_t tag)
     for (uint32_t i = 0; i < count; i++)
     {
         uint32_t entry = ifd + 2 + i * 12;
-        if (entry > t->len - 12)
+        if (t->len < 12 || entry > t->len - 12) // short data: t->len - 12 would wrap around
             return NULL;
         const uint8_t *e = t->data + entry;
         if (get16(e, t->big_endian) == tag)
